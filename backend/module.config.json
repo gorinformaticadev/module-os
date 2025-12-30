@@ -2,7 +2,7 @@
   "name": "moduloOs",
   "slug": "moduloOs",
   "displayName": "Ordem de Serviços",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Módulo personalizado com funcionalidades integradas",
   "author": "Equipe CORE",
   "category": "custom",
@@ -61,7 +61,7 @@
       {
         "id": "moduloOs-main",
         "label": "Ordem de Serviços",
-        "icon": "box",
+        "icon": "Wrench",
         "path": "/moduloOs",
         "order": 10,
         "permissions": [

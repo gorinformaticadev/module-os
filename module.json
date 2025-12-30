@@ -1,12 +1,13 @@
 {
   "name": "moduloOs",
   "displayName": "Ordem de Serviços",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Módulo personalizado com funcionalidades integradas",
   "author": "GOR Informatica",
   "category": "custom",
   "enabled": true,
   "dependencies": null,
+  "icon": "Wrench",
   "menus": [
     {
       "label": "Dashboard",
