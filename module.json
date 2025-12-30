@@ -1,0 +1,35 @@
+{
+  "name": "moduloOs",
+  "displayName": "Ordem de Serviços",
+  "version": "1.0.0",
+  "description": "Módulo personalizado com funcionalidades integradas",
+  "author": "GOR Informatica",
+  "category": "custom",
+  "enabled": true,
+  "dependencies": null,
+  "menus": [
+    {
+      "label": "Dashboard",
+      "route": "/modules/moduloOs/pages/dashboard",
+      "icon": "BarChart3",
+      "order": 1
+    },
+    {
+      "label": "Lista",
+      "route": "/modules/moduloOs/pages/lista",
+      "icon": "List",
+      "order": 2
+    },
+    {
+      "label": "Configurações",
+      "route": "/modules/moduloOs/pages/configuracoes",
+      "icon": "Settings",
+      "order": 3
+    }
+  ],
+  "defaultConfig": {
+    "showNotifications": true,
+    "enableWidgets": true,
+    "maxItems": 50
+  }
+}
