@@ -2,7 +2,7 @@ export const ModuleMenu = [
     {
         id: 'moduloOs-main',
         name: 'Ordem de Serviços',
-        icon: 'Box',
+        icon: 'Wrench', //icone principal do menu
         href: '/modules/moduloOs/pages/dashboard',
         order: 10,
         group: 'moduloOs',
