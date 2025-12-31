@@ -12,7 +12,7 @@ import { Bell, Save, ArrowRight, CalendarClock } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
-export default function moduloOsConfiguracoesPage() {
+export default function OrdemServicoConfiguracoesPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -77,7 +77,7 @@ export default function moduloOsConfiguracoesPage() {
   const fetchSchedules = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/modules/moduloOs/config/notifications');
+      const response = await api.get('/modules/ordem_servico/config/notifications');
       setSchedules(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Erro ao carregar agendamentos:', error);
@@ -103,7 +103,7 @@ export default function moduloOsConfiguracoesPage() {
 
     try {
       setSaving(true);
-      await api.post('/modules/moduloOs/config/notifications', config);
+      await api.post('/modules/ordem_servico/config/notifications', config);
       toast({
         title: 'Sucesso',
         description: 'Novo agendamento criado.',

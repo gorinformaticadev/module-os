@@ -1,11 +1,10 @@
-
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CronService } from '../../core/cron/cron.service';
 import { PrismaService } from '../../core/prisma/prisma.service';
 
 @Injectable()
-export class moduloOsCronService implements OnModuleInit {
-    private readonly logger = new Logger(moduloOsCronService.name);
+export class OrdemServicoCronService implements OnModuleInit {
+    private readonly logger = new Logger(OrdemServicoCronService.name);
 
     constructor(
         private cronService: CronService,
@@ -13,7 +12,7 @@ export class moduloOsCronService implements OnModuleInit {
     ) { }
 
     async onModuleInit() {
-        this.logger.log('Inicializando moduloOs Cron Service');
+        this.logger.log('Inicializando OrdemServico Cron Service');
         await this.ensureDatabaseTable();
         await this.registerNotificationJob();
     }
@@ -21,7 +20,7 @@ export class moduloOsCronService implements OnModuleInit {
     private async ensureDatabaseTable() {
         try {
             await this.prisma.$executeRawUnsafe(`
-                CREATE TABLE IF NOT EXISTS mod_moduloOs_notification_schedules (
+                CREATE TABLE IF NOT EXISTS mod_ordemServico_notification_schedules (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     title VARCHAR(255) NOT NULL,
                     content TEXT,
@@ -33,20 +32,20 @@ export class moduloOsCronService implements OnModuleInit {
                 );
             `);
         } catch (error) {
-            this.logger.warn('Aviso ao verificar tabela mod_moduloOs_notification_schedules: ' + error.message);
+            this.logger.warn('Aviso ao verificar tabela mod_ordemServico_notification_schedules: ' + error.message);
         }
     }
 
     async registerNotificationJob() {
         try {
             const schedules = await this.prisma.$queryRawUnsafe<any[]>(`
-                SELECT * FROM mod_moduloOs_notification_schedules
+                SELECT * FROM mod_ordemServico_notification_schedules
             `);
 
             const activeKeys = new Set<string>();
 
             for (const config of schedules) {
-                const key = `moduloOs.auto_notification.${config.id}`;
+                const key = `ordemServico.auto_notification.${config.id}`;
 
                 if (config.enabled) {
                     await this.cronService.register(
@@ -57,8 +56,8 @@ export class moduloOsCronService implements OnModuleInit {
                         },
                         {
                             name: 'Notif: ' + config.title,
-                            description: 'Notificação Automática do moduloOs',
-                            settingsUrl: '/modules/moduloOs/configuracoes'
+                            description: 'Notificação Automática do Ordem de Serviço',
+                            settingsUrl: '/modules/ordem_servico/pages/configuracoes'
                         }
                     );
                     activeKeys.add(key);
@@ -67,11 +66,11 @@ export class moduloOsCronService implements OnModuleInit {
                 }
             }
 
-            this.cronService.delete('moduloOs.auto_notification');
+            this.cronService.delete('ordemServico.auto_notification');
 
             const allJobs = this.cronService.listJobs();
             for (const job of allJobs) {
-                if (job.key.startsWith('moduloOs.auto_notification.') && !activeKeys.has(job.key)) {
+                if (job.key.startsWith('ordemServico.auto_notification.') && !activeKeys.has(job.key)) {
                     this.cronService.delete(job.key);
                 }
             }
@@ -92,7 +91,7 @@ export class moduloOsCronService implements OnModuleInit {
                     severity: 'info',
                     audience: config.audience || 'all',
                     source: 'module',
-                    module: 'moduloOs',
+                    module: 'ordem_servico',
                     read: false
                 }
             });

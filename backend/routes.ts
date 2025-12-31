@@ -1,5 +1,5 @@
-import { moduloOsController } from './controllers/moduloOs.controller';
+import { OrdemServicoController } from './controllers/ordemServico.controller';
 
 export const ModuleRoutes = [
-    moduloOsController
+    OrdemServicoController
 ];

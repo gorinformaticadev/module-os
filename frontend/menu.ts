@@ -1,34 +1,48 @@
 export const ModuleMenu = [
     {
-        id: 'moduloOs-main',
-        name: 'Ordem de Serviços',
-        icon: 'Wrench', //icone principal do menu
-        href: '/modules/moduloOs/pages/dashboard',
+        id: 'ordem_servico-main',
+        name: 'Ordem de Serviço',
+        icon: 'Wrench',
+        href: '/modules/ordem_servico/pages/dashboard',
         order: 10,
-        group: 'moduloOs',
-        roles: ['ADMIN', 'SUPER_ADMIN', 'USER'],
+        group: 'ordem_servico',
+        roles: ['ADMIN', 'SUPER_ADMIN', 'ATENDENTE', 'TECNICO'],
 
         children: [
             {
-                id: 'moduloOs-dashboard',
+                id: 'ordem_servico-dashboard',
                 name: 'Dashboard',
-                href: '/modules/moduloOs/pages/dashboard',
+                href: '/modules/ordem_servico/pages/dashboard',
                 icon: 'BarChart3',
                 order: 1
             },
             {
-                id: 'moduloOs-lista',
-                name: 'Lista',
-                href: '/modules/moduloOs/pages/lista',
-                icon: 'List',
+                id: 'ordem_servico-ordens',
+                name: 'Ordens de Serviço',
+                href: '/modules/ordem_servico/pages/ordens',
+                icon: 'ClipboardList',
                 order: 2
             },
             {
-                id: 'moduloOs-configuracoes',
-                name: 'Configurações',
-                href: '/modules/moduloOs/pages/configuracoes',
-                icon: 'Settings',
+                id: 'ordem_servico-clientes',
+                name: 'Clientes',
+                href: '/modules/ordem_servico/pages/clientes',
+                icon: 'Users',
                 order: 3
+            },
+            {
+                id: 'ordem_servico-produtos',
+                name: 'Produtos / Serviços',
+                href: '/modules/ordem_servico/pages/produtos',
+                icon: 'Package',
+                order: 4
+            },
+            {
+                id: 'ordem_servico-configuracoes',
+                name: 'Configurações',
+                href: '/modules/ordem_servico/pages/configuracoes',
+                icon: 'Settings',
+                order: 5
             }
         ]
     }

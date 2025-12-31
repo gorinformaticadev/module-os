@@ -1,8 +1,8 @@
 {
-  "name": "moduloOs",
-  "displayName": "Ordem de Serviços",
-  "version": "1.0.1",
-  "description": "Módulo personalizado com funcionalidades integradas",
+  "name": "ordem_servico",
+  "displayName": "Ordem de Serviço",
+  "version": "1.0.0",
+  "description": "Módulo de Gerenciamento de Ordens de Serviço",
   "author": "GOR Informatica",
   "category": "custom",
   "enabled": true,
@@ -11,21 +11,33 @@
   "menus": [
     {
       "label": "Dashboard",
-      "route": "/modules/moduloOs/pages/dashboard",
+      "route": "/modules/ordem_servico/pages/dashboard",
       "icon": "BarChart3",
       "order": 1
     },
     {
-      "label": "Lista",
-      "route": "/modules/moduloOs/pages/lista",
-      "icon": "List",
+      "label": "Ordens de Serviço",
+      "route": "/modules/ordem_servico/pages/ordens",
+      "icon": "ClipboardList",
       "order": 2
     },
     {
-      "label": "Configurações",
-      "route": "/modules/moduloOs/pages/configuracoes",
-      "icon": "Settings",
+      "label": "Clientes",
+      "route": "/modules/ordem_servico/pages/clientes",
+      "icon": "Users",
       "order": 3
+    },
+    {
+      "label": "Produtos / Serviços",
+      "route": "/modules/ordem_servico/pages/produtos",
+      "icon": "Package",
+      "order": 4
+    },
+    {
+      "label": "Configurações",
+      "route": "/modules/ordem_servico/pages/configuracoes",
+      "icon": "Settings",
+      "order": 5
     }
   ],
   "defaultConfig": {

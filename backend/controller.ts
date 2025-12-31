@@ -1,24 +1,23 @@
-
 import { Controller, Get, Post, Body, UseGuards, Put } from '@nestjs/common';
 import { Roles } from '@core/roles.decorator';
 import { RolesGuard } from '@core/roles.guard';
 import { JwtAuthGuard } from '@core/jwt-auth.guard';
 import { PrismaService } from '@core/prisma/prisma.service';
-import { moduloOsCronService } from './cron.service';
+import { OrdemServicoCronService } from './cron.service';
 
-@Controller('modules/moduloOs/config')
+@Controller('modules/ordem_servico/config')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN')
-export class moduloOsConfigController {
+export class OrdemServicoConfigController {
     constructor(
         private prisma: PrismaService,
-        private moduloOsCron: moduloOsCronService
+        private cronService: OrdemServicoCronService
     ) { }
 
     @Get('notifications')
     async getNotificationConfigs() {
         const result = await this.prisma.$queryRaw<any[]>`
-            SELECT * FROM mod_moduloOs_notification_schedules
+            SELECT * FROM mod_ordemServico_notification_schedules
             ORDER BY created_at DESC
         `;
         return result;
@@ -27,7 +26,7 @@ export class moduloOsConfigController {
     @Post('notifications')
     async createNotificationConfig(@Body() body: any) {
         const result = await this.prisma.$executeRaw`
-            INSERT INTO mod_moduloOs_notification_schedules
+            INSERT INTO mod_ordemServico_notification_schedules
             (title, content, audience, cron_expression, enabled)
             VALUES (
                 ${body.title},
@@ -38,7 +37,7 @@ export class moduloOsConfigController {
             )
         `;
 
-        await this.moduloOsCron.registerNotificationJob();
+        await this.cronService.registerNotificationJob();
 
         return result;
     }

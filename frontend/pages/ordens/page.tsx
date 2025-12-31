@@ -7,15 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
 
-export default function moduloOsListaPage() {
+export default function OrdemServicoOrdensPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const mockData = [
-    { id: 1, name: 'Item 1', status: 'Ativo', date: '28/12/2025', category: 'Categoria A' },
-    { id: 2, name: 'Item 2', status: 'Inativo', date: '27/12/2025', category: 'Categoria B' },
-    { id: 3, name: 'Item 3', status: 'Ativo', date: '26/12/2025', category: 'Categoria A' },
-    { id: 4, name: 'Item 4', status: 'Ativo', date: '25/12/2025', category: 'Categoria C' },
-    { id: 5, name: 'Item 5', status: 'Pendente', date: '24/12/2025', category: 'Categoria B' },
+    { id: 1, name: 'OS 001', status: 'Aberto', date: '28/12/2025', category: 'Manutenção' },
+    { id: 2, name: 'OS 002', status: 'Fechado', date: '27/12/2025', category: 'Instalação' },
+    { id: 3, name: 'OS 003', status: 'Aberto', date: '26/12/2025', category: 'Suporte' },
+    { id: 4, name: 'OS 004', status: 'Aberto', date: '25/12/2025', category: 'Manutenção' },
+    { id: 5, name: 'OS 005', status: 'Pendente', date: '24/12/2025', category: 'Instalação' },
   ];
 
   const filteredData = mockData.filter(item =>
@@ -27,7 +27,7 @@ export default function moduloOsListaPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Lista de Itens</h1>
+          <h1 className="text-3xl font-bold">Ordens de Serviço</h1>
           <p className="text-muted-foreground mt-2">
             Gerencie todos os itens do módulo
           </p>
@@ -85,8 +85,8 @@ export default function moduloOsListaPage() {
                           <Badge
                             variant={
                               item.status === 'Ativo' ? 'default' :
-                              item.status === 'Inativo' ? 'secondary' :
-                              'outline'
+                                item.status === 'Inativo' ? 'secondary' :
+                                  'outline'
                             }
                           >
                             {item.status}
