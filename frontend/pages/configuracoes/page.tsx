@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Bell, Save, ArrowRight, CalendarClock, Calendar, Users, Settings } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +20,7 @@ export default function OrdemServicoConfiguracoesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('agendamento');
 
   const [config, setConfig] = useState({
@@ -72,8 +76,12 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   useEffect(() => {
-    fetchSchedules();
-  }, []);
+    if (activeTab === 'agendamento') {
+      fetchSchedules();
+    } else if (activeTab === 'usuarios') {
+      fetchUsers();
+    }
+  }, [activeTab]);
 
   const fetchSchedules = async () => {
     try {
@@ -89,6 +97,46 @@ export default function OrdemServicoConfiguracoesPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/modules/ordem_servico/config/users');
+      setUsers(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar os usuários.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleTechnician = async (userId: string, currentStatus: boolean, systemRole: string) => {
+    // Admins usually play dual roles, but if they want to explicitly unmark themselves as technicians for assignment lists, they can.
+    // However, if logic dictates Admins are ALWAYS technicians, we should disable the switch or handle it.
+    // Prompt says: "SUPER_ADMIN e ADMIN -> podem atuar também como Técnico".
+    // "USER -> pode ser Técnico, se marcado/permitido".
+
+    try {
+      await api.put(`/modules/ordem_servico/config/users/${userId}/technician`, {
+        is_technician: !currentStatus
+      });
+
+      // Optimistic update or refetch
+      setUsers(users.map(u =>
+        u.id === userId
+          ? { ...u, os_roles: { ...u.os_roles, technician: !currentStatus } }
+          : u
+      ));
+
+      toast({ title: 'Permissão atualizada' });
+    } catch (error) {
+      toast({ title: 'Erro ao atualizar', variant: 'destructive' });
     }
   };
 
@@ -326,12 +374,62 @@ export default function OrdemServicoConfiguracoesPage() {
                   Defina quem tem acesso e quais permissões dentro deste módulo.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-64 flex flex-col items-center justify-center text-muted-foreground">
-                <Users className="h-12 w-12 mb-4 opacity-20" />
-                <p>Funcionalidade em desenvolvimento.</p>
-                <Button variant="outline" className="mt-4">
-                  Gerenciar Permissões
-                </Button>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-8">Carregando usuários...</div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Usuário</TableHead>
+                          <TableHead>Papel do Sistema</TableHead>
+                          <TableHead>Papéis no Módulo (OS)</TableHead>
+                          <TableHead className="text-right">Técnico?</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-sm">{user.name}</span>
+                                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{user.system_role}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2 flex-wrap">
+                                {user.os_roles.admin && <Badge className="bg-purple-500 hover:bg-purple-600">Administrador</Badge>}
+                                {user.os_roles.attendant && <Badge variant="secondary">Atendente</Badge>}
+                                {user.os_roles.technician && <Badge className="bg-blue-500 hover:bg-blue-600">Técnico</Badge>}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end items-center gap-2">
+                                <Label htmlFor={`tech-${user.id}`} className="text-xs text-muted-foreground mr-2">
+                                  {user.os_roles.technician ? 'Sim' : 'Não'}
+                                </Label>
+                                <Switch
+                                  id={`tech-${user.id}`}
+                                  checked={user.os_roles.technician}
+                                  onCheckedChange={() => handleToggleTechnician(user.id, user.os_roles.technician, user.system_role)}
+                                />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
