@@ -145,15 +145,29 @@ export class ClientesService {
 
     async delete(tenantId: string, id: string, userId: string) {
         // Verificar se existem OS associadas a este cliente
-        const osCountResult = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT COUNT(*) as count FROM mod_ordemServico_os WHERE client_id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
-            id, tenantId
-        );
+        try {
+            const osCountResult = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT COUNT(*) as count FROM mod_ordemServico_os WHERE client_id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
+                id, tenantId
+            );
 
-        const osCount = parseInt(osCountResult[0].count);
+            const osCount = parseInt(osCountResult[0]?.count || '0');
 
-        if (osCount > 0) {
-            throw new Error('Não é possível excluir o cliente pois existem Ordens de Serviço associadas a ele.');
+            if (osCount > 0) {
+                throw new Error('Não é possível excluir o cliente pois existem Ordens de Serviço associadas a ele.');
+            }
+        } catch (error: any) {
+            // Check for Postgres code 42P01 (undefined_table) or Prisma P2010 which wraps it
+            const isTableNotFoundError =
+                error.code === '42P01' ||
+                (error.code === 'P2010' && (error.meta?.code === '42P01' || error.message?.includes('mod_ordemServico_os')));
+
+            if (isTableNotFoundError) {
+                this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}. Ignorando verificação.`);
+            } else {
+                this.logger.error(`Erro ao verificar OS do cliente: ${error.message} (Code: ${error.code})`);
+                throw error;
+            }
         }
 
         await this.prisma.$executeRawUnsafe(

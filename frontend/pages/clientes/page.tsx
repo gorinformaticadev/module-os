@@ -524,14 +524,14 @@ export default function OrdemServicoClientesPage() {
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>Confirmar Exclusão</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4 text-center">
-                        <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                        <p className="text-muted-foreground">
+                        <DialogDescription className="text-center pt-4">
                             Tem certeza que deseja excluir este cliente?
                             <br />
                             Essa ação não pode ser desfeita.
-                        </p>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-2 text-center">
+                        <Trash2 className="h-12 w-12 text-red-500 mx-auto" />
                     </div>
                     <DialogFooter className="flex gap-2 justify-center sm:justify-center">
                         <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
