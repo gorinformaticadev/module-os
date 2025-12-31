@@ -11,6 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import { Search, Plus, Edit, Trash2, Phone, MapPin, FileText } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { X } from 'lucide-react';
 
 interface Client {
     id: string;
@@ -18,7 +20,14 @@ interface Client {
     document: string;
     phone_primary: string;
     phone_secondary: string;
-    address: string;
+    // New Address Fields
+    address_zip?: string;
+    address_street?: string;
+    address_number?: string;
+    address_complement?: string;
+    address_neighborhood?: string;
+    address_city?: string;
+    address_state?: string;
     is_active: boolean;
     created_at: string;
 }
@@ -28,29 +37,47 @@ export default function OrdemServicoClientesPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: '',
         document: '',
         phone_primary: '',
         phone_secondary: '',
-        address: '',
+        address_zip: '',
+        address_street: '',
+        address_number: '',
+        address_complement: '',
+        address_neighborhood: '',
+        address_city: '',
+        address_state: '',
         is_active: true
     });
 
     useEffect(() => {
-        fetchClients();
-    }, []);
+        const delayDebounceFn = setTimeout(() => {
+            fetchClients();
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm, statusFilter]);
 
     const fetchClients = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/api/ordem_servico/clientes');
+            const params: any = {};
+            if (searchTerm) params.search = searchTerm;
+            if (statusFilter !== 'all') params.status = statusFilter === 'active' ? 'true' : 'false';
+
+            const response = await api.get('/api/ordem_servico/clientes', { params });
             setClients(response.data);
         } catch (error) {
+            console.error(error);
             toast({
                 title: 'Erro ao carregar',
                 description: 'Não foi possível carregar a lista de clientes.',
@@ -61,18 +88,9 @@ export default function OrdemServicoClientesPage() {
         }
     };
 
-    const handleSearch = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get('/api/ordem_servico/clientes', {
-                params: { search: searchTerm }
-            });
-            setClients(response.data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
+    const handleClearFilters = () => {
+        setSearchTerm('');
+        setStatusFilter('all');
     };
 
     const maskPhone = (value: string) => {
@@ -106,7 +124,13 @@ export default function OrdemServicoClientesPage() {
             document: '',
             phone_primary: '',
             phone_secondary: '',
-            address: '',
+            address_zip: '',
+            address_street: '',
+            address_number: '',
+            address_complement: '',
+            address_neighborhood: '',
+            address_city: '',
+            address_state: '',
             is_active: true
         });
         setEditingId(null);
@@ -123,11 +147,41 @@ export default function OrdemServicoClientesPage() {
             document: client.document || '',
             phone_primary: client.phone_primary,
             phone_secondary: client.phone_secondary || '',
-            address: client.address || '',
+            address_zip: client.address_zip || '',
+            address_street: client.address_street || '',
+            address_number: client.address_number || '',
+            address_complement: client.address_complement || '',
+            address_neighborhood: client.address_neighborhood || '',
+            address_city: client.address_city || '',
+            address_state: client.address_state || '',
             is_active: client.is_active
         });
         setEditingId(client.id);
         setIsDialogOpen(true);
+        setIsDialogOpen(true);
+    };
+
+    const handleDelete = (id: string) => {
+        setDeleteId(id);
+        setIsDeleteOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+
+        try {
+            await api.delete(`/api/ordem_servico/clientes/${deleteId}`);
+            toast({ title: 'Cliente excluído com sucesso' });
+            fetchClients();
+            setIsDeleteOpen(false);
+        } catch (error: any) {
+            const msg = error.response?.data?.message || 'Erro ao excluir cliente.';
+            toast({
+                title: 'Erro ao excluir',
+                description: msg,
+                variant: 'destructive'
+            });
+        }
     };
 
     const handleSave = async () => {
@@ -199,20 +253,33 @@ export default function OrdemServicoClientesPage() {
                                 Visualize e busque clientes cadastrados
                             </CardDescription>
                         </div>
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-80">
+                        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-64">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Buscar por nome, documento ou telefone..."
+                                    placeholder="Buscar por nome, cpf ou telefone..."
                                     className="pl-10"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
                             </div>
-                            <Button variant="secondary" onClick={handleSearch}>
-                                Buscar
-                            </Button>
+
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-full md:w-32">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    <SelectItem value="active">Ativos</SelectItem>
+                                    <SelectItem value="inactive">Inativos</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {(searchTerm || statusFilter !== 'all') && (
+                                <Button variant="ghost" onClick={handleClearFilters} className="px-3" title="Limpar Filtros">
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardHeader>
@@ -269,10 +336,10 @@ export default function OrdemServicoClientesPage() {
                                                             <Phone className="h-3 w-3" />
                                                             {client.phone_primary}
                                                         </div>
-                                                        {client.address && (
-                                                            <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[200px]" title={client.address}>
+                                                        {(client.address_street || client.address_city || client.address_state) && (
+                                                            <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[200px]" title={`${client.address_street || ''}${client.address_street && client.address_number ? ', ' : ''}${client.address_number || ''}`}>
                                                                 <MapPin className="h-3 w-3" />
-                                                                {client.address}
+                                                                {client.address_city || ''}{client.address_city && client.address_state ? ' - ' : ''}{client.address_state || ''}
                                                             </div>
                                                         )}
                                                     </div>
@@ -289,6 +356,9 @@ export default function OrdemServicoClientesPage() {
                                                 <td className="px-4 py-3 text-right">
                                                     <Button variant="ghost" size="sm" onClick={() => openEdit(client)}>
                                                         <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(client.id)}>
+                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </td>
                                             </tr>
@@ -364,13 +434,78 @@ export default function OrdemServicoClientesPage() {
                                 />
                             </div>
 
-                            <div className="col-span-2 space-y-2">
-                                <Label htmlFor="address">Endereço Completo</Label>
+                            <div className="col-span-2">
+                                <Label className="font-semibold text-lg">Endereço</Label>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="zip">CEP</Label>
                                 <Input
-                                    id="address"
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                    placeholder="Rua, Número, Bairro, Cidade - UF"
+                                    id="zip"
+                                    value={formData.address_zip}
+                                    onChange={(e) => setFormData({ ...formData, address_zip: e.target.value })}
+                                    placeholder="00000-000"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="street">Rua</Label>
+                                <Input
+                                    id="street"
+                                    value={formData.address_street}
+                                    onChange={(e) => setFormData({ ...formData, address_street: e.target.value })}
+                                    placeholder="Rua / Avenida"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="number">Número</Label>
+                                <Input
+                                    id="number"
+                                    value={formData.address_number}
+                                    onChange={(e) => setFormData({ ...formData, address_number: e.target.value })}
+                                    placeholder="123"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="neighborhood">Bairro</Label>
+                                <Input
+                                    id="neighborhood"
+                                    value={formData.address_neighborhood}
+                                    onChange={(e) => setFormData({ ...formData, address_neighborhood: e.target.value })}
+                                    placeholder="Bairro"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="complement">Complemento</Label>
+                                <Input
+                                    id="complement"
+                                    value={formData.address_complement}
+                                    onChange={(e) => setFormData({ ...formData, address_complement: e.target.value })}
+                                    placeholder="Apto, Sala, etc."
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="city">Cidade</Label>
+                                <Input
+                                    id="city"
+                                    value={formData.address_city}
+                                    onChange={(e) => setFormData({ ...formData, address_city: e.target.value })}
+                                    placeholder="Cidade"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="state">UF</Label>
+                                <Input
+                                    id="state"
+                                    value={formData.address_state}
+                                    onChange={(e) => setFormData({ ...formData, address_state: e.target.value })}
+                                    placeholder="UF"
+                                    maxLength={2}
                                 />
                             </div>
                         </div>
@@ -384,6 +519,26 @@ export default function OrdemServicoClientesPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+
+            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirmar Exclusão</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 text-center">
+                        <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                        <p className="text-muted-foreground">
+                            Tem certeza que deseja excluir este cliente?
+                            <br />
+                            Essa ação não pode ser desfeita.
+                        </p>
+                    </div>
+                    <DialogFooter className="flex gap-2 justify-center sm:justify-center">
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
+                        <Button variant="destructive" onClick={confirmDelete}>Excluir Cliente</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div >
     );
 }

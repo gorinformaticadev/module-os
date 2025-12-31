@@ -35,7 +35,7 @@ export class ClientesService {
 
     async findById(tenantId: string, id: string) {
         const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT * FROM mod_ordemServico_clients WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL LIMIT 1`,
+            `SELECT * FROM mod_ordemServico_clients WHERE tenant_id = $1 AND id = $2::uuid AND deleted_at IS NULL LIMIT 1`,
             tenantId, id
         );
         return result[0];
@@ -50,31 +50,40 @@ export class ClientesService {
             throw new Error('Erro interno: Tenant ID não identificado. Faça login novamente.');
         }
 
-        const id = randomUUID();
+        // const id = randomUUID(); // Let database generate it
 
         try {
-            await this.prisma.$executeRawUnsafe(
+            const result = await this.prisma.$queryRawUnsafe<any[]>(
                 `INSERT INTO mod_ordemServico_clients 
-                (id, tenant_id, name, document, phone_primary, phone_secondary, address, is_active)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-                id,
+                (tenant_id, name, document, phone_primary, phone_secondary, is_active,
+                 address_zip, address_street, address_number, address_complement, address_neighborhood, address_city, address_state)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                RETURNING id`,
                 tenantId,
                 data.name,
                 data.document || null,
                 data.phone_primary,
                 data.phone_secondary || null,
-                data.address || null,
-                data.is_active ?? true
+                data.is_active ?? true,
+                data.address_zip || null,
+                data.address_street || null,
+                data.address_number || null,
+                data.address_complement || null,
+                data.address_neighborhood || null,
+                data.address_city || null,
+                data.address_state || null
             );
+
+            const newId = result[0].id;
 
             await this.auditService.log({
                 action: 'CREATE_CLIENT',
                 userId,
                 tenantId,
-                details: { clientId: id, name: data.name }
+                details: { clientId: newId, name: data.name }
             });
 
-            return { id, ...data };
+            return { id: newId, ...data };
         } catch (error) {
             this.logger.error('Erro ao criar cliente:', error);
             throw new Error('Erro ao salvar no banco de dados. Verifique os dados e tente novamente.');
@@ -94,18 +103,30 @@ export class ClientesService {
                     document = $4,
                     phone_primary = $5,
                     phone_secondary = $6,
-                    address = $7,
-                    is_active = $8,
+                    is_active = $7,
+                    address_zip = $8,
+                    address_street = $9,
+                    address_number = $10,
+                    address_complement = $11,
+                    address_neighborhood = $12,
+                    address_city = $13,
+                    address_state = $14,
                     updated_at = NOW()
-                WHERE id = $1 AND tenant_id = $2`,
+                WHERE id = $1::uuid AND tenant_id = $2`,
                 id,
                 tenantId,
                 data.name,
                 data.document || null,
                 data.phone_primary,
                 data.phone_secondary || null,
-                data.address || null,
-                data.is_active ?? true
+                data.is_active ?? true,
+                data.address_zip || null,
+                data.address_street || null,
+                data.address_number || null,
+                data.address_complement || null,
+                data.address_neighborhood || null,
+                data.address_city || null,
+                data.address_state || null
             );
 
             await this.auditService.log({
@@ -123,8 +144,20 @@ export class ClientesService {
     }
 
     async delete(tenantId: string, id: string, userId: string) {
+        // Verificar se existem OS associadas a este cliente
+        const osCountResult = await this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT COUNT(*) as count FROM mod_ordemServico_os WHERE client_id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
+            id, tenantId
+        );
+
+        const osCount = parseInt(osCountResult[0].count);
+
+        if (osCount > 0) {
+            throw new Error('Não é possível excluir o cliente pois existem Ordens de Serviço associadas a ele.');
+        }
+
         await this.prisma.$executeRawUnsafe(
-            `UPDATE mod_ordemServico_clients SET deleted_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+            `UPDATE mod_ordemServico_clients SET deleted_at = NOW() WHERE id = $1::uuid AND tenant_id = $2`,
             id, tenantId
         );
 
