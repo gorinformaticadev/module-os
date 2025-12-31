@@ -10,10 +10,13 @@ export class ProdutosService {
     constructor(
         private prisma: PrismaService,
         private auditService: AuditService
-    ) { }
+    ) {
+        this.logger.log('✅✅✅ PRODUTOS SERVICE INICIADO!!! ✅✅✅');
+    }
 
     async findAll(tenantId: string, filters: any = {}) {
         const { search, status } = filters;
+        this.logger.log(`findAll chamado. Tenant: ${tenantId}, Filters: ${JSON.stringify(filters)}`);
 
         // Base query
         let query = `SELECT * FROM mod_ordemServico_products WHERE tenant_id = $1 AND deleted_at IS NULL`;
@@ -69,15 +72,18 @@ export class ProdutosService {
         try {
             await this.prisma.$executeRawUnsafe(
                 `INSERT INTO mod_ordemServico_products 
-                (id, tenant_id, code, name, price, description, is_active)
-                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7)`,
+                (id, tenant_id, code, name, price, description, is_active, type, cost_price, image_url)
+                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
                 id,
                 tenantId,
                 data.code,
                 data.name,
                 data.price,
                 data.description || null,
-                data.is_active ?? true
+                data.is_active ?? true,
+                data.type || 'PRODUCT',
+                data.cost_price || 0,
+                data.image_url || null
             );
 
             await this.auditService.log({
@@ -114,6 +120,9 @@ export class ProdutosService {
                     price = $5,
                     description = $6,
                     is_active = $7,
+                    type = $8,
+                    cost_price = $9,
+                    image_url = $10,
                     updated_at = NOW()
                 WHERE id = $1::uuid AND tenant_id = $2`,
                 id,
@@ -122,7 +131,10 @@ export class ProdutosService {
                 data.name,
                 data.price,
                 data.description || null,
-                data.is_active ?? true
+                data.is_active ?? true,
+                data.type || 'PRODUCT',
+                data.cost_price || 0,
+                data.image_url || null
             );
 
             await this.auditService.log({

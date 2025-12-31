@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Search, Plus, Edit, Package, RefreshCw } from 'lucide-react';
+import { Search, Plus, Edit, RefreshCw, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,18 +16,22 @@ export default function OrdemServicoProdutosPage() {
     const { toast } = useToast();
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
 
-    // State do Dialog
+    // Dialog State
     const [isOpen, setIsOpen] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         code: '',
         name: '',
-        price: '0,00', // Mudei para string formatada
+        price: '0,00',
+        cost_price: '0,00',
+        profit_margin: '', // New field
         description: '',
+        type: 'PRODUCT',
+        image_url: '' as string | null,
         is_active: true
     });
 
@@ -53,49 +57,120 @@ export default function OrdemServicoProdutosPage() {
             code: '',
             name: '',
             price: '0,00',
+            cost_price: '0,00',
+            profit_margin: '',
             description: '',
+            type: 'PRODUCT',
+            image_url: null,
             is_active: true
         });
         setIsOpen(true);
     };
 
     const generateRandomCode = () => {
-        const randomNum = Math.floor(1000 + Math.random() * 9000); // 4 digitos
-        setFormData(prev => ({ ...prev, code: `PROD-${randomNum}` }));
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        setFormData(prev => ({ ...prev, code: `ITEM-${randomNum}` }));
     };
 
     const formatCurrencyInput = (value: string) => {
-        // Remove tudo que não é dígito
         const digits = value.replace(/\D/g, '');
-
-        // Se vazio, retorna 0,00
         if (!digits) return '0,00';
-
-        // Converte para número e divide por 100
         const number = parseFloat(digits) / 100;
-
         return number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
+    const parseMoney = (val: string) => {
+        if (!val) return 0;
+        return parseFloat(val.replace(/\./g, '').replace(',', '.'));
+    };
+
+    const formatMoney = (val: number) => {
+        return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const handleCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = formatCurrencyInput(e.target.value);
+        const cost = parseMoney(val);
+
+        let newPrice = formData.price;
+        const margin = parseFloat(formData.profit_margin.replace(',', '.')) || 0;
+
+        if (margin && cost > 0) {
+            const priceVal = cost * (1 + margin / 100);
+            newPrice = formatMoney(priceVal);
+        }
+
+        setFormData(prev => ({ ...prev, cost_price: val, price: newPrice }));
+    };
+
     const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const formatted = formatCurrencyInput(e.target.value);
-        setFormData(prev => ({ ...prev, price: formatted }));
+        const val = formatCurrencyInput(e.target.value);
+        const price = parseMoney(val);
+        const cost = parseMoney(formData.cost_price);
+
+        let newMargin = formData.profit_margin;
+
+        if (cost > 0 && price > 0) {
+            const marginVal = ((price - cost) / cost) * 100;
+            newMargin = marginVal.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+        }
+
+        setFormData(prev => ({ ...prev, price: val, profit_margin: newMargin }));
+    };
+
+    const handleMarginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        const margin = parseFloat(val.replace(',', '.'));
+        const cost = parseMoney(formData.cost_price);
+
+        let newPrice = formData.price;
+
+        if (!isNaN(margin) && cost > 0) {
+            const priceVal = cost * (1 + margin / 100);
+            newPrice = formatMoney(priceVal);
+        }
+
+        setFormData(prev => ({ ...prev, profit_margin: val, price: newPrice }));
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const data = new FormData();
+            data.append('file', file);
+
+            try {
+                setUploading(true);
+                const res = await api.post('/api/ordem_servico/produtos/upload', data, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                setFormData(prev => ({ ...prev, image_url: res.data.url }));
+                toast({ title: 'Imagem enviada com sucesso!' });
+            } catch (err) {
+                toast({ title: 'Erro no upload', variant: 'destructive' });
+            } finally {
+                setUploading(false);
+            }
+        }
     };
 
     const handleSave = async () => {
         try {
             setSaving(true);
 
-            // Converter preço formatado (ex: "1.234,56") para float (1234.56)
-            const priceString = formData.price.replace(/\./g, '').replace(',', '.');
-            const priceVal = parseFloat(priceString);
+            const priceVal = parseFloat(formData.price.replace(/\./g, '').replace(',', '.'));
+            const costVal = parseFloat(formData.cost_price.replace(/\./g, '').replace(',', '.')); // New
 
             if (isNaN(priceVal)) {
                 toast({ title: 'Preço inválido', variant: 'destructive' });
                 return;
             }
 
-            const payload = { ...formData, price: priceVal };
+            const payload = {
+                ...formData,
+                price: priceVal,
+                cost_price: costVal
+            };
 
             if (editingId) {
                 await api.put(`/api/ordem_servico/produtos/${editingId}`, payload);
@@ -148,8 +223,10 @@ export default function OrdemServicoProdutosPage() {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-muted">
                                     <tr>
+                                        <th className="p-3 w-16">Img</th>
                                         <th className="p-3">Código</th>
                                         <th className="p-3">Nome</th>
+                                        <th className="p-3">Tipo</th>
                                         <th className="p-3">Preço</th>
                                         <th className="p-3">Status</th>
                                         <th className="p-3 text-right">Ações</th>
@@ -158,8 +235,22 @@ export default function OrdemServicoProdutosPage() {
                                 <tbody>
                                     {products.map(p => (
                                         <tr key={p.id} className="border-t hover:bg-muted/50">
+                                            <td className="p-3">
+                                                {p.image_url ? (
+                                                    <img src={p.image_url} alt="Prod" className="h-8 w-8 object-cover rounded bg-muted" />
+                                                ) : (
+                                                    <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">
+                                                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="p-3 font-mono">{p.code}</td>
                                             <td className="p-3">{p.name}</td>
+                                            <td className="p-3">
+                                                <Badge variant="outline" className={p.type === 'SERVICE' ? 'border-orange-500 text-orange-600' : 'border-blue-500 text-blue-600'}>
+                                                    {p.type === 'SERVICE' ? 'Serviço' : 'Produto'}
+                                                </Badge>
+                                            </td>
                                             <td className="p-3 text-green-600 font-bold">
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price)}
                                             </td>
@@ -175,7 +266,13 @@ export default function OrdemServicoProdutosPage() {
                                                         code: p.code,
                                                         name: p.name,
                                                         price: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(p.price),
+                                                        cost_price: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(p.cost_price || 0),
+                                                        profit_margin: (p.cost_price > 0 && p.price > 0)
+                                                            ? (((Number(p.price) - Number(p.cost_price)) / Number(p.cost_price)) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+                                                            : '',
                                                         description: p.description,
+                                                        type: p.type || 'PRODUCT',
+                                                        image_url: p.image_url,
                                                         is_active: p.is_active
                                                     });
                                                     setIsOpen(true);
@@ -187,7 +284,7 @@ export default function OrdemServicoProdutosPage() {
                                     ))}
                                     {products.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                                            <td colSpan={7} className="p-8 text-center text-muted-foreground">
                                                 Nenhum produto cadastrado.
                                             </td>
                                         </tr>
@@ -200,60 +297,118 @@ export default function OrdemServicoProdutosPage() {
             </Card>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>{editingId ? 'Editar' : 'Novo'} Produto</DialogTitle>
+                        <DialogTitle>{editingId ? 'Editar' : 'Novo'} Item</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Código</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    value={formData.code}
-                                    onChange={e => setFormData({ ...formData, code: e.target.value })}
-                                    placeholder="Ex: PROD-123"
+
+                        {/* Tipo: Produto ou Serviço */}
+                        <div className="flex items-center justify-between border p-3 rounded-md">
+                            <Label className="text-base">É um Serviço?</Label>
+                            <div className="flex items-center gap-2">
+                                <span className={formData.type === 'PRODUCT' ? 'font-bold' : 'text-muted-foreground'}>Produto</span>
+                                <Switch
+                                    checked={formData.type === 'SERVICE'}
+                                    onCheckedChange={c => setFormData({ ...formData, type: c ? 'SERVICE' : 'PRODUCT' })}
                                 />
-                                <Button variant="outline" size="icon" onClick={generateRandomCode} title="Gerar Código Aleatório">
-                                    <RefreshCw className="h-4 w-4" />
-                                </Button>
+                                <span className={formData.type === 'SERVICE' ? 'font-bold' : 'text-muted-foreground'}>Serviço</span>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Nome</Label>
-                            <Input
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="Nome do produto ou serviço"
-                            />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Código <span className="text-red-500">*</span></Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={formData.code}
+                                        onChange={e => setFormData({ ...formData, code: e.target.value })}
+                                        placeholder="Código"
+                                        className="!bg-gray-100"
+                                    />
+                                    <Button variant="outline" size="icon" onClick={generateRandomCode} title="Gerar Código">
+                                        <RefreshCw className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Nome <span className="text-red-500">*</span></Label>
+                                <Input
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder="Nome do item"
+                                    className="bg-slate-50"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Preço (R$)</Label>
-                            <Input
-                                value={formData.price}
-                                onChange={handlePriceChange}
-                                placeholder="0,00"
-                            />
+
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label>Preço Custo (R$)</Label>
+                                <Input
+                                    value={formData.cost_price}
+                                    onChange={handleCostChange}
+                                    className="bg-slate-50"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Lucro (%)</Label>
+                                <Input
+                                    value={formData.profit_margin}
+                                    onChange={handleMarginChange}
+                                    placeholder="%"
+                                    className="bg-slate-50"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Preço Venda (R$) <span className="text-red-500">*</span></Label>
+                                <Input
+                                    value={formData.price}
+                                    onChange={handlePriceChange}
+                                    className="!bg-gray-100 font-bold"
+                                />
+                            </div>
                         </div>
+
+                        <div className="space-y-2">
+                            <Label>Imagem (Opcional)</Label>
+                            <div className="flex items-center gap-4">
+                                {formData.image_url && (
+                                    <img src={formData.image_url} alt="Preview" className="h-16 w-16 object-cover rounded border" />
+                                )}
+                                <div className="flex-1">
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        disabled={uploading}
+                                    />
+                                    {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
                             <Label>Descrição</Label>
                             <Input
                                 value={formData.description}
                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                placeholder="Opcional"
+                                className="bg-slate-50"
                             />
                         </div>
+
                         <div className="flex items-center space-x-2 pt-2">
                             <Switch
                                 id="status"
                                 checked={formData.is_active}
                                 onCheckedChange={c => setFormData({ ...formData, is_active: c })}
                             />
-                            <Label htmlFor="status">Ativo</Label>
+                            <Label htmlFor="status">Ativo no Sistema</Label>
                         </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSave} disabled={saving}>Salvar</Button>
+                        <Button onClick={handleSave} disabled={saving || uploading}>Salvar</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
