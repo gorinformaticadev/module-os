@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { CronService } from '../../core/cron/cron.service';
-import { PrismaService } from '../../core/prisma/prisma.service';
+import { CronService } from '@core/cron/cron.service';
+import { PrismaService } from '@core/prisma/prisma.service';
 
 @Injectable()
 export class OrdemServicoCronService implements OnModuleInit {
