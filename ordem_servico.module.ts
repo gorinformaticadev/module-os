@@ -5,6 +5,8 @@ import { OrdemServicoService } from './services/ordemServico.service';
 import { OrdemServicoController } from './controllers/ordemServico.controller';
 import { ClientesService } from './services/clientes.service';
 import { ClientesController } from './controllers/clientes.controller';
+import { ProdutosService } from './services/produtos.service';
+import { ProdutosController } from './controllers/produtos.controller';
 import { CronModule } from '@core/cron/cron.module';
 import { PrismaModule } from '@core/prisma/prisma.module';
 import { AuditModule } from '@core/audit/audit.module';
@@ -14,12 +16,18 @@ import { AuditModule } from '@core/audit/audit.module';
     providers: [
         OrdemServicoCronService,
         OrdemServicoService,
-        ClientesService
+        ClientesService,
+        ProdutosService
     ],
     controllers: [
         OrdemServicoConfigController,
         OrdemServicoController,
-        ClientesController
+        ClientesController,
+        ProdutosController
     ],
 })
-export class OrdemServicoModule { }
+export class Ordem_servicoModule {
+    constructor() {
+        console.log('✅✅✅ MÓDULO ORDEM_SERVICO CARREGADO COM CLASSE Ordem_servicoModule!!! ✅✅✅');
+    }
+}

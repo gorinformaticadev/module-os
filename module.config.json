@@ -1,0 +1,79 @@
+{
+  "name": "moduloOs",
+  "slug": "moduloOs",
+  "displayName": "Ordem de Serviços",
+  "version": "1.0.1",
+  "description": "Módulo personalizado com funcionalidades integradas",
+  "author": "Equipe CORE",
+  "category": "custom",
+  "enabled": true,
+  "dependencies": [
+    {
+      "type": "core",
+      "name": "core",
+      "version": ">=1.0.0"
+    }
+  ],
+  "config": {
+    "defaultSettings": {
+      "showNotifications": true,
+      "enableWidgets": true,
+      "maxItems": 50,
+      "enablePublicPages": true
+    },
+    "permissions": [
+      "moduloOs.view",
+      "moduloOs.create",
+      "moduloOs.edit",
+      "moduloOs.delete",
+      "moduloOs.admin"
+    ],
+    "routes": [
+      {
+        "path": "/moduloOs",
+        "component": "moduloOsDashboardPage",
+        "title": "Dashboard Ordem de Serviços",
+        "protected": true,
+        "permissions": [
+          "moduloOs.view"
+        ]
+      },
+      {
+        "path": "/moduloOs/lista",
+        "component": "moduloOsListaPage",
+        "title": "Lista",
+        "protected": true,
+        "permissions": [
+          "moduloOs.view"
+        ]
+      },
+      {
+        "path": "/moduloOs/configuracoes",
+        "component": "moduloOsConfiguracoesPage",
+        "title": "Configurações",
+        "protected": true,
+        "permissions": [
+          "moduloOs.view"
+        ]
+      }
+    ],
+    "menuItems": [
+      {
+        "id": "moduloOs-main",
+        "label": "Ordem de Serviços",
+        "icon": "Wrench",
+        "path": "/moduloOs",
+        "order": 10,
+        "permissions": [
+          "moduloOs.view"
+        ]
+      }
+    ],
+    "database": {
+      "tables": [
+        "moduloOs_configs"
+      ],
+      "migrations": true
+    }
+  }
+}

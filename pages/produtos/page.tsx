@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Search, Plus, Edit, Package, RefreshCw } from 'lucide-react';
+import { Search, Plus, Edit, Package } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,18 +20,20 @@ export default function OrdemServicoProdutosPage() {
 
     // State do Dialog
     const [isOpen, setIsOpen] = useState(false);
+
     const [saving, setSaving] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         code: '',
         name: '',
-        price: '0,00', // Mudei para string formatada
+        price: '',
         description: '',
         is_active: true
     });
 
     useEffect(() => {
+        console.log('PRODUTOS PAGE MOUNTED');
         fetchProducts();
     }, []);
 
@@ -48,52 +50,22 @@ export default function OrdemServicoProdutosPage() {
     };
 
     const handleOpenNew = () => {
+        console.log('Botão Novo Item Clicado!');
         setEditingId(null);
         setFormData({
             code: '',
             name: '',
-            price: '0,00',
+            price: '',
             description: '',
             is_active: true
         });
         setIsOpen(true);
     };
 
-    const generateRandomCode = () => {
-        const randomNum = Math.floor(1000 + Math.random() * 9000); // 4 digitos
-        setFormData(prev => ({ ...prev, code: `PROD-${randomNum}` }));
-    };
-
-    const formatCurrencyInput = (value: string) => {
-        // Remove tudo que não é dígito
-        const digits = value.replace(/\D/g, '');
-
-        // Se vazio, retorna 0,00
-        if (!digits) return '0,00';
-
-        // Converte para número e divide por 100
-        const number = parseFloat(digits) / 100;
-
-        return number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
-
-    const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const formatted = formatCurrencyInput(e.target.value);
-        setFormData(prev => ({ ...prev, price: formatted }));
-    };
-
     const handleSave = async () => {
         try {
             setSaving(true);
-
-            // Converter preço formatado (ex: "1.234,56") para float (1234.56)
-            const priceString = formData.price.replace(/\./g, '').replace(',', '.');
-            const priceVal = parseFloat(priceString);
-
-            if (isNaN(priceVal)) {
-                toast({ title: 'Preço inválido', variant: 'destructive' });
-                return;
-            }
+            const priceVal = parseFloat(formData.price.toString().replace(',', '.'));
 
             const payload = { ...formData, price: priceVal };
 
@@ -127,6 +99,7 @@ export default function OrdemServicoProdutosPage() {
                     </p>
                 </div>
 
+                {/* BOTÃO REFATORADO E VISÍVEL */}
                 <Button
                     onClick={handleOpenNew}
                     className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
@@ -161,7 +134,7 @@ export default function OrdemServicoProdutosPage() {
                                             <td className="p-3 font-mono">{p.code}</td>
                                             <td className="p-3">{p.name}</td>
                                             <td className="p-3 text-green-600 font-bold">
-                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price)}
+                                                R$ {parseFloat(p.price).toFixed(2)}
                                             </td>
                                             <td className="p-3">
                                                 <Badge variant={p.is_active ? 'default' : 'secondary'}>
@@ -174,7 +147,7 @@ export default function OrdemServicoProdutosPage() {
                                                     setFormData({
                                                         code: p.code,
                                                         name: p.name,
-                                                        price: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(p.price),
+                                                        price: p.price,
                                                         description: p.description,
                                                         is_active: p.is_active
                                                     });
@@ -207,42 +180,27 @@ export default function OrdemServicoProdutosPage() {
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
                             <Label>Código</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    value={formData.code}
-                                    onChange={e => setFormData({ ...formData, code: e.target.value })}
-                                    placeholder="Ex: PROD-123"
-                                />
-                                <Button variant="outline" size="icon" onClick={generateRandomCode} title="Gerar Código Aleatório">
-                                    <RefreshCw className="h-4 w-4" />
-                                </Button>
-                            </div>
+                            <Input
+                                value={formData.code}
+                                onChange={e => setFormData({ ...formData, code: e.target.value })}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label>Nome</Label>
                             <Input
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="Nome do produto ou serviço"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Preço (R$)</Label>
+                            <Label>Preço</Label>
                             <Input
+                                type="number"
                                 value={formData.price}
-                                onChange={handlePriceChange}
-                                placeholder="0,00"
+                                onChange={e => setFormData({ ...formData, price: e.target.value })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label>Descrição</Label>
-                            <Input
-                                value={formData.description}
-                                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                placeholder="Opcional"
-                            />
-                        </div>
-                        <div className="flex items-center space-x-2 pt-2">
+                        <div className="flex items-center space-x-2">
                             <Switch
                                 id="status"
                                 checked={formData.is_active}
