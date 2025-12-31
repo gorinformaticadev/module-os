@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Search, Plus, Edit, RefreshCw, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Edit, RefreshCw, UploadCloud, Image as ImageIcon, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +22,8 @@ export default function OrdemServicoProdutosPage() {
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     // Filter State
     const [searchTerm, setSearchTerm] = useState('');
@@ -197,6 +199,25 @@ export default function OrdemServicoProdutosPage() {
         }
     };
 
+    const handleDelete = (id: string) => {
+        setDeleteId(id);
+        setIsDeleteOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        try {
+            await api.delete(`/api/ordem_servico/produtos/${deleteId}`);
+            toast({ title: 'Item excluído com sucesso!' });
+            fetchProducts();
+        } catch (error) {
+            toast({ title: 'Erro ao excluir', variant: 'destructive' });
+        } finally {
+            setIsDeleteOpen(false);
+            setDeleteId(null);
+        }
+    };
+
     const filteredProducts = products.filter(p => {
         const matchesSearch = (
             p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -335,6 +356,9 @@ export default function OrdemServicoProdutosPage() {
                                                 }}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
+                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(p.id)}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
                                             </td>
                                         </tr>
                                     ))}
@@ -465,6 +489,26 @@ export default function OrdemServicoProdutosPage() {
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
                         <Button onClick={handleSave} disabled={saving || uploading}>Salvar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirmar Exclusão</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 text-center">
+                        <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                        <p className="text-muted-foreground">
+                            Tem certeza que deseja excluir este item permanentemente?
+                            <br />
+                            Essa ação não pode ser desfeita.
+                        </p>
+                    </div>
+                    <DialogFooter className="flex gap-2 justify-center sm:justify-center">
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
+                        <Button variant="destructive" onClick={confirmDelete}>Excluir Item</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
