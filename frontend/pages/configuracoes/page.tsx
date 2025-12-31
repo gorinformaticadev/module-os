@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Save, ArrowRight, CalendarClock } from 'lucide-react';
+import { Bell, Save, ArrowRight, CalendarClock, Calendar, Users, Settings } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +17,7 @@ export default function OrdemServicoConfiguracoesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('agendamento');
 
   const [config, setConfig] = useState({
     title: '',
@@ -126,151 +127,215 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Bell className="h-8 w-8" />
-          Configurações de Agendamento
-        </h1>
-        <Link href="/configuracoes/sistema/cron">
-          <Button variant="outline" className="gap-2">
-            Ver todas as rotinas (Cron)
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Settings className="h-8 w-8 text-primary" />
+            Configurações
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie as preferências do módulo de Ordem de Serviço
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Novo Agendamento</CardTitle>
-            <CardDescription>
-              Crie uma nova regra de notificação automática.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Título</Label>
-              <Input
-                value={config.title}
-                onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                placeholder="Ex: Lembrete Diário"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Conteúdo</Label>
-              <Input
-                value={config.content}
-                onChange={(e) => setConfig({ ...config, content: e.target.value })}
-                placeholder="Mensagem da notificação..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Público Alvo</Label>
-              <Select
-                value={config.audience}
-                onValueChange={(val) => setConfig({ ...config, audience: val })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Geral (Todos)</SelectItem>
-                  <SelectItem value="admin">Administradores</SelectItem>
-                  <SelectItem value="super_admin">Super Admins</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Frequência</Label>
-              <Select
-                value={getFrequencyType(config.cronExpression)}
-                onValueChange={(type) => {
-                  const newCron = generateCron(type, '09:00', '1', '30');
-                  setConfig({ ...config, cronExpression: newCron });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Diário (Todo dia)</SelectItem>
-                  <SelectItem value="weekly">Semanal</SelectItem>
-                  <SelectItem value="monthly">Mensal</SelectItem>
-                  <SelectItem value="interval">Intervalo (Minutos)</SelectItem>
-                  <SelectItem value="custom">Personalizado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {getFrequencyType(config.cronExpression) === 'daily' && (
-              <div className="space-y-2">
-                <Label>Horário</Label>
-                <Input
-                  type="time"
-                  value={getTimeFromCron(config.cronExpression)}
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    if (!time) return;
-                    const [hour, minute] = time.split(':');
-                    setConfig({ ...config, cronExpression: `${parseInt(minute)} ${parseInt(hour)} * * *` });
-                  }}
-                />
-              </div>
-            )}
-
-            <Button onClick={handleCreate} disabled={saving} className="w-full mt-4">
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Criando...' : 'Criar Agendamento'}
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Sidebar Navigation */}
+        <Card className="w-full md:w-64 h-fit border-none shadow-none bg-transparent md:bg-card md:border md:shadow-sm">
+          <CardContent className="p-0 md:p-4 space-y-1">
+            <Button
+              variant={activeTab === 'agendamento' ? 'secondary' : 'ghost'}
+              className={`w-full justify-start gap-2 ${activeTab === 'agendamento' ? 'bg-secondary' : ''}`}
+              onClick={() => setActiveTab('agendamento')}
+            >
+              <Calendar className="h-4 w-4" />
+              Agendamento
+            </Button>
+            <Button
+              variant={activeTab === 'usuarios' ? 'secondary' : 'ghost'}
+              className={`w-full justify-start gap-2 ${activeTab === 'usuarios' ? 'bg-secondary' : ''}`}
+              onClick={() => setActiveTab('usuarios')}
+            >
+              <Users className="h-4 w-4" />
+              Usuários
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Agendamentos Ativos</CardTitle>
-            <CardDescription>
-              Lista de notificações agendadas para envio automático.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Carregando agendamentos...</div>
-            ) : schedules.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                Nenhum agendamento encontrado.
+        {/* Main Content Area */}
+        <div className="flex-1 space-y-6">
+          {activeTab === 'agendamento' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5" />
+                  Rotinas de Agendamento
+                </h2>
+                <Link href="/configuracoes/sistema/cron">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    Ver Cron do Sistema
+                    <ArrowRight className="h-3 w-3" />
+                  </Button>
+                </Link>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {schedules.map((schedule) => (
-                  <div key={schedule.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">{schedule.title}</h3>
-                        <Badge variant={schedule.enabled ? 'default' : 'secondary'}>
-                          {schedule.enabled ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-balance text-muted-foreground">{schedule.content}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                        <span className="flex items-center gap-1">
-                          <CalendarClock className="h-3 w-3" />
-                          {schedule.cron_expression}
-                        </span>
-                        <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                          Destino: {schedule.audience === 'all' ? 'Todos' : schedule.audience}
-                        </span>
-                      </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <Card className="lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle>Novo Agendamento</CardTitle>
+                    <CardDescription>
+                      Crie uma nova regra de notificação automática.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Título</Label>
+                      <Input
+                        value={config.title}
+                        onChange={(e) => setConfig({ ...config, title: e.target.value })}
+                        placeholder="Ex: Lembrete Diário"
+                      />
                     </div>
-                  </div>
-                ))}
+
+                    <div className="space-y-2">
+                      <Label>Conteúdo</Label>
+                      <Input
+                        value={config.content}
+                        onChange={(e) => setConfig({ ...config, content: e.target.value })}
+                        placeholder="Mensagem da notificação..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Público Alvo</Label>
+                      <Select
+                        value={config.audience}
+                        onValueChange={(val) => setConfig({ ...config, audience: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Geral (Todos)</SelectItem>
+                          <SelectItem value="admin">Administradores</SelectItem>
+                          <SelectItem value="super_admin">Super Admins</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Frequência</Label>
+                      <Select
+                        value={getFrequencyType(config.cronExpression)}
+                        onValueChange={(type) => {
+                          const newCron = generateCron(type, '09:00', '1', '30');
+                          setConfig({ ...config, cronExpression: newCron });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Diário (Todo dia)</SelectItem>
+                          <SelectItem value="weekly">Semanal</SelectItem>
+                          <SelectItem value="monthly">Mensal</SelectItem>
+                          <SelectItem value="interval">Intervalo (Minutos)</SelectItem>
+                          <SelectItem value="custom">Personalizado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {getFrequencyType(config.cronExpression) === 'daily' && (
+                      <div className="space-y-2">
+                        <Label>Horário</Label>
+                        <Input
+                          type="time"
+                          value={getTimeFromCron(config.cronExpression)}
+                          onChange={(e) => {
+                            const time = e.target.value;
+                            if (!time) return;
+                            const [hour, minute] = time.split(':');
+                            setConfig({ ...config, cronExpression: `${parseInt(minute)} ${parseInt(hour)} * * *` });
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <Button onClick={handleCreate} disabled={saving} className="w-full mt-4">
+                      <Save className="h-4 w-4 mr-2" />
+                      {saving ? 'Criando...' : 'Criar Agendamento'}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Agendamentos Ativos</CardTitle>
+                    <CardDescription>
+                      Lista de notificações agendadas para envio automático.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loading ? (
+                      <div className="text-center py-8 text-muted-foreground">Carregando agendamentos...</div>
+                    ) : schedules.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                        Nenhum agendamento encontrado.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {schedules.map((schedule) => (
+                          <div key={schedule.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-lg">{schedule.title}</h3>
+                                <Badge variant={schedule.enabled ? 'default' : 'secondary'}>
+                                  {schedule.enabled ? 'Ativo' : 'Inativo'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-balance text-muted-foreground">{schedule.content}</p>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                                <span className="flex items-center gap-1">
+                                  <CalendarClock className="h-3 w-3" />
+                                  {schedule.cron_expression}
+                                </span>
+                                <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                  Destino: {schedule.audience === 'all' ? 'Todos' : schedule.audience}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+
+          {activeTab === 'usuarios' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Configurações de Usuários
+                </CardTitle>
+                <CardDescription>
+                  Defina quem tem acesso e quais permissões dentro deste módulo.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-64 flex flex-col items-center justify-center text-muted-foreground">
+                <Users className="h-12 w-12 mb-4 opacity-20" />
+                <p>Funcionalidade em desenvolvimento.</p>
+                <Button variant="outline" className="mt-4">
+                  Gerenciar Permissões
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
