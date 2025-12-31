@@ -23,6 +23,11 @@ export default function OrdemServicoProdutosPage() {
     const [uploading, setUploading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
+    // Filter State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState<string>('ALL'); // ALL | ACTIVE | INACTIVE
+    const [filterType, setFilterType] = useState<string>('ALL'); // ALL | PRODUCT | SERVICE
+
     const [formData, setFormData] = useState({
         code: '',
         name: '',
@@ -192,6 +197,24 @@ export default function OrdemServicoProdutosPage() {
         }
     };
 
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = (
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.code.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        const matchesStatus =
+            filterStatus === 'ALL' ? true :
+                filterStatus === 'ACTIVE' ? p.is_active :
+                    !p.is_active;
+
+        const matchesType =
+            filterType === 'ALL' ? true :
+                p.type === filterType;
+
+        return matchesSearch && matchesStatus && matchesType;
+    });
+
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -214,6 +237,39 @@ export default function OrdemServicoProdutosPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Lista de Itens</CardTitle>
+                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Pesquisar por Nome ou Código..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="pl-8"
+                            />
+                        </div>
+                        <div className="w-full md:w-48">
+                            <select
+                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={filterStatus}
+                                onChange={e => setFilterStatus(e.target.value)}
+                            >
+                                <option value="ALL">Todos Status</option>
+                                <option value="ACTIVE">Ativos</option>
+                                <option value="INACTIVE">Inativos</option>
+                            </select>
+                        </div>
+                        <div className="w-full md:w-48">
+                            <select
+                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={filterType}
+                                onChange={e => setFilterType(e.target.value)}
+                            >
+                                <option value="ALL">Todos Tipos</option>
+                                <option value="PRODUCT">Produtos</option>
+                                <option value="SERVICE">Serviços</option>
+                            </select>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
@@ -233,7 +289,7 @@ export default function OrdemServicoProdutosPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {products.map(p => (
+                                    {filteredProducts.map(p => (
                                         <tr key={p.id} className="border-t hover:bg-muted/50">
                                             <td className="p-3">
                                                 {p.image_url ? (
@@ -282,7 +338,7 @@ export default function OrdemServicoProdutosPage() {
                                             </td>
                                         </tr>
                                     ))}
-                                    {products.length === 0 && (
+                                    {filteredProducts.length === 0 && (
                                         <tr>
                                             <td colSpan={7} className="p-8 text-center text-muted-foreground">
                                                 Nenhum produto cadastrado.
