@@ -1,6 +1,6 @@
 {
-  "name": "moduloOs",
-  "slug": "moduloOs",
+  "name": "ordem_servico",
+  "slug": "ordem_servico",
   "displayName": "Ordem de Serviços",
   "version": "1.0.1",
   "description": "Módulo personalizado com funcionalidades integradas",
@@ -22,56 +22,56 @@
       "enablePublicPages": true
     },
     "permissions": [
-      "moduloOs.view",
-      "moduloOs.create",
-      "moduloOs.edit",
-      "moduloOs.delete",
-      "moduloOs.admin"
+      "ordem_servico.view",
+      "ordem_servico.create",
+      "ordem_servico.edit",
+      "ordem_servico.delete",
+      "ordem_servico.admin"
     ],
     "routes": [
       {
-        "path": "/moduloOs",
-        "component": "moduloOsDashboardPage",
+        "path": "/ordem_servico",
+        "component": "ordem_servicoDashboardPage",
         "title": "Dashboard Ordem de Serviços",
         "protected": true,
         "permissions": [
-          "moduloOs.view"
+          "ordem_servico.view"
         ]
       },
       {
-        "path": "/moduloOs/lista",
-        "component": "moduloOsListaPage",
+        "path": "/ordem_servico/lista",
+        "component": "ordem_servicoListaPage",
         "title": "Lista",
         "protected": true,
         "permissions": [
-          "moduloOs.view"
+          "ordem_servico.view"
         ]
       },
       {
-        "path": "/moduloOs/configuracoes",
-        "component": "moduloOsConfiguracoesPage",
+        "path": "/ordem_servico/configuracoes",
+        "component": "ordem_servicoConfiguracoesPage",
         "title": "Configurações",
         "protected": true,
         "permissions": [
-          "moduloOs.view"
+          "ordem_servico.view"
         ]
       }
     ],
     "menuItems": [
       {
-        "id": "moduloOs-main",
+        "id": "ordem_servico-main",
         "label": "Ordem de Serviços",
         "icon": "Wrench",
-        "path": "/moduloOs",
+        "path": "/ordem_servico",
         "order": 10,
         "permissions": [
-          "moduloOs.view"
+          "ordem_servico.view"
         ]
       }
     ],
     "database": {
       "tables": [
-        "moduloOs_configs"
+        "ordem_servico_configs"
       ],
       "migrations": true
     }

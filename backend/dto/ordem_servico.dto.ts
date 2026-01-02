@@ -1,14 +1,14 @@
-export class CreatemoduloOsDto {
+export class CreateOrdemServicoDto {
   name: string;
   description?: string;
 }
 
-export class UpdatemoduloOsDto {
+export class UpdateOrdemServicoDto {
   name?: string;
   description?: string;
 }
 
-export class FiltermoduloOsDto {
+export class FilterOrdemServicoDto {
   limit?: number;
   offset?: number;
 }

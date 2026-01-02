@@ -3,7 +3,7 @@
 -- Data: 2025-12-31
 -- ═══════════════════════════════════════════════════════════════════════════
 
-CREATE TABLE IF NOT EXISTS mod_ordemServico_products (
+CREATE TABLE IF NOT EXISTS mod_ordem_servico_products (
     id UUID PRIMARY KEY,
     tenant_id TEXT NOT NULL,
     code VARCHAR(50) NOT NULL,
@@ -16,11 +16,11 @@ CREATE TABLE IF NOT EXISTS mod_ordemServico_products (
     deleted_at TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_mod_ordemServico_products_tenant_id ON mod_ordemServico_products(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_mod_ordemServico_products_code ON mod_ordemServico_products(code);
-CREATE INDEX IF NOT EXISTS idx_mod_ordemServico_products_name ON mod_ordemServico_products(name);
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_products_tenant_id ON mod_ordem_servico_products(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_products_code ON mod_ordem_servico_products(code);
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_products_name ON mod_ordem_servico_products(name);
 
 -- Unique index for code per tenant (ignoring deleted)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mod_ordemServico_products_unique_code 
-ON mod_ordemServico_products(tenant_id, code) 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mod_ordem_servico_products_unique_code 
+ON mod_ordem_servico_products(tenant_id, code) 
 WHERE deleted_at IS NULL;

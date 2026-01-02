@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS mod_ordemServico_clients (
+CREATE TABLE IF NOT EXISTS mod_ordem_servico_clients (
     id UUID PRIMARY KEY,
     tenant_id TEXT NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -12,6 +12,6 @@ CREATE TABLE IF NOT EXISTS mod_ordemServico_clients (
     deleted_at TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_mod_ordemServico_clients_tenant_id ON mod_ordemServico_clients(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_mod_ordemServico_clients_name ON mod_ordemServico_clients(name);
-CREATE INDEX IF NOT EXISTS idx_mod_ordemServico_clients_document ON mod_ordemServico_clients(document);
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_clients_tenant_id ON mod_ordem_servico_clients(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_clients_name ON mod_ordem_servico_clients(name);
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_clients_document ON mod_ordem_servico_clients(document);

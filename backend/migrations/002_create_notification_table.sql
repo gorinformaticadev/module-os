@@ -3,7 +3,7 @@
 -- Data: 2025-12-30
 -- ═══════════════════════════════════════════════════════════════════════════
 
-CREATE TABLE IF NOT EXISTS mod_ordemServico_notification_schedules (
+CREATE TABLE IF NOT EXISTS mod_ordem_servico_notification_schedules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
     content TEXT,
@@ -14,4 +14,4 @@ CREATE TABLE IF NOT EXISTS mod_ordemServico_notification_schedules (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_mod_ordemServico_notif_enabled ON mod_ordemServico_notification_schedules(enabled);
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_notif_enabled ON mod_ordem_servico_notification_schedules(enabled);

@@ -2,33 +2,33 @@ export const ModulePermissions = {
     driver: 'acl',
     permissions: [
         {
-            slug: 'moduloOs.view',
+            slug: 'ordem_servico.view',
             name: 'Visualizar Ordem de Serviços',
-            description: 'Permite visualizar o módulo moduloOs',
+            description: 'Permite visualizar o módulo ordem_servico',
             roles: ['ADMIN', 'USER', 'GUEST']
         },
         {
-            slug: 'moduloOs.create',
+            slug: 'ordem_servico.create',
             name: 'Criar Configurações',
-            description: 'Permite criar configurações no moduloOs',
+            description: 'Permite criar configurações no ordem_servico',
             roles: ['ADMIN']
         },
         {
-            slug: 'moduloOs.edit',
+            slug: 'ordem_servico.edit',
             name: 'Editar Ordem de Serviços',
-            description: 'Permite editar configurações do moduloOs',
+            description: 'Permite editar configurações do ordem_servico',
             roles: ['ADMIN']
         },
         {
-            slug: 'moduloOs.delete',
+            slug: 'ordem_servico.delete',
             name: 'Excluir Ordem de Serviços',
-            description: 'Permite excluir configurações do moduloOs',
+            description: 'Permite excluir configurações do ordem_servico',
             roles: ['ADMIN']
         },
         {
-            slug: 'moduloOs.admin',
+            slug: 'ordem_servico.admin',
             name: 'Administrar Ordem de Serviços',
-            description: 'Permite administrar o módulo moduloOs',
+            description: 'Permite administrar o módulo ordem_servico',
             roles: ['ADMIN']
         }
     ]
