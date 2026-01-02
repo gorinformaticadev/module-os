@@ -30,12 +30,12 @@ export class ClientesService {
         const params: any[] = [tenantId];
 
         if (search) {
-            query += ` AND (name ILIKE $${params.length + 1} OR document ILIKE $${params.length + 1} OR phone_primary ILIKE $${params.length + 1})`;
+            query += ` AND (name ILIKE ${params.length + 1} OR document ILIKE ${params.length + 1} OR phone_primary ILIKE ${params.length + 1})`;
             params.push(`%${search}%`);
         }
 
         if (status !== undefined && status !== '') {
-            query += ` AND is_active = $${params.length + 1}`;
+            query += ` AND is_active = ${params.length + 1}`;
             params.push(status === 'true');
         }
 
