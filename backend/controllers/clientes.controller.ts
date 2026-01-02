@@ -1,5 +1,6 @@
 
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { ClientesService } from '../services/clientes.service';
 import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
 import { RolesGuard } from '@core/guards/roles.guard';
@@ -15,14 +16,12 @@ export class ClientesController {
     }
 
     @Get()
-    // Roles ajustadas temporariamente para evitar erros de compilação
     @Roles('ADMIN', 'SUPER_ADMIN')
-    async findAll(@Query() filters: any, @Req() req) {
+    async findAll(@Query() filters: any, @Req() req: ExpressRequest & { user: any }) {
         this.logger.log('📥 GET findAll chamado');
         const tenantId = req.user?.tenantId;
         try {
             const result = await this.clientesService.findAll(tenantId, filters);
-            // Fix: Cast result to any array to access length
             this.logger.log(`🔙 Retornando ${(result as any[]).length} clientes`);
             return result;
         } catch (error) {
@@ -33,7 +32,7 @@ export class ClientesController {
 
     @Get(':id')
     @Roles('ADMIN', 'SUPER_ADMIN')
-    async findOne(@Param('id') id: string, @Req() req) {
+    async findOne(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const client = await this.clientesService.findById(tenantId, id);
         if (!client) {
@@ -44,7 +43,7 @@ export class ClientesController {
 
     @Post()
     @Roles('ADMIN', 'SUPER_ADMIN')
-    async create(@Body() data: any, @Req() req) {
+    async create(@Body() data: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
         try {
@@ -56,7 +55,7 @@ export class ClientesController {
 
     @Put(':id')
     @Roles('ADMIN', 'SUPER_ADMIN')
-    async update(@Param('id') id: string, @Body() data: any, @Req() req) {
+    async update(@Param('id') id: string, @Body() data: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
         try {
@@ -68,7 +67,7 @@ export class ClientesController {
 
     @Delete(':id')
     @Roles('ADMIN', 'SUPER_ADMIN')
-    async remove(@Param('id') id: string, @Req() req) {
+    async remove(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
         return this.clientesService.delete(tenantId, id, userId);
