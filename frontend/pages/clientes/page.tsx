@@ -43,6 +43,10 @@ export default function OrdemServicoClientesPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [validationErrors, setValidationErrors] = useState({
+        phone_primary: '',
+        document: ''
+    });
 
     const [formData, setFormData] = useState({
         name: '',
@@ -118,6 +122,80 @@ export default function OrdemServicoClientesPage() {
             .slice(0, 18);
     };
 
+    const validatePhone = (phone: string) => {
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length < 10) {
+            return 'Telefone deve ter pelo menos 10 dígitos';
+        }
+        if (cleanPhone.length > 11) {
+            return 'Telefone deve ter no máximo 11 dígitos';
+        }
+        return '';
+    };
+
+    const validateDocument = (document: string) => {
+        if (!document) return '';
+        
+        const cleanDoc = document.replace(/\D/g, '');
+        
+        if (cleanDoc.length === 11) {
+            // Validação CPF
+            if (!/^\d{11}$/.test(cleanDoc)) return 'CPF inválido';
+            
+            // Verifica se todos os dígitos são iguais
+            if (/^(\d)\1{10}$/.test(cleanDoc)) return 'CPF inválido';
+            
+            // Validação dos dígitos verificadores
+            let sum = 0;
+            for (let i = 0; i < 9; i++) {
+                sum += parseInt(cleanDoc.charAt(i)) * (10 - i);
+            }
+            let digit1 = 11 - (sum % 11);
+            if (digit1 > 9) digit1 = 0;
+            
+            sum = 0;
+            for (let i = 0; i < 10; i++) {
+                sum += parseInt(cleanDoc.charAt(i)) * (11 - i);
+            }
+            let digit2 = 11 - (sum % 11);
+            if (digit2 > 9) digit2 = 0;
+            
+            if (parseInt(cleanDoc.charAt(9)) !== digit1 || parseInt(cleanDoc.charAt(10)) !== digit2) {
+                return 'CPF inválido';
+            }
+        } else if (cleanDoc.length === 14) {
+            // Validação CNPJ
+            if (!/^\d{14}$/.test(cleanDoc)) return 'CNPJ inválido';
+            
+            // Verifica se todos os dígitos são iguais
+            if (/^(\d)\1{13}$/.test(cleanDoc)) return 'CNPJ inválido';
+            
+            // Validação dos dígitos verificadores
+            const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+            const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+            
+            let sum = 0;
+            for (let i = 0; i < 12; i++) {
+                sum += parseInt(cleanDoc.charAt(i)) * weights1[i];
+            }
+            let digit1 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+            
+            sum = 0;
+            for (let i = 0; i < 13; i++) {
+                sum += parseInt(cleanDoc.charAt(i)) * weights2[i];
+            }
+            let digit2 = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+            
+            if (parseInt(cleanDoc.charAt(12)) !== digit1 || parseInt(cleanDoc.charAt(13)) !== digit2) {
+                return 'CNPJ inválido';
+            }
+        } else {
+            return 'Documento deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ)';
+        }
+        
+        return '';
+    };
+
     const resetForm = () => {
         setFormData({
             name: '',
@@ -132,6 +210,10 @@ export default function OrdemServicoClientesPage() {
             address_city: '',
             address_state: '',
             is_active: true
+        });
+        setValidationErrors({
+            phone_primary: '',
+            document: ''
         });
         setEditingId(null);
     };
@@ -185,10 +267,28 @@ export default function OrdemServicoClientesPage() {
     };
 
     const handleSave = async () => {
+        // Validações
+        const phoneError = validatePhone(formData.phone_primary);
+        const documentError = validateDocument(formData.document);
+        
+        setValidationErrors({
+            phone_primary: phoneError,
+            document: documentError
+        });
+
         if (!formData.name || !formData.phone_primary) {
             toast({
                 title: 'Campos obrigatórios',
                 description: 'Preencha o Nome e o Telefone Principal.',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        if (phoneError || documentError) {
+            toast({
+                title: 'Dados inválidos',
+                description: 'Corrija os erros nos campos destacados.',
                 variant: 'destructive'
             });
             return;
@@ -397,9 +497,20 @@ export default function OrdemServicoClientesPage() {
                                 <Input
                                     id="document"
                                     value={formData.document}
-                                    onChange={(e) => setFormData({ ...formData, document: maskDocument(e.target.value) })}
+                                    onChange={(e) => {
+                                        const maskedValue = maskDocument(e.target.value);
+                                        setFormData({ ...formData, document: maskedValue });
+                                        
+                                        // Validação em tempo real
+                                        const error = validateDocument(maskedValue);
+                                        setValidationErrors(prev => ({ ...prev, document: error }));
+                                    }}
                                     placeholder="000.000.000-00"
+                                    className={validationErrors.document ? 'border-red-500 focus:border-red-500' : ''}
                                 />
+                                {validationErrors.document && (
+                                    <p className="text-sm text-red-500">{validationErrors.document}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -419,9 +530,20 @@ export default function OrdemServicoClientesPage() {
                                 <Input
                                     id="phone1"
                                     value={formData.phone_primary}
-                                    onChange={(e) => setFormData({ ...formData, phone_primary: maskPhone(e.target.value) })}
+                                    onChange={(e) => {
+                                        const maskedValue = maskPhone(e.target.value);
+                                        setFormData({ ...formData, phone_primary: maskedValue });
+                                        
+                                        // Validação em tempo real
+                                        const error = validatePhone(maskedValue);
+                                        setValidationErrors(prev => ({ ...prev, phone_primary: error }));
+                                    }}
                                     placeholder="(00) 00000-0000"
+                                    className={validationErrors.phone_primary ? 'border-red-500 focus:border-red-500' : ''}
                                 />
+                                {validationErrors.phone_primary && (
+                                    <p className="text-sm text-red-500">{validationErrors.phone_primary}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
