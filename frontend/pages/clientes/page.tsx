@@ -372,7 +372,7 @@ export default function OrdemServicoClientesPage() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingId ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
                         <DialogDescription>
@@ -380,7 +380,7 @@ export default function OrdemServicoClientesPage() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-4 py-4 overflow-y-auto max-h-[60vh]">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2 space-y-2">
                                 <Label htmlFor="name">Nome Completo *</Label>

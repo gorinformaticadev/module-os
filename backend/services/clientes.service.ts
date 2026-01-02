@@ -15,7 +15,7 @@ export class ClientesService {
     async findAll(tenantId: string, filters: any = {}) {
         const { search, status } = filters;
 
-        let query = `SELECT * FROM mod_ordemServico_clients WHERE tenant_id = $1 AND deleted_at IS NULL`;
+        let query = `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND deleted_at IS NULL`;
         const params: any[] = [tenantId];
 
         if (search) {
@@ -35,7 +35,7 @@ export class ClientesService {
 
     async findById(tenantId: string, id: string) {
         const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT * FROM mod_ordemServico_clients WHERE tenant_id = $1 AND id = $2::uuid AND deleted_at IS NULL LIMIT 1`,
+            `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND id = $2::uuid AND deleted_at IS NULL LIMIT 1`,
             tenantId, id
         );
         return result[0];
@@ -51,19 +51,22 @@ export class ClientesService {
         }
 
         // const id = randomUUID(); // Let database generate it
+        const id = randomUUID(); // Generate UUID manually since table doesn't have DEFAULT
 
         try {
             const result = await this.prisma.$queryRawUnsafe<any[]>(
-                `INSERT INTO mod_ordemServico_clients 
-                (tenant_id, name, document, phone_primary, phone_secondary, is_active,
+                `INSERT INTO mod_ordem_servico_clients 
+                (id, tenant_id, name, document, phone_primary, phone_secondary, address, is_active,
                  address_zip, address_street, address_number, address_complement, address_neighborhood, address_city, address_state)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
                 RETURNING id`,
+                id,
                 tenantId,
                 data.name,
                 data.document || null,
                 data.phone_primary,
                 data.phone_secondary || null,
+                data.address || null,
                 data.is_active ?? true,
                 data.address_zip || null,
                 data.address_street || null,
@@ -97,20 +100,21 @@ export class ClientesService {
 
         try {
             await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordemServico_clients
+                `UPDATE mod_ordem_servico_clients
                 SET 
                     name = $3,
                     document = $4,
                     phone_primary = $5,
                     phone_secondary = $6,
-                    is_active = $7,
-                    address_zip = $8,
-                    address_street = $9,
-                    address_number = $10,
-                    address_complement = $11,
-                    address_neighborhood = $12,
-                    address_city = $13,
-                    address_state = $14,
+                    address = $7,
+                    is_active = $8,
+                    address_zip = $9,
+                    address_street = $10,
+                    address_number = $11,
+                    address_complement = $12,
+                    address_neighborhood = $13,
+                    address_city = $14,
+                    address_state = $15,
                     updated_at = NOW()
                 WHERE id = $1::uuid AND tenant_id = $2`,
                 id,
@@ -119,6 +123,7 @@ export class ClientesService {
                 data.document || null,
                 data.phone_primary,
                 data.phone_secondary || null,
+                data.address || null,
                 data.is_active ?? true,
                 data.address_zip || null,
                 data.address_street || null,
@@ -147,7 +152,7 @@ export class ClientesService {
         // Verificar se existem OS associadas a este cliente
         try {
             const osCountResult = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT COUNT(*) as count FROM mod_ordemServico_os WHERE client_id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
+                `SELECT COUNT(*) as count FROM mod_ordem_servico_os WHERE client_id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
                 id, tenantId
             );
 
@@ -160,7 +165,7 @@ export class ClientesService {
             // Check for Postgres code 42P01 (undefined_table) or Prisma P2010 which wraps it
             const isTableNotFoundError =
                 error.code === '42P01' ||
-                (error.code === 'P2010' && (error.meta?.code === '42P01' || error.message?.includes('mod_ordemServico_os')));
+                (error.code === 'P2010' && (error.meta?.code === '42P01' || error.message?.includes('mod_ordem_servico_os')));
 
             if (isTableNotFoundError) {
                 this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}. Ignorando verificação.`);
@@ -171,7 +176,7 @@ export class ClientesService {
         }
 
         await this.prisma.$executeRawUnsafe(
-            `UPDATE mod_ordemServico_clients SET deleted_at = NOW() WHERE id = $1::uuid AND tenant_id = $2`,
+            `UPDATE mod_ordem_servico_clients SET deleted_at = NOW() WHERE id = $1::uuid AND tenant_id = $2`,
             id, tenantId
         );
 
