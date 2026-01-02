@@ -404,7 +404,6 @@ export default function OrdemServicoProdutosPage() {
                                         value={formData.code}
                                         onChange={e => setFormData({ ...formData, code: e.target.value })}
                                         placeholder="Código"
-                                        className="!bg-gray-100"
                                     />
                                     <Button variant="outline" size="icon" onClick={generateRandomCode} title="Gerar Código">
                                         <RefreshCw className="h-4 w-4" />
@@ -417,7 +416,6 @@ export default function OrdemServicoProdutosPage() {
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     placeholder="Nome do item"
-                                    className="bg-slate-50"
                                 />
                             </div>
                         </div>
@@ -428,7 +426,6 @@ export default function OrdemServicoProdutosPage() {
                                 <Input
                                     value={formData.cost_price}
                                     onChange={handleCostChange}
-                                    className="bg-slate-50"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -437,7 +434,6 @@ export default function OrdemServicoProdutosPage() {
                                     value={formData.profit_margin}
                                     onChange={handleMarginChange}
                                     placeholder="%"
-                                    className="bg-slate-50"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -445,7 +441,7 @@ export default function OrdemServicoProdutosPage() {
                                 <Input
                                     value={formData.price}
                                     onChange={handlePriceChange}
-                                    className="!bg-gray-100 font-bold"
+                                    className="font-bold"
                                 />
                             </div>
                         </div>
@@ -473,7 +469,6 @@ export default function OrdemServicoProdutosPage() {
                             <Input
                                 value={formData.description}
                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                className="bg-slate-50"
                             />
                         </div>
 
