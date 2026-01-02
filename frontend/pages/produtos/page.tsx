@@ -38,7 +38,7 @@ export default function OrdemServicoProdutosPage() {
         profit_margin: '', // New field
         description: '',
         type: 'PRODUCT',
-        image_url: '' as string | null,
+        image_url: '',
         is_active: true
     });
 
@@ -50,6 +50,15 @@ export default function OrdemServicoProdutosPage() {
         try {
             setLoading(true);
             const response = await api.get('/api/ordem_servico/produtos');
+            console.log('🔍 DEBUG: Produtos recebidos:', response.data);
+            
+            // Debug das URLs de imagem
+            response.data.forEach((product: any) => {
+                if (product.image_url) {
+                    console.log(`🖼️ Produto ${product.code}: URL = "${product.image_url}"`);
+                }
+            });
+            
             setProducts(response.data);
         } catch (error) {
             console.error('Erro get produtos:', error);
@@ -68,7 +77,7 @@ export default function OrdemServicoProdutosPage() {
             profit_margin: '',
             description: '',
             type: 'PRODUCT',
-            image_url: null,
+            image_url: '',
             is_active: true
         });
         setIsOpen(true);
@@ -313,13 +322,22 @@ export default function OrdemServicoProdutosPage() {
                                     {filteredProducts.map(p => (
                                         <tr key={p.id} className="border-t hover:bg-muted/50">
                                             <td className="p-3">
-                                                {p.image_url ? (
-                                                    <img src={p.image_url} alt="Prod" className="h-8 w-8 object-cover rounded bg-muted" />
-                                                ) : (
-                                                    <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">
-                                                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                                    </div>
-                                                )}
+                                                {p.image_url && p.image_url.trim() !== '' ? (
+                                                    <img 
+                                                        src={p.image_url} 
+                                                        alt="Prod" 
+                                                        className="h-8 w-8 object-cover rounded bg-muted" 
+                                                        onError={(e) => {
+                                                            console.error('Image load error:', p.image_url);
+                                                            e.currentTarget.style.display = 'none';
+                                                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                        }}
+                                                        onLoad={() => console.log('Image loaded successfully:', p.image_url)}
+                                                    />
+                                                ) : null}
+                                                <div className="h-8 w-8 bg-muted rounded flex items-center justify-center" style={{display: (p.image_url && p.image_url.trim() !== '') ? 'none' : 'flex'}}>
+                                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                </div>
                                             </td>
                                             <td className="p-3 font-mono">{p.code}</td>
                                             <td className="p-3">{p.name}</td>
@@ -349,7 +367,7 @@ export default function OrdemServicoProdutosPage() {
                                                             : '',
                                                         description: p.description,
                                                         type: p.type || 'PRODUCT',
-                                                        image_url: p.image_url,
+                                                        image_url: p.image_url || '',
                                                         is_active: p.is_active
                                                     });
                                                     setIsOpen(true);
@@ -449,8 +467,28 @@ export default function OrdemServicoProdutosPage() {
                         <div className="space-y-2">
                             <Label>Imagem (Opcional)</Label>
                             <div className="flex items-center gap-4">
-                                {formData.image_url && (
-                                    <img src={formData.image_url} alt="Preview" className="h-16 w-16 object-cover rounded border" />
+                                {formData.image_url && formData.image_url.trim() !== '' && (
+                                    <div className="relative">
+                                        <img 
+                                            src={formData.image_url} 
+                                            alt="Preview" 
+                                            className="h-16 w-16 object-cover rounded border" 
+                                            onError={(e) => {
+                                                console.error('Preview image load error:', formData.image_url);
+                                                e.currentTarget.style.display = 'none';
+                                            }}
+                                            onLoad={() => console.log('Preview image loaded:', formData.image_url)}
+                                        />
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="destructive"
+                                            className="absolute -top-2 -right-2 h-6 w-6"
+                                            onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                                        >
+                                            ×
+                                        </Button>
+                                    </div>
                                 )}
                                 <div className="flex-1">
                                     <Input
@@ -460,6 +498,11 @@ export default function OrdemServicoProdutosPage() {
                                         disabled={uploading}
                                     />
                                     {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
+                                    {formData.image_url && formData.image_url.trim() !== '' && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            URL: {formData.image_url}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>

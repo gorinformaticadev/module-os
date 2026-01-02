@@ -72,14 +72,16 @@ export class ProdutosService {
         try {
             await this.prisma.$executeRawUnsafe(
                 `INSERT INTO mod_ordem_servico_products 
-                (id, tenant_id, code, name, price, description, is_active)
-                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7)`,
+                (id, tenant_id, code, name, price, description, type, image_url, is_active)
+                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9)`,
                 id,
                 tenantId,
                 data.code,
                 data.name,
                 data.price,
                 data.description || null,
+                data.type || 'PRODUCT',
+                data.image_url || null,
                 data.is_active ?? true
             );
 
@@ -116,7 +118,9 @@ export class ProdutosService {
                     name = $4,
                     price = $5,
                     description = $6,
-                    is_active = $7,
+                    type = $7,
+                    image_url = $8,
+                    is_active = $9,
                     updated_at = NOW()
                 WHERE id = $1::uuid AND tenant_id = $2`,
                 id,
@@ -125,6 +129,8 @@ export class ProdutosService {
                 data.name,
                 data.price,
                 data.description || null,
+                data.type || 'PRODUCT',
+                data.image_url || null,
                 data.is_active ?? true
             );
 
