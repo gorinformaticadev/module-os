@@ -1,6 +1,6 @@
--- SEED: Dados iniciais do módulo moduloOs
+-- SEED: Dados iniciais do módulo ordemServico
 
-INSERT INTO mod_moduloOs_configs (id, tenant_id, key, value)
+INSERT INTO mod_ordemServico_configs (id, tenant_id, key, value)
 SELECT
     gen_random_uuid(),
     t.id,
@@ -8,7 +8,7 @@ SELECT
     'true'
 FROM tenants t WHERE t.ativo = true LIMIT 1;
 
-INSERT INTO mod_moduloOs_configs (id, tenant_id, key, value)
+INSERT INTO mod_ordemServico_configs (id, tenant_id, key, value)
 SELECT
     gen_random_uuid(),
     t.id,
