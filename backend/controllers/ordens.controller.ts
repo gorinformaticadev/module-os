@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req, Logger, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
+import { PermissionGuard } from '../guards/permission.guard';
 import { OrdensService } from '../services/ordens.service';
 import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../dto/ordem-servico.dto';
 

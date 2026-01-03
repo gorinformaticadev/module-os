@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsEnum, IsArray, IsDateString, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString, Min } from 'class-validator';
 
 export enum OrigemSolicitacao {
     WHATSAPP = 'WHATSAPP',
