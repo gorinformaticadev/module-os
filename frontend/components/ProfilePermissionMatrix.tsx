@@ -1,6 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { Save, X, Shield, Users, Package, Settings, BarChart3, CheckCircle, XCircle, Info } from 'lucide-react';
 
+// Cliente API customizado para o módulo raiz (sem autenticação automática)
+const api = {
+  get: async (url: string) => {
+    const response = await fetch(`http://localhost:3001${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  },
+  post: async (url: string, data: any) => {
+    const response = await fetch(`http://localhost:3001${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  },
+  put: async (url: string, data: any) => {
+    const response = await fetch(`http://localhost:3001${url}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  }
+};
+
 // Definição dos perfis
 type Profile = 'admin' | 'technician' | 'attendant';
 
@@ -24,59 +63,6 @@ interface ProfilePermissionMatrixProps {
   onClose: () => void;
   onSave: () => void;
 }
-
-// API client com autenticação
-const getAuthToken = () => {
-  try {
-    const token = localStorage.getItem('@App:token');
-    return token ? atob(token) : null;
-  } catch {
-    return null;
-  }
-};
-
-const api = {
-  get: async (url: string) => {
-    const token = getAuthToken();
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  },
-  
-  post: async (url: string, data: any) => {
-    const token = getAuthToken();
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
-      body: JSON.stringify(data),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  }
-};
 
 // Importar componentes UI reais do sistema
 const Card = React.forwardRef<

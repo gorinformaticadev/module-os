@@ -3,6 +3,46 @@
 import React, { useState, useEffect } from 'react';
 import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield } from 'lucide-react';
 import { PermissionManagement } from '../../components/PermissionManagement';
+import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatrix';
+
+// Cliente API customizado para o módulo raiz (sem autenticação automática)
+const api = {
+  get: async (url: string) => {
+    const response = await fetch(`http://localhost:3001${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  },
+  post: async (url: string, data: any) => {
+    const response = await fetch(`http://localhost:3001${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  },
+  put: async (url: string, data: any) => {
+    const response = await fetch(`http://localhost:3001${url}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  }
+};
 
 // Importar componentes UI reais do sistema
 const Card = React.forwardRef<
@@ -111,16 +151,18 @@ const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLL
 );
 Label.displayName = "Label";
 
-const Select = ({ value, onValueChange, children }: {
+const Select = ({ value, onValueChange, children, placeholder }: {
   value: string;
   onValueChange: (value: string) => void;
   children: React.ReactNode;
+  placeholder?: string;
 }) => (
   <select
     value={value}
     onChange={(e) => onValueChange(e.target.value)}
     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
   >
+    {placeholder && <option value="">{placeholder}</option>}
     {children}
   </select>
 );
@@ -149,11 +191,11 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
 });
 Badge.displayName = "Badge";
 
-const Switch = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & {
+const Switch = ({ id, checked, onCheckedChange }: {
   id: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
-}>(({ className, id, checked, onCheckedChange, ...props }, ref) => (
+}) => (
   <label htmlFor={id} className="relative inline-flex items-center cursor-pointer">
     <input
       type="checkbox"
@@ -161,15 +203,12 @@ const Switch = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
       checked={checked}
       onChange={(e) => onCheckedChange(e.target.checked)}
       className="sr-only peer"
-      ref={ref}
-      {...props}
     />
-    <div className={`peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 peer-checked:bg-primary peer-unchecked:bg-input ${className || ''}`}>
+    <div className="peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 peer-checked:bg-primary peer-unchecked:bg-input">
       <div className="pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform peer-checked:translate-x-5 peer-unchecked:translate-x-0" />
     </div>
   </label>
-));
-Switch.displayName = "Switch";
+);
 
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
@@ -264,81 +303,6 @@ const useToast = () => ({
     // Em produção, isso seria substituído por uma biblioteca de toast real
   }
 });
-
-// API client com autenticação
-const getAuthToken = () => {
-  // Tentar obter o token do localStorage (método mais comum)
-  try {
-    const token = localStorage.getItem('@App:token');
-    return token ? atob(token) : null; // Decodificar se estiver em base64
-  } catch {
-    return null;
-  }
-};
-
-const api = {
-  get: async (url: string) => {
-    const token = getAuthToken();
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  },
-  
-  post: async (url: string, data: any) => {
-    const token = getAuthToken();
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
-      body: JSON.stringify(data),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  },
-  
-  put: async (url: string, data: any) => {
-    const token = getAuthToken();
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
-      body: JSON.stringify(data),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  }
-};
 
 export default function OrdemServicoConfiguracoesPage() {
   const { toast } = useToast();
@@ -469,7 +433,6 @@ export default function OrdemServicoConfiguracoesPage() {
         is_technician: !currentStatus
       });
 
-      // Optimistic update or refetch
       setUsers(users.map(u =>
         u.id === userId
           ? { ...u, os_roles: { ...u.os_roles, technician: !currentStatus } }
@@ -530,267 +493,293 @@ export default function OrdemServicoConfiguracoesPage() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar Navigation */}
-        <Card className="w-full md:w-64 h-fit">
-          <CardContent className="p-4 space-y-1">
-            <Button
-              variant={activeTab === 'agendamento' ? 'secondary' : 'ghost'}
-              className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('agendamento')}
-            >
-              <Calendar className="h-4 w-4" />
-              Agendamento
-            </Button>
-            <Button
-              variant={activeTab === 'usuarios' ? 'secondary' : 'ghost'}
-              className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('usuarios')}
-            >
-              <Users className="h-4 w-4" />
-              Usuários
-            </Button>
-            <Button
-              variant={activeTab === 'permissoes' ? 'secondary' : 'ghost'}
-              className="w-full justify-start gap-2"
-              onClick={() => setActiveTab('permissoes')}
-            >
-              <Shield className="h-4 w-4" />
-              Permissões
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Horizontal Tabs */}
+      <div className="border-b border-border">
+        <nav className="flex space-x-8">
+          <Button
+            variant="ghost"
+            className={`border-b-2 rounded-none px-1 py-3 ${
+              activeTab === 'agendamento' 
+                ? 'border-primary text-primary' 
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setActiveTab('agendamento')}
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Agendamento
+          </Button>
+          <Button
+            variant="ghost"
+            className={`border-b-2 rounded-none px-1 py-3 ${
+              activeTab === 'usuarios' 
+                ? 'border-primary text-primary' 
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setActiveTab('usuarios')}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Usuários
+          </Button>
+          <Button
+            variant="ghost"
+            className={`border-b-2 rounded-none px-1 py-3 ${
+              activeTab === 'permissoes' 
+                ? 'border-primary text-primary' 
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setActiveTab('permissoes')}
+          >
+            <Shield className="h-4 w-4 mr-2" />
+            Permissões
+          </Button>
+        </nav>
+      </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 space-y-6">
-          {activeTab === 'agendamento' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <CalendarClock className="h-5 w-5" />
-                  Rotinas de Agendamento
-                </h2>
-                <Button variant="outline" size="sm" className="gap-2">
-                  Ver Cron do Sistema
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
-              </div>
+      {/* Main Content Area */}
+      <div className="space-y-6">
+        {activeTab === 'agendamento' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <CalendarClock className="h-5 w-5" />
+                Rotinas de Agendamento
+              </h2>
+              <Button variant="outline" size="sm" className="gap-2">
+                Ver Cron do Sistema
+                <ArrowRight className="h-3 w-3" />
+              </Button>
+            </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Card className="lg:col-span-1">
-                  <CardHeader>
-                    <CardTitle>Novo Agendamento</CardTitle>
-                    <CardDescription>
-                      Crie uma nova regra de notificação automática.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle>Novo Agendamento</CardTitle>
+                  <CardDescription>
+                    Crie uma nova regra de notificação automática.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Título</Label>
+                    <Input
+                      value={config.title}
+                      onChange={(e) => setConfig({ ...config, title: e.target.value })}
+                      placeholder="Ex: Lembrete Diário"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Conteúdo</Label>
+                    <Input
+                      value={config.content}
+                      onChange={(e) => setConfig({ ...config, content: e.target.value })}
+                      placeholder="Mensagem da notificação..."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Público Alvo</Label>
+                    <Select
+                      value={config.audience}
+                      onValueChange={(val) => setConfig({ ...config, audience: val })}
+                      placeholder="Selecione..."
+                    >
+                      <SelectItem value="all">Geral (Todos)</SelectItem>
+                      <SelectItem value="admin">Administradores</SelectItem>
+                      <SelectItem value="super_admin">Super Admins</SelectItem>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Frequência</Label>
+                    <Select
+                      value={getFrequencyType(config.cronExpression)}
+                      onValueChange={(type) => {
+                        const newCron = generateCron(type, '09:00', '1', '30');
+                        setConfig({ ...config, cronExpression: newCron });
+                      }}
+                      placeholder="Selecione..."
+                    >
+                      <SelectItem value="daily">Diário (Todo dia)</SelectItem>
+                      <SelectItem value="weekly">Semanal</SelectItem>
+                      <SelectItem value="monthly">Mensal</SelectItem>
+                      <SelectItem value="interval">Intervalo (Minutos)</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </Select>
+                  </div>
+
+                  {getFrequencyType(config.cronExpression) === 'daily' && (
                     <div className="space-y-2">
-                      <Label>Título</Label>
+                      <Label>Horário</Label>
                       <Input
-                        value={config.title}
-                        onChange={(e) => setConfig({ ...config, title: e.target.value })}
-                        placeholder="Ex: Lembrete Diário"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Conteúdo</Label>
-                      <Input
-                        value={config.content}
-                        onChange={(e) => setConfig({ ...config, content: e.target.value })}
-                        placeholder="Mensagem da notificação..."
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Público Alvo</Label>
-                      <Select
-                        value={config.audience}
-                        onValueChange={(val) => setConfig({ ...config, audience: val })}
-                      >
-                        <SelectItem value="all">Geral (Todos)</SelectItem>
-                        <SelectItem value="admin">Administradores</SelectItem>
-                        <SelectItem value="super_admin">Super Admins</SelectItem>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Frequência</Label>
-                      <Select
-                        value={getFrequencyType(config.cronExpression)}
-                        onValueChange={(type) => {
-                          const newCron = generateCron(type, '09:00', '1', '30');
-                          setConfig({ ...config, cronExpression: newCron });
+                        type="time"
+                        value={getTimeFromCron(config.cronExpression)}
+                        onChange={(e) => {
+                          const time = e.target.value;
+                          if (!time) return;
+                          const [hour, minute] = time.split(':');
+                          setConfig({ ...config, cronExpression: `${parseInt(minute)} ${parseInt(hour)} * * *` });
                         }}
-                      >
-                        <SelectItem value="daily">Diário (Todo dia)</SelectItem>
-                        <SelectItem value="weekly">Semanal</SelectItem>
-                        <SelectItem value="monthly">Mensal</SelectItem>
-                        <SelectItem value="interval">Intervalo (Minutos)</SelectItem>
-                        <SelectItem value="custom">Personalizado</SelectItem>
-                      </Select>
+                      />
                     </div>
+                  )}
 
-                    {getFrequencyType(config.cronExpression) === 'daily' && (
-                      <div className="space-y-2">
-                        <Label>Horário</Label>
-                        <Input
-                          type="time"
-                          value={getTimeFromCron(config.cronExpression)}
-                          onChange={(e) => {
-                            const time = e.target.value;
-                            if (!time) return;
-                            const [hour, minute] = time.split(':');
-                            setConfig({ ...config, cronExpression: `${parseInt(minute)} ${parseInt(hour)} * * *` });
-                          }}
-                        />
-                      </div>
-                    )}
+                  <Button onClick={handleCreate} disabled={saving} className="w-full mt-4">
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? 'Criando...' : 'Criar Agendamento'}
+                  </Button>
+                </CardContent>
+              </Card>
 
-                    <Button onClick={handleCreate} disabled={saving} className="w-full mt-4">
-                      <Save className="h-4 w-4 mr-2" />
-                      {saving ? 'Criando...' : 'Criar Agendamento'}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Agendamentos Ativos</CardTitle>
-                    <CardDescription>
-                      Lista de notificações agendadas para envio automático.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <div className="text-center py-8 text-muted-foreground">Carregando agendamentos...</div>
-                    ) : schedules.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                        Nenhum agendamento encontrado.
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {schedules.map((schedule) => (
-                          <div key={schedule.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold text-lg">{schedule.title}</h3>
-                                <Badge variant={schedule.enabled ? 'default' : 'secondary'}>
-                                  {schedule.enabled ? 'Ativo' : 'Inativo'}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground">{schedule.content}</p>
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                                <span className="flex items-center gap-1">
-                                  <CalendarClock className="h-3 w-3" />
-                                  {schedule.cron_expression}
-                                </span>
-                                <Badge variant="outline" className="text-xs">
-                                  Destino: {schedule.audience === 'all' ? 'Todos' : schedule.audience}
-                                </Badge>
-                              </div>
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Agendamentos Ativos</CardTitle>
+                  <CardDescription>
+                    Lista de notificações agendadas para envio automático.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="text-center py-8 text-muted-foreground">Carregando agendamentos...</div>
+                  ) : schedules.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                      Nenhum agendamento encontrado.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {schedules.map((schedule) => (
+                        <div key={schedule.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-lg">{schedule.title}</h3>
+                              <Badge variant={schedule.enabled ? 'default' : 'secondary'}>
+                                {schedule.enabled ? 'Ativo' : 'Inativo'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{schedule.content}</p>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                              <span className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                {schedule.cron_expression}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                Destino: {schedule.audience === 'all' ? 'Todos' : schedule.audience}
+                              </Badge>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'usuarios' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Configurações de Usuários
+              </CardTitle>
+              <CardDescription>
+                Configure os papéis dos usuários do sistema principal dentro deste módulo. 
+                ADMIN e SUPER_ADMIN são automaticamente administradores do módulo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8">Carregando usuários...</div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">Nenhum usuário encontrado</p>
+                  <p className="text-sm">Verifique se há usuários cadastrados no sistema principal.</p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Papel do Sistema</TableHead>
+                        <TableHead>Papéis no Módulo (OS)</TableHead>
+                        <TableHead className="text-right">Técnico?</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-sm">{user.name}</span>
+                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{user.system_role}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2 flex-wrap">
+                              {user.os_roles?.admin && <Badge className="bg-purple-500 hover:bg-purple-600 text-white">Administrador</Badge>}
+                              {user.os_roles?.attendant && <Badge variant="secondary">Atendente</Badge>}
+                              {user.os_roles?.technician && <Badge className="bg-blue-500 hover:bg-blue-600 text-white">Técnico</Badge>}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end items-center gap-2">
+                              <Label htmlFor={`tech-${user.id}`} className="text-xs text-muted-foreground mr-2">
+                                {user.os_roles?.technician ? 'Sim' : 'Não'}
+                              </Label>
+                              <Switch
+                                id={`tech-${user.id}`}
+                                checked={user.os_roles?.technician || false}
+                                onCheckedChange={(checked) => handleToggleTechnician(user.id, user.os_roles?.technician || false, user.system_role)}
+                              />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'permissoes' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Permissões por Perfil
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Configure as permissões para cada tipo de usuário: Administrador, Técnico e Atendente
+                </p>
               </div>
             </div>
-          )}
 
-          {activeTab === 'usuarios' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Configurações de Usuários
-                </CardTitle>
-                <CardDescription>
-                  Configure os papéis dos usuários do sistema principal dentro deste módulo. 
-                  ADMIN e SUPER_ADMIN são automaticamente administradores do módulo.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-8">Carregando usuários...</div>
-                ) : users.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">Nenhum usuário encontrado</p>
-                    <p className="text-sm">Verifique se há usuários cadastrados no sistema principal.</p>
-                  </div>
-                ) : (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Usuário</TableHead>
-                          <TableHead>Papel do Sistema</TableHead>
-                          <TableHead>Papéis no Módulo</TableHead>
-                          <TableHead className="text-right">Técnico?</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex flex-col">
-                                  <span className="font-medium text-sm">{user.name}</span>
-                                  <span className="text-xs text-muted-foreground">{user.email}</span>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">{user.system_role}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2 flex-wrap">
-                                {user.os_roles?.admin && (
-                                  <Badge className="bg-purple-500 hover:bg-purple-600 text-white">
-                                    Administrador
-                                  </Badge>
-                                )}
-                                <Badge variant="secondary">Atendente</Badge>
-                                {user.os_roles?.technician && (
-                                  <Badge className="bg-blue-500 hover:bg-blue-600 text-white">
-                                    Técnico
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end items-center gap-2">
-                                <Label htmlFor={`tech-${user.id}`} className="text-xs text-muted-foreground mr-2">
-                                  {user.os_roles?.technician ? 'Sim' : 'Não'}
-                                </Label>
-                                <Switch
-                                  id={`tech-${user.id}`}
-                                  checked={user.os_roles?.technician || false}
-                                  onCheckedChange={(checked) => handleToggleTechnician(user.id, user.os_roles?.technician || false, user.system_role)}
-                                />
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'permissoes' && (
-            <PermissionManagement />
-          )}
-        </div>
+            <ProfilePermissionMatrix
+              onClose={() => {}}
+              onSave={() => {
+                toast({
+                  title: 'Sucesso',
+                  description: 'Permissões de perfil atualizadas com sucesso!',
+                });
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
