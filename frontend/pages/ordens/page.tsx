@@ -1,134 +1,388 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Search, 
+  Plus, 
+  Eye, 
+  Edit, 
+  Trash2, 
+  Printer, 
+  MessageCircle,
+  Filter,
+  Calendar,
+  User,
+  FileText
+} from 'lucide-react';
+import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../../types/ordem-servico.types';
 
-export default function OrdemServicoOrdensPage() {
+// Simulação de API client para módulo raiz
+const apiClient = {
+  get: async (url: string) => {
+    console.log('API GET:', url);
+    // Simular dados para demonstração
+    return { data: [] };
+  },
+  post: async (url: string, data: any) => {
+    console.log('API POST:', url, data);
+    return { data: {} };
+  },
+  put: async (url: string, data: any) => {
+    console.log('API PUT:', url, data);
+    return { data: {} };
+  },
+  delete: async (url: string) => {
+    console.log('API DELETE:', url);
+    return { data: {} };
+  }
+};
+
+const toast = {
+  success: (message: string) => console.log('SUCCESS:', message),
+  error: (message: string) => console.error('ERROR:', message),
+  info: (message: string) => console.log('INFO:', message)
+};
+
+export default function OrdensPage() {
+  const [ordens, setOrdens] = useState<OrdemServico[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusOS | 'all'>('all');
+  const [origemFilter, setOrigemFilter] = useState<OrigemSolicitacao | 'all'>('all');
+  const [activeTab, setActiveTab] = useState('todas');
 
-  const mockData = [
-    { id: 1, name: 'OS 001', status: 'Aberto', date: '28/12/2025', category: 'Manutenção' },
-    { id: 2, name: 'OS 002', status: 'Fechado', date: '27/12/2025', category: 'Instalação' },
-    { id: 3, name: 'OS 003', status: 'Aberto', date: '26/12/2025', category: 'Suporte' },
-    { id: 4, name: 'OS 004', status: 'Aberto', date: '25/12/2025', category: 'Manutenção' },
-    { id: 5, name: 'OS 005', status: 'Pendente', date: '24/12/2025', category: 'Instalação' },
-  ];
+  // Carregar ordens de serviço
+  const loadOrdens = async () => {
+    try {
+      setLoading(true);
+      
+      const filters: any = {};
+      if (searchTerm) filters.search = searchTerm;
+      if (statusFilter !== 'all') filters.status = [statusFilter];
+      if (origemFilter !== 'all') filters.origem_solicitacao = origemFilter;
 
-  const filteredData = mockData.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach(v => queryParams.append(key, v.toString()));
+        } else {
+          queryParams.append(key, value.toString());
+        }
+      });
+
+      const response = await apiClient.get(`/modules/ordem_servico/ordens?${queryParams.toString()}`);
+      setOrdens(response.data || []);
+    } catch (error) {
+      console.error('Erro ao carregar ordens:', error);
+      toast.error('Erro ao carregar ordens de serviço');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrdens();
+  }, [searchTerm, statusFilter, origemFilter]);
+
+  // Filtrar ordens por aba ativa
+  const getFilteredOrdens = () => {
+    switch (activeTab) {
+      case 'orcamentos':
+        return ordens.filter(ordem => ordem.status === StatusOS.ORCAMENTO);
+      case 'abertas':
+        return ordens.filter(ordem => [StatusOS.ABERTA, StatusOS.EM_ANALISE].includes(ordem.status));
+      case 'aguardando':
+        return ordens.filter(ordem => [StatusOS.AGUARDANDO_CLIENTE, StatusOS.AGUARDANDO_PECAS].includes(ordem.status));
+      case 'execucao':
+        return ordens.filter(ordem => ordem.status === StatusOS.EM_EXECUCAO);
+      case 'finalizadas':
+        return ordens.filter(ordem => [StatusOS.FINALIZADA, StatusOS.CANCELADA].includes(ordem.status));
+      default:
+        return ordens;
+    }
+  };
+
+  const filteredOrdens = getFilteredOrdens();
+
+  // Ações das ordens
+  const handleView = (ordem: OrdemServico) => {
+    window.location.href = `/modules/ordem_servico/ordens/${ordem.id}`;
+  };
+
+  const handleEdit = (ordem: OrdemServico) => {
+    window.location.href = `/modules/ordem_servico/ordens/${ordem.id}/edit`;
+  };
+
+  const handleDelete = async (ordem: OrdemServico) => {
+    if (!confirm(`Tem certeza que deseja excluir a OS #${ordem.numero}?`)) return;
+
+    try {
+      await apiClient.delete(`/modules/ordem_servico/ordens/${ordem.id}`);
+      toast.success('Ordem de serviço excluída com sucesso');
+      loadOrdens();
+    } catch (error) {
+      console.error('Erro ao excluir ordem:', error);
+      toast.error('Erro ao excluir ordem de serviço');
+    }
+  };
+
+  const handlePrint = (ordem: OrdemServico) => {
+    toast.info('Funcionalidade de impressão será implementada em breve');
+  };
+
+  const handleWhatsApp = (ordem: OrdemServico) => {
+    if (ordem.cliente?.phone_primary) {
+      const message = `Olá! Sobre a OS #${ordem.numero} - ${ordem.descricao}`;
+      const url = `https://wa.me/55${ordem.cliente.phone_primary.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      window.open(url, '_blank');
+    } else {
+      toast.error('Cliente não possui telefone cadastrado');
+    }
+  };
+
+  const getStatusBadge = (status: StatusOS) => {
+    const colorClass = STATUS_COLORS[status];
+    return (
+      <Badge className={`${colorClass} text-white`}>
+        {STATUS_LABELS[status]}
+      </Badge>
+    );
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Ordens de Serviço</h1>
-          <p className="text-muted-foreground mt-2">
-            Gerencie todos os itens do módulo
-          </p>
+          <p className="text-muted-foreground">Gerencie todas as ordens de serviço</p>
         </div>
-        <Button className="gap-2">
+        <Button onClick={() => window.location.href = '/modules/ordem_servico/ordens/new'} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Novo Item
+          Nova Ordem
         </Button>
       </div>
 
+      {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>Itens Cadastrados</CardTitle>
-          <CardDescription>
-            Lista completa de todos os itens do módulo
-          </CardDescription>
-          <div className="pt-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar itens..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-900">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Nome</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Categoria</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Data</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredData.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                        Nenhum item encontrado
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredData.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
-                        <td className="px-4 py-3 text-sm font-medium">{item.name}</td>
-                        <td className="px-4 py-3 text-sm">{item.category}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <Badge
-                            variant={
-                              item.status === 'Ativo' ? 'default' :
-                                item.status === 'Inativo' ? 'secondary' :
-                                  'outline'
-                            }
-                          >
-                            {item.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{item.date}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center gap-2">
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Buscar</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Número, cliente ou descrição..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-          </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={statusFilter.toString()} onValueChange={(value) => setStatusFilter(value === 'all' ? 'all' : parseInt(value) as StatusOS)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="flex items-center justify-between mt-6">
-            <p className="text-sm text-muted-foreground">
-              Mostrando {filteredData.length} de {mockData.length} itens
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Anterior
-              </Button>
-              <Button variant="outline" size="sm">
-                Próximo
-              </Button>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Origem</label>
+              <Select value={origemFilter.toString()} onValueChange={(value) => setOrigemFilter(value === 'all' ? 'all' : value as OrigemSolicitacao)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as origens" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as origens</SelectItem>
+                  {Object.entries(ORIGEM_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Abas por Status */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="todas">Todas</TabsTrigger>
+          <TabsTrigger value="orcamentos">Orçamentos</TabsTrigger>
+          <TabsTrigger value="abertas">Abertas</TabsTrigger>
+          <TabsTrigger value="aguardando">Aguardando</TabsTrigger>
+          <TabsTrigger value="execucao">Em Execução</TabsTrigger>
+          <TabsTrigger value="finalizadas">Finalizadas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>
+                  {activeTab === 'todas' && 'Todas as Ordens'}
+                  {activeTab === 'orcamentos' && 'Orçamentos'}
+                  {activeTab === 'abertas' && 'Ordens Abertas/Em Análise'}
+                  {activeTab === 'aguardando' && 'Aguardando Cliente/Peças'}
+                  {activeTab === 'execucao' && 'Em Execução'}
+                  {activeTab === 'finalizadas' && 'Finalizadas/Canceladas'}
+                </span>
+                <Badge variant="secondary">{filteredOrdens.length} ordens</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredOrdens.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhuma ordem de serviço encontrada</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nº</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Tipo de Serviço</TableHead>
+                        <TableHead>Data Abertura</TableHead>
+                        <TableHead>Data Previsão</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Origem</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrdens.map((ordem) => (
+                        <TableRow key={ordem.id}>
+                          <TableCell className="font-mono font-medium">
+                            #{ordem.numero}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{ordem.cliente?.name || 'Cliente não encontrado'}</div>
+                              {ordem.cliente?.phone_primary && (
+                                <div className="text-sm text-muted-foreground">{ordem.cliente.phone_primary}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{ordem.tipo_servico}</TableCell>
+                          <TableCell>{formatDate(ordem.data_abertura)}</TableCell>
+                          <TableCell>
+                            {ordem.data_previsao ? formatDate(ordem.data_previsao) : '-'}
+                          </TableCell>
+                          <TableCell>{formatCurrency(ordem.valor_servico)}</TableCell>
+                          <TableCell>{getStatusBadge(ordem.status)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {ORIGEM_LABELS[ordem.origem_solicitacao]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleView(ordem)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              
+                              {ordem.status !== StatusOS.FINALIZADA && ordem.status !== StatusOS.CANCELADA && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(ordem)}
+                                  className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePrint(ordem)}
+                                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              
+                              {ordem.cliente?.phone_primary && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleWhatsApp(ordem)}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                              )}
+                              
+                              {(ordem.status === StatusOS.ORCAMENTO || ordem.status === StatusOS.ABERTA) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(ordem)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -13,6 +13,8 @@ import { PermissionService } from './services/permission.service';
 import { PermissionController } from './controllers/permission.controller';
 import { TemplateService } from './services/template.service';
 import { TemplateController } from './controllers/template.controller';
+import { OrdensService } from './services/ordens.service';
+import { OrdensController } from './controllers/ordens.controller';
 import { CronModule } from '@core/cron/cron.module';
 import { PrismaModule } from '@core/prisma/prisma.module';
 import { AuditModule } from '@core/audit/audit.module';
@@ -26,7 +28,8 @@ import { AuditModule } from '@core/audit/audit.module';
         ProdutosService,
         OrdemServicoConfiguracoesService,
         PermissionService,
-        TemplateService
+        TemplateService,
+        OrdensService
     ],
     controllers: [
         OrdemServicoConfigController,
@@ -35,11 +38,12 @@ import { AuditModule } from '@core/audit/audit.module';
         ProdutosController,
         OrdemServicoConfiguracoesController,
         PermissionController,
-        TemplateController
+        TemplateController,
+        OrdensController
     ],
 })
-export class Ordem_servicoModule {
+export class OrdemServicoModule {
     constructor() {
-        console.log('✅✅✅ MÓDULO ORDEM_SERVICO CARREGADO COM CLASSE Ordem_servicoModule!!! ✅✅✅');
+        console.log('✅✅✅ MÓDULO ORDEM_SERVICO CARREGADO COM TODAS AS FUNCIONALIDADES!!! ✅✅✅');
     }
 }
