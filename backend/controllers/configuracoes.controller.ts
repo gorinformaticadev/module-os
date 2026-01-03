@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
 import { OrdemServicoConfiguracoesService } from '../services/configuracoes.service';
