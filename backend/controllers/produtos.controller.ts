@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req, HttpException, HttpStatus, UploadedFile, UseInterceptors, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
-import { RolesGuard } from '@core/guards/roles.guard';
-import { Roles } from '@core/decorators/roles.decorator';
+import { PermissionGuard } from '../guards/permission.guard';
+import { RequireProductsPermission } from '../decorators/require-permission.decorator';
 import { ProdutosService } from '../services/produtos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -14,28 +14,28 @@ export class ProdutosController {
     private readonly logger = new Logger(ProdutosController.name);
 
     constructor(private readonly produtosService: ProdutosService) {
-        this.logger.log('✅✅✅ PRODUTOS CONTROLLER INICIADO (Serve Fix)!!! ✅✅✅');
+        this.logger.log('✅✅✅ PRODUTOS CONTROLLER INICIADO COM SISTEMA DE PERMISSÕES!!! ✅✅✅');
     }
 
     @Get()
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequireProductsPermission('view')
     async findAll(@Query() filters: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         return this.produtosService.findAll(tenantId, filters);
     }
 
     @Get(':id')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequireProductsPermission('view')
     async findById(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         return this.produtosService.findById(tenantId, id);
     }
 
     @Post()
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequireProductsPermission('create')
     async create(@Body() data: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
@@ -43,8 +43,8 @@ export class ProdutosController {
     }
 
     @Put(':id')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequireProductsPermission('edit')
     async update(@Param('id') id: string, @Body() data: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
@@ -52,8 +52,8 @@ export class ProdutosController {
     }
 
     @Delete(':id')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequireProductsPermission('delete')
     async delete(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
@@ -61,8 +61,8 @@ export class ProdutosController {
     }
 
     @Post('upload')
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @UseGuards(JwtAuthGuard, PermissionGuard)
+    @RequireProductsPermission('upload_images')
     @UseInterceptors(FileInterceptor('file'))
     async uploadFile(@UploadedFile() file: any, @Req() req: ExpressRequest & { user: any }) {
         if (!file) {

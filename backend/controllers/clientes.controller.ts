@@ -2,20 +2,20 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req,
 import { Request as ExpressRequest } from 'express';
 import { ClientesService } from '../services/clientes.service';
 import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
-import { RolesGuard } from '@core/guards/roles.guard';
-import { Roles } from '@core/decorators/roles.decorator';
+import { PermissionGuard } from '../guards/permission.guard';
+import { RequireClientsPermission } from '../decorators/require-permission.decorator';
 
 @Controller('api/ordem_servico/clientes')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class ClientesController {
     private readonly logger = new Logger(ClientesController.name);
 
     constructor(private readonly clientesService: ClientesService) {
-        console.log('✅✅✅ CLIENTES CONTROLLER INSTANCIADO!!! ✅✅✅');
+        console.log('✅✅✅ CLIENTES CONTROLLER INSTANCIADO COM SISTEMA DE PERMISSÕES!!! ✅✅✅');
     }
 
     @Get()
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @RequireClientsPermission('view')
     async findAll(@Query() filters: any, @Req() req: ExpressRequest & { user: any }) {
         this.logger.log('📥 GET findAll chamado');
         const tenantId = req.user?.tenantId;
@@ -30,7 +30,7 @@ export class ClientesController {
     }
 
     @Get(':id')
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @RequireClientsPermission('view_details')
     async findOne(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const client = await this.clientesService.findById(tenantId, id);
@@ -41,7 +41,7 @@ export class ClientesController {
     }
 
     @Post()
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @RequireClientsPermission('create')
     async create(@Body() data: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
@@ -53,7 +53,7 @@ export class ClientesController {
     }
 
     @Put(':id')
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @RequireClientsPermission('edit')
     async update(@Param('id') id: string, @Body() data: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
@@ -65,7 +65,7 @@ export class ClientesController {
     }
 
     @Delete(':id')
-    @Roles('ADMIN', 'SUPER_ADMIN')
+    @RequireClientsPermission('delete')
     async remove(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;

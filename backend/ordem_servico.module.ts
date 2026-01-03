@@ -9,6 +9,10 @@ import { ProdutosService } from './services/produtos.service';
 import { ProdutosController } from './controllers/produtos.controller';
 import { OrdemServicoConfiguracoesService } from './services/configuracoes.service';
 import { OrdemServicoConfiguracoesController } from './controllers/configuracoes.controller';
+import { PermissionService } from './services/permission.service';
+import { PermissionController } from './controllers/permission.controller';
+import { TemplateService } from './services/template.service';
+import { TemplateController } from './controllers/template.controller';
 import { CronModule } from '@core/cron/cron.module';
 import { PrismaModule } from '@core/prisma/prisma.module';
 import { AuditModule } from '@core/audit/audit.module';
@@ -20,14 +24,18 @@ import { AuditModule } from '@core/audit/audit.module';
         OrdemServicoService,
         ClientesService,
         ProdutosService,
-        OrdemServicoConfiguracoesService
+        OrdemServicoConfiguracoesService,
+        PermissionService,
+        TemplateService
     ],
     controllers: [
         OrdemServicoConfigController,
         OrdemServicoController,
         ClientesController,
         ProdutosController,
-        OrdemServicoConfiguracoesController
+        OrdemServicoConfiguracoesController,
+        PermissionController,
+        TemplateController
     ],
 })
 export class Ordem_servicoModule {
