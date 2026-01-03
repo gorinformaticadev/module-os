@@ -131,11 +131,12 @@ export class PermissionService implements IPermissionService {
   async hasPermission(tenantId: string, userId: string, resource: string, action: string): Promise<boolean> {
     try {
       // 🔑 BYPASS AUTOMÁTICO: Verificar se o usuário é ADMIN ou SUPER_ADMIN
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true, name: true, email: true }
-      });
+      const users = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT role, name, email FROM users WHERE id = $1`,
+        userId
+      );
 
+      const user = users[0];
       if (user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')) {
         this.logger.log(`🔓 BYPASS ADMIN: ${user.name} (${user.role}) tem acesso automático a ${resource}:${action}`);
         return true;
@@ -168,12 +169,12 @@ export class PermissionService implements IPermissionService {
     try {
       this.logger.log(`Buscando usuários com permissões para tenant ${tenantId}`);
 
-      // Buscar todos os usuários do tenant
-      const users = await this.prisma.user.findMany({
-        where: { tenantId },
-        select: { id: true, name: true, email: true, role: true },
-        orderBy: { name: 'asc' }
-      });
+      // Buscar todos os usuários (sem filtro de tenant se a tabela não tiver essa coluna)
+      const users = await this.prisma.$queryRawUnsafe<any[]>(
+        `SELECT id, name, email, role FROM users ORDER BY name ASC`
+      );
+
+      this.logger.log(`✅ ${users.length} usuários encontrados na base`);
 
       const usersWithPermissions: UserWithPermissions[] = [];
 
@@ -208,7 +209,7 @@ export class PermissionService implements IPermissionService {
         });
       }
 
-      this.logger.log(`✅ ${usersWithPermissions.length} usuários encontrados com permissões`);
+      this.logger.log(`✅ ${usersWithPermissions.length} usuários processados com permissões`);
       return usersWithPermissions;
 
     } catch (error) {

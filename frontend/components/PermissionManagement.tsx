@@ -3,123 +3,209 @@ import { Settings, Search, Shield, Users, Eye } from 'lucide-react';
 import { UserWithPermissions } from '../types/permission.types';
 import { PermissionService } from '../services/permissionService';
 import { PermissionMatrix } from './PermissionMatrix';
+import { ProfilePermissionMatrix } from './ProfilePermissionMatrix';
 
-// Componentes UI simples para substituir os imports
-const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>{children}</div>
-);
+// Importar componentes UI reais do sistema
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+    {...props}
+  />
+));
+Card.displayName = "Card";
 
-const CardHeader = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`p-6 pb-4 ${className}`}>{children}</div>
-);
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={`flex flex-col space-y-1.5 p-6 ${className || ''}`}
+    {...props}
+  />
+));
+CardHeader.displayName = "CardHeader";
 
-const CardTitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <h3 className={`text-lg font-semibold ${className}`}>{children}</h3>
-);
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={`text-lg font-semibold leading-none tracking-tight ${className || ''}`}
+    {...props}
+  />
+));
+CardTitle.displayName = "CardTitle";
 
-const CardDescription = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <p className={`text-sm text-gray-600 mt-1 ${className}`}>{children}</p>
-);
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={`text-sm text-muted-foreground ${className || ''}`}
+    {...props}
+  />
+));
+CardDescription.displayName = "CardDescription";
 
-const CardContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`p-6 pt-0 ${className}`}>{children}</div>
-);
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={`p-6 pt-0 ${className || ''}`} {...props} />
+));
+CardContent.displayName = "CardContent";
 
-const Button = ({ children, onClick, disabled = false, variant = "default", size = "default", className = "" }: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  variant?: "default" | "outline";
-  size?: "default" | "sm";
-  className?: string;
-}) => {
-  const baseClasses = "rounded-md font-medium transition-colors";
-  const sizeClasses = size === "sm" ? "px-3 py-1.5 text-sm" : "px-4 py-2 text-sm";
-  const variantClasses = variant === "outline" 
-    ? "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50" 
-    : "bg-blue-600 text-white hover:bg-blue-700";
-  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
-  
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled}
-      className={`${baseClasses} ${sizeClasses} ${variantClasses} ${disabledClasses} ${className}`}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Badge = ({ children, variant = "default", className = "" }: {
-  children: React.ReactNode;
-  variant?: "default" | "outline" | "secondary";
-  className?: string;
-}) => {
-  const baseClasses = "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
+const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+}>(({ className, variant = "default", size = "default", ...props }, ref) => {
+  const baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95 hover:shadow-md";
+  const sizeClasses = size === "sm" ? "h-9 rounded-md px-3" : size === "lg" ? "h-11 rounded-md px-8" : size === "icon" ? "h-10 w-10" : "h-10 px-4 py-2";
   const variantClasses = {
-    default: "bg-blue-100 text-blue-800",
-    outline: "border border-gray-300 text-gray-700",
-    secondary: "bg-gray-100 text-gray-800"
+    default: "bg-primary text-primary-foreground hover:bg-primary/90",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
+    link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
   
   return (
-    <span className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
-      {children}
-    </span>
+    <button
+      className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${className || ''}`}
+      ref={ref}
+      {...props}
+    />
   );
-};
+});
+Button.displayName = "Button";
 
-const Input = ({ placeholder, value, onChange, className = "" }: {
-  placeholder?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  className?: string;
-}) => (
-  <input
-    type="text"
-    placeholder={placeholder}
-    value={value}
-    onChange={onChange}
-    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
-  />
-);
+const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & {
+  variant?: "default" | "secondary" | "destructive" | "outline";
+}>(({ className, variant = "default", ...props }, ref) => {
+  const variantClasses = {
+    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+    outline: "text-foreground",
+  };
+  
+  return (
+    <div
+      ref={ref}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantClasses[variant]} ${className || ''}`}
+      {...props}
+    />
+  );
+});
+Badge.displayName = "Badge";
 
-const Table = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <table className={`w-full ${className}`}>{children}</table>
+const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
 );
+Input.displayName = "Input";
 
-const TableHeader = ({ children }: { children: React.ReactNode }) => (
-  <thead className="bg-gray-50">{children}</thead>
+const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
+  ({ className, ...props }, ref) => (
+    <div className="relative w-full overflow-auto">
+      <table
+        ref={ref}
+        className={`w-full caption-bottom text-sm ${className || ''}`}
+        {...props}
+      />
+    </div>
+  )
 );
+Table.displayName = "Table";
 
-const TableBody = ({ children }: { children: React.ReactNode }) => (
-  <tbody className="divide-y divide-gray-200">{children}</tbody>
+const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+  ({ className, ...props }, ref) => (
+    <thead ref={ref} className={`[&_tr]:border-b ${className || ''}`} {...props} />
+  )
 );
+TableHeader.displayName = "TableHeader";
 
-const TableRow = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <tr className={`hover:bg-gray-50 ${className}`}>{children}</tr>
+const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+  ({ className, ...props }, ref) => (
+    <tbody
+      ref={ref}
+      className={`[&_tr:last-child]:border-0 ${className || ''}`}
+      {...props}
+    />
+  )
 );
+TableBody.displayName = "TableBody";
 
-const TableHead = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}>
-    {children}
-  </th>
+const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
+  ({ className, ...props }, ref) => (
+    <tr
+      ref={ref}
+      className={`border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted ${className || ''}`}
+      {...props}
+    />
+  )
 );
+TableRow.displayName = "TableRow";
 
-const TableCell = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <td className={`px-6 py-4 whitespace-nowrap text-sm ${className}`}>{children}</td>
+const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
+  ({ className, ...props }, ref) => (
+    <th
+      ref={ref}
+      className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 ${className || ''}`}
+      {...props}
+    />
+  )
 );
+TableHead.displayName = "TableHead";
 
-const Avatar = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`inline-flex items-center justify-center rounded-full bg-gray-100 ${className}`}>
-    {children}
-  </div>
+const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
+  ({ className, ...props }, ref) => (
+    <td
+      ref={ref}
+      className={`p-4 align-middle [&:has([role=checkbox])]:pr-0 ${className || ''}`}
+      {...props}
+    />
+  )
 );
+TableCell.displayName = "TableCell";
 
-const AvatarFallback = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-sm font-medium text-gray-600">{children}</span>
+const Avatar = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${className || ''}`}
+      {...props}
+    />
+  )
 );
+Avatar.displayName = "Avatar";
+
+const AvatarFallback = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={`flex h-full w-full items-center justify-center rounded-full bg-muted ${className || ''}`}
+      {...props}
+    />
+  )
+);
+AvatarFallback.displayName = "AvatarFallback";
 
 const Dialog = ({ open, onOpenChange, children }: {
   open: boolean;
@@ -130,8 +216,11 @@ const Dialog = ({ open, onOpenChange, children }: {
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => onOpenChange(false)} />
-      <div className="relative bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div 
+        className="fixed inset-0 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" 
+        onClick={() => onOpenChange(false)} 
+      />
+      <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border/50 bg-background/90 dark:bg-background/60 backdrop-blur-md p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-xl max-w-4xl max-h-[90vh] overflow-y-auto">
         {children}
       </div>
     </div>
@@ -139,15 +228,15 @@ const Dialog = ({ open, onOpenChange, children }: {
 };
 
 const DialogContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`p-6 ${className}`}>{children}</div>
+  <div className={className}>{children}</div>
 );
 
 const DialogHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="mb-4">{children}</div>
+  <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">{children}</div>
 );
 
 const DialogTitle = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="text-xl font-semibold">{children}</h2>
+  <h2 className="text-lg font-semibold leading-none tracking-tight">{children}</h2>
 );
 
 // Hook toast simples
@@ -166,6 +255,7 @@ export const PermissionManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserWithPermissions | null>(null);
   const [showPermissionMatrix, setShowPermissionMatrix] = useState(false);
+  const [showProfileMatrix, setShowProfileMatrix] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -232,6 +322,7 @@ export const PermissionManagement: React.FC = () => {
 
   const handleCloseMatrix = () => {
     setShowPermissionMatrix(false);
+    setShowProfileMatrix(false);
     setSelectedUser(null);
   };
 
@@ -244,18 +335,22 @@ export const PermissionManagement: React.FC = () => {
     });
   };
 
+  const handleOpenProfileMatrix = () => {
+    setShowProfileMatrix(true);
+  };
+
   const getPermissionStatusColor = (summary: UserWithPermissions['permissionSummary'], user?: any) => {
     // Se for admin, sempre verde (acesso total)
     if (user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')) {
-      return 'bg-green-500';
+      return 'bg-primary';
     }
     
     const percentage = summary.total > 0 ? (summary.allowed / summary.total) * 100 : 0;
     
-    if (percentage >= 80) return 'bg-green-500';
+    if (percentage >= 80) return 'bg-primary';
     if (percentage >= 50) return 'bg-yellow-500';
     if (percentage >= 20) return 'bg-orange-500';
-    return 'bg-red-500';
+    return 'bg-destructive';
   };
 
   const getPermissionStatusText = (summary: UserWithPermissions['permissionSummary'], user?: any) => {
@@ -290,12 +385,20 @@ export const PermissionManagement: React.FC = () => {
             <Shield className="h-5 w-5" />
             Gerenciamento de Permissões
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Configure permissões específicas para cada usuário do módulo
+          <p className="text-sm text-muted-foreground mt-1">
+            Configure permissões por perfil ou específicas para cada usuário
           </p>
         </div>
         
         <div className="flex items-center gap-2">
+          <Button
+            onClick={handleOpenProfileMatrix}
+            variant="default"
+            className="flex items-center gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Configurar Perfis
+          </Button>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -313,7 +416,7 @@ export const PermissionManagement: React.FC = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-blue-500" />
+              <Users className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Total de Usuários</span>
             </div>
             <p className="text-2xl font-bold mt-1">{Array.isArray(users) ? users.length : 0}</p>
@@ -323,7 +426,7 @@ export const PermissionManagement: React.FC = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-green-500" />
+              <Shield className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Com Permissões</span>
             </div>
             <p className="text-2xl font-bold mt-1">
@@ -335,7 +438,7 @@ export const PermissionManagement: React.FC = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-orange-500" />
+              <Eye className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Acesso Limitado</span>
             </div>
             <p className="text-2xl font-bold mt-1">
@@ -351,7 +454,7 @@ export const PermissionManagement: React.FC = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-purple-500" />
+              <Settings className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">Acesso Completo</span>
             </div>
             <p className="text-2xl font-bold mt-1">
@@ -375,7 +478,7 @@ export const PermissionManagement: React.FC = () => {
         </CardHeader>
         <CardContent>
           {!Array.isArray(filteredUsers) || filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               {searchTerm ? 'Nenhum usuário encontrado com esse termo.' : 'Nenhum usuário encontrado.'}
             </div>
           ) : (
@@ -403,12 +506,12 @@ export const PermissionManagement: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-sm">{user.name}</span>
                               {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && (
-                                <Badge variant="default" className="text-xs bg-blue-500 hover:bg-blue-600">
+                                <Badge variant="default" className="text-xs">
                                   {user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
                                 </Badge>
                               )}
                             </div>
-                            <span className="text-xs text-gray-500">{user.email}</span>
+                            <span className="text-xs text-muted-foreground">{user.email}</span>
                           </div>
                         </div>
                       </TableCell>
@@ -471,6 +574,19 @@ export const PermissionManagement: React.FC = () => {
               onSave={handleSavePermissions}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Configuração de Perfis */}
+      <Dialog open={showProfileMatrix} onOpenChange={setShowProfileMatrix}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configurar Permissões por Perfil</DialogTitle>
+          </DialogHeader>
+          <ProfilePermissionMatrix
+            onClose={handleCloseMatrix}
+            onSave={handleSavePermissions}
+          />
         </DialogContent>
       </Dialog>
     </div>

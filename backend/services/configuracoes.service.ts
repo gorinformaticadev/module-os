@@ -89,4 +89,65 @@ export class OrdemServicoConfiguracoesService {
             throw error;
         }
     }
+
+    async getProfilePermissions(tenantId: string) {
+        try {
+            this.logger.log(`getProfilePermissions chamado. Tenant: ${tenantId}`);
+            
+            const permissions = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT permission_id, profile, allowed FROM "mod_ordem_servico_profile_permissions" WHERE tenant_id = $1`,
+                tenantId
+            );
+
+            this.logger.log(`✅ ${permissions.length} permissões de perfil encontradas`);
+
+            // Organizar permissões por permission_id
+            const result: Record<string, any> = {};
+            permissions.forEach(perm => {
+                if (!result[perm.permission_id]) {
+                    result[perm.permission_id] = {
+                        admin: false,
+                        technician: false,
+                        attendant: false
+                    };
+                }
+                result[perm.permission_id][perm.profile] = perm.allowed;
+            });
+
+            return result;
+        } catch (error) {
+            this.logger.error(`❌ Erro no getProfilePermissions:`, error);
+            throw error;
+        }
+    }
+
+    async updateProfilePermissions(tenantId: string, permissions: Record<string, any>) {
+        try {
+            this.logger.log(`updateProfilePermissions chamado. Tenant: ${tenantId}`);
+            
+            // Primeiro, limpar permissões existentes
+            await this.prisma.$executeRawUnsafe(
+                `DELETE FROM "mod_ordem_servico_profile_permissions" WHERE tenant_id = $1`,
+                tenantId
+            );
+
+            // Inserir novas permissões
+            for (const [permissionId, profilePerms] of Object.entries(permissions)) {
+                for (const [profile, allowed] of Object.entries(profilePerms as Record<string, boolean>)) {
+                    if (allowed) {
+                        await this.prisma.$executeRawUnsafe(
+                            `INSERT INTO "mod_ordem_servico_profile_permissions" (tenant_id, permission_id, profile, allowed) VALUES ($1, $2, $3, $4)`,
+                            tenantId, permissionId, profile, true
+                        );
+                    }
+                }
+            }
+
+            this.logger.log(`✅ Permissões de perfil atualizadas`);
+            return { success: true };
+        } catch (error) {
+            this.logger.error(`❌ Erro no updateProfilePermissions:`, error);
+            throw error;
+        }
+    }
 }

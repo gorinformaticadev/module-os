@@ -47,7 +47,7 @@ import {
   PermissionAudit 
 } from '../types/permission.types';
 
-const API_BASE = '/api/modules/ordem_servico/permissions';
+const API_BASE = '/modules/ordem_servico/permissions';
 
 export class PermissionService {
   static async getAvailablePermissions(): Promise<AvailablePermission[]> {

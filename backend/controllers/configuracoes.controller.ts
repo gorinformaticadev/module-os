@@ -31,4 +31,26 @@ export class OrdemServicoConfiguracoesController {
             throw error;
         }
     }
+
+    @Get('profile-permissions')
+    async getProfilePermissions(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            this.logger.log(`getProfilePermissions endpoint chamado. Tenant: ${req.user?.tenantId}`);
+            return await this.service.getProfilePermissions(req.user.tenantId);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint getProfilePermissions:`, error);
+            throw error;
+        }
+    }
+
+    @Post('profile-permissions')
+    async updateProfilePermissions(@Req() req: ExpressRequest & { user: any }, @Body() body: { permissions: any }) {
+        try {
+            this.logger.log(`updateProfilePermissions endpoint chamado. Tenant: ${req.user?.tenantId}`);
+            return await this.service.updateProfilePermissions(req.user.tenantId, body.permissions);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint updateProfilePermissions:`, error);
+            throw error;
+        }
+    }
 }

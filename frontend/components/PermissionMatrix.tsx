@@ -11,69 +11,107 @@ interface PermissionMatrixProps {
   onSave: () => void;
 }
 
-// Componentes UI simples para substituir os imports
-const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>{children}</div>
-);
+// Importar componentes UI reais do sistema
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+    {...props}
+  />
+));
+Card.displayName = "Card";
 
-const CardHeader = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`p-6 pb-4 ${className}`}>{children}</div>
-);
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={`flex flex-col space-y-1.5 p-6 ${className || ''}`}
+    {...props}
+  />
+));
+CardHeader.displayName = "CardHeader";
 
-const CardTitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <h3 className={`text-lg font-semibold ${className}`}>{children}</h3>
-);
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={`text-lg font-semibold leading-none tracking-tight ${className || ''}`}
+    {...props}
+  />
+));
+CardTitle.displayName = "CardTitle";
 
-const CardDescription = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <p className={`text-sm text-gray-600 mt-1 ${className}`}>{children}</p>
-);
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={`text-sm text-muted-foreground ${className || ''}`}
+    {...props}
+  />
+));
+CardDescription.displayName = "CardDescription";
 
-const CardContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`p-6 pt-0 ${className}`}>{children}</div>
-);
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={`p-6 pt-0 ${className || ''}`} {...props} />
+));
+CardContent.displayName = "CardContent";
 
-const Button = ({ children, onClick, disabled = false, variant = "default", className = "" }: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  variant?: "default" | "outline";
-  className?: string;
-}) => {
-  const baseClasses = "px-4 py-2 rounded-md font-medium text-sm transition-colors";
-  const variantClasses = variant === "outline" 
-    ? "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50" 
-    : "bg-blue-600 text-white hover:bg-blue-700";
-  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
-  
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled}
-      className={`${baseClasses} ${variantClasses} ${disabledClasses} ${className}`}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Badge = ({ children, variant = "default", className = "" }: {
-  children: React.ReactNode;
-  variant?: "default" | "outline" | "secondary";
-  className?: string;
-}) => {
-  const baseClasses = "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
+const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+}>(({ className, variant = "default", size = "default", ...props }, ref) => {
+  const baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95 hover:shadow-md";
+  const sizeClasses = size === "sm" ? "h-9 rounded-md px-3" : size === "lg" ? "h-11 rounded-md px-8" : size === "icon" ? "h-10 w-10" : "h-10 px-4 py-2";
   const variantClasses = {
-    default: "bg-blue-100 text-blue-800",
-    outline: "border border-gray-300 text-gray-700",
-    secondary: "bg-gray-100 text-gray-800"
+    default: "bg-primary text-primary-foreground hover:bg-primary/90",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
+    link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
   
   return (
-    <span className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
-      {children}
-    </span>
+    <button
+      className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${className || ''}`}
+      ref={ref}
+      {...props}
+    />
   );
-};
+});
+Button.displayName = "Button";
+
+const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & {
+  variant?: "default" | "secondary" | "destructive" | "outline";
+}>(({ className, variant = "default", ...props }, ref) => {
+  const variantClasses = {
+    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+    outline: "text-foreground",
+  };
+  
+  return (
+    <div
+      ref={ref}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantClasses[variant]} ${className || ''}`}
+      {...props}
+    />
+  );
+});
+Badge.displayName = "Badge";
 
 const Checkbox = ({ id, checked, onCheckedChange }: {
   id: string;
@@ -85,7 +123,7 @@ const Checkbox = ({ id, checked, onCheckedChange }: {
     id={id}
     checked={checked}
     onChange={(e) => onCheckedChange(e.target.checked)}
-    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+    className="peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
   />
 );
 
@@ -97,22 +135,19 @@ const Select = ({ value, onValueChange, children }: {
   <select
     value={value}
     onChange={(e) => onValueChange(e.target.value)}
-    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
   >
     {children}
   </select>
 );
 
-const SelectTrigger = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-const SelectValue = ({ placeholder }: { placeholder: string }) => <option value="">{placeholder}</option>;
-const SelectContent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 const SelectItem = ({ value, children }: { value: string; children: React.ReactNode }) => (
   <option value={value}>{children}</option>
 );
 
 // Hook toast simples
 const useToast = () => ({
-  toast: ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
+  toast: ({ title, description }: { title: string; description?: string; variant?: string }) => {
     console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
     // Em produção, isso seria substituído por uma biblioteca de toast real
   }
@@ -273,12 +308,12 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
 
   const getResourceColor = (resource: string) => {
     switch (resource) {
-      case 'dashboard': return 'bg-blue-500';
-      case 'orders': return 'bg-green-500';
-      case 'clients': return 'bg-purple-500';
-      case 'products': return 'bg-orange-500';
-      case 'config': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'dashboard': return 'bg-primary';
+      case 'orders': return 'bg-primary';
+      case 'clients': return 'bg-primary';
+      case 'products': return 'bg-primary';
+      case 'config': return 'bg-primary';
+      default: return 'bg-primary';
     }
   };
 
@@ -297,7 +332,7 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Permissões de {userName}</h3>
-          <p className="text-sm text-gray-600">Configure as permissões específicas para este usuário</p>
+          <p className="text-sm text-muted-foreground">Configure as permissões específicas para este usuário</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={onClose}>
@@ -325,16 +360,12 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
         <CardContent>
           <div className="flex items-center gap-4">
             <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um template..." />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name} - {template.description}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <option value="">Selecione um template...</option>
+              {templates.map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {template.name} - {template.description}
+                </SelectItem>
+              ))}
             </Select>
             <Button 
               onClick={() => handleApplyTemplate(selectedTemplate)}
@@ -365,7 +396,7 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {group.actions.map((action) => (
-                  <div key={action.action} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                  <div key={action.action} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50">
                     <Checkbox
                       id={`${group.resource}-${action.action}`}
                       checked={isPermissionAllowed(group.resource, action.action)}
@@ -380,7 +411,7 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                       >
                         {action.actionLabel}
                       </label>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {action.description}
                       </p>
                     </div>

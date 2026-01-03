@@ -1,17 +1,289 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Bell, Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield } from 'lucide-react';
+import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield } from 'lucide-react';
 import { PermissionManagement } from '../../components/PermissionManagement';
 
-// API client simples
+// Importar componentes UI reais do sistema
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+    {...props}
+  />
+));
+Card.displayName = "Card";
+
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={`flex flex-col space-y-1.5 p-6 ${className || ''}`}
+    {...props}
+  />
+));
+CardHeader.displayName = "CardHeader";
+
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={`text-lg font-semibold leading-none tracking-tight ${className || ''}`}
+    {...props}
+  />
+));
+CardTitle.displayName = "CardTitle";
+
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={`text-sm text-muted-foreground ${className || ''}`}
+    {...props}
+  />
+));
+CardDescription.displayName = "CardDescription";
+
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={`p-6 pt-0 ${className || ''}`} {...props} />
+));
+CardContent.displayName = "CardContent";
+
+const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+}>(({ className, variant = "default", size = "default", ...props }, ref) => {
+  const baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95 hover:shadow-md";
+  const sizeClasses = size === "sm" ? "h-9 rounded-md px-3" : size === "lg" ? "h-11 rounded-md px-8" : size === "icon" ? "h-10 w-10" : "h-10 px-4 py-2";
+  const variantClasses = {
+    default: "bg-primary text-primary-foreground hover:bg-primary/90",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
+    link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
+  };
+  
+  return (
+    <button
+      className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${className || ''}`}
+      ref={ref}
+      {...props}
+    />
+  );
+});
+Button.displayName = "Button";
+
+const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Input.displayName = "Input";
+
+const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLLabelElement>>(
+  ({ className, ...props }, ref) => (
+    <label
+      ref={ref}
+      className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className || ''}`}
+      {...props}
+    />
+  )
+);
+Label.displayName = "Label";
+
+const Select = ({ value, onValueChange, children }: {
+  value: string;
+  onValueChange: (value: string) => void;
+  children: React.ReactNode;
+}) => (
+  <select
+    value={value}
+    onChange={(e) => onValueChange(e.target.value)}
+    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    {children}
+  </select>
+);
+
+const SelectItem = ({ value, children }: { value: string; children: React.ReactNode }) => (
+  <option value={value}>{children}</option>
+);
+
+const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & {
+  variant?: "default" | "secondary" | "destructive" | "outline";
+}>(({ className, variant = "default", ...props }, ref) => {
+  const variantClasses = {
+    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+    outline: "text-foreground",
+  };
+  
+  return (
+    <div
+      ref={ref}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantClasses[variant]} ${className || ''}`}
+      {...props}
+    />
+  );
+});
+Badge.displayName = "Badge";
+
+const Switch = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}>(({ className, id, checked, onCheckedChange, ...props }, ref) => (
+  <label htmlFor={id} className="relative inline-flex items-center cursor-pointer">
+    <input
+      type="checkbox"
+      id={id}
+      checked={checked}
+      onChange={(e) => onCheckedChange(e.target.checked)}
+      className="sr-only peer"
+      ref={ref}
+      {...props}
+    />
+    <div className={`peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 peer-checked:bg-primary peer-unchecked:bg-input ${className || ''}`}>
+      <div className="pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform peer-checked:translate-x-5 peer-unchecked:translate-x-0" />
+    </div>
+  </label>
+));
+Switch.displayName = "Switch";
+
+const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
+  ({ className, ...props }, ref) => (
+    <div className="relative w-full overflow-auto">
+      <table
+        ref={ref}
+        className={`w-full caption-bottom text-sm ${className || ''}`}
+        {...props}
+      />
+    </div>
+  )
+);
+Table.displayName = "Table";
+
+const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+  ({ className, ...props }, ref) => (
+    <thead ref={ref} className={`[&_tr]:border-b ${className || ''}`} {...props} />
+  )
+);
+TableHeader.displayName = "TableHeader";
+
+const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+  ({ className, ...props }, ref) => (
+    <tbody
+      ref={ref}
+      className={`[&_tr:last-child]:border-0 ${className || ''}`}
+      {...props}
+    />
+  )
+);
+TableBody.displayName = "TableBody";
+
+const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
+  ({ className, ...props }, ref) => (
+    <tr
+      ref={ref}
+      className={`border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted ${className || ''}`}
+      {...props}
+    />
+  )
+);
+TableRow.displayName = "TableRow";
+
+const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
+  ({ className, ...props }, ref) => (
+    <th
+      ref={ref}
+      className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 ${className || ''}`}
+      {...props}
+    />
+  )
+);
+TableHead.displayName = "TableHead";
+
+const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
+  ({ className, ...props }, ref) => (
+    <td
+      ref={ref}
+      className={`p-4 align-middle [&:has([role=checkbox])]:pr-0 ${className || ''}`}
+      {...props}
+    />
+  )
+);
+TableCell.displayName = "TableCell";
+
+const Avatar = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${className || ''}`}
+      {...props}
+    />
+  )
+);
+Avatar.displayName = "Avatar";
+
+const AvatarFallback = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={`flex h-full w-full items-center justify-center rounded-full bg-muted ${className || ''}`}
+      {...props}
+    />
+  )
+);
+AvatarFallback.displayName = "AvatarFallback";
+
+// Hook toast simples
+const useToast = () => ({
+  toast: ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
+    console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
+    // Em produção, isso seria substituído por uma biblioteca de toast real
+  }
+});
+
+// API client com autenticação
+const getAuthToken = () => {
+  // Tentar obter o token do localStorage (método mais comum)
+  try {
+    const token = localStorage.getItem('@App:token');
+    return token ? atob(token) : null; // Decodificar se estiver em base64
+  } catch {
+    return null;
+  }
+};
+
 const api = {
   get: async (url: string) => {
+    const token = getAuthToken();
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
     });
     
@@ -26,10 +298,12 @@ const api = {
   },
   
   post: async (url: string, data: any) => {
+    const token = getAuthToken();
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: JSON.stringify(data),
     });
@@ -45,10 +319,12 @@ const api = {
   },
   
   put: async (url: string, data: any) => {
+    const token = getAuthToken();
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: JSON.stringify(data),
     });
@@ -63,174 +339,6 @@ const api = {
     };
   }
 };
-
-// Hook toast simples
-const useToast = () => ({
-  toast: ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
-    console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
-    // Em produção, isso seria substituído por uma biblioteca de toast real
-  }
-});
-
-// Componentes UI simples
-const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>{children}</div>
-);
-
-const CardHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="p-6 pb-4">{children}</div>
-);
-
-const CardTitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <h3 className={`text-lg font-semibold ${className}`}>{children}</h3>
-);
-
-const CardDescription = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-sm text-gray-600 mt-1">{children}</p>
-);
-
-const CardContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`p-6 pt-0 ${className}`}>{children}</div>
-);
-
-const Button = ({ children, onClick, disabled = false, variant = "default", size = "default", className = "" }: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  variant?: "default" | "outline" | "ghost" | "secondary";
-  size?: "default" | "sm";
-  className?: string;
-}) => {
-  const baseClasses = "rounded-md font-medium transition-colors";
-  const sizeClasses = size === "sm" ? "px-3 py-1.5 text-sm" : "px-4 py-2 text-sm";
-  const variantClasses = {
-    default: "bg-blue-600 text-white hover:bg-blue-700",
-    outline: "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50",
-    ghost: "text-gray-700 hover:bg-gray-100",
-    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200"
-  };
-  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
-  
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled}
-      className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${disabledClasses} ${className}`}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Input = ({ placeholder, value, onChange, type = "text", className = "" }: {
-  placeholder?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  type?: string;
-  className?: string;
-}) => (
-  <input
-    type={type}
-    placeholder={placeholder}
-    value={value}
-    onChange={onChange}
-    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
-  />
-);
-
-const Label = ({ children, htmlFor, className = "" }: { children: React.ReactNode; htmlFor?: string; className?: string }) => (
-  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 mb-1 ${className}`}>
-    {children}
-  </label>
-);
-
-const Select = ({ value, onValueChange, children }: {
-  value: string;
-  onValueChange: (value: string) => void;
-  children: React.ReactNode;
-}) => (
-  <select
-    value={value}
-    onChange={(e) => onValueChange(e.target.value)}
-    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-  >
-    {children}
-  </select>
-);
-
-const SelectTrigger = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-const SelectValue = ({ placeholder }: { placeholder: string }) => <option value="">{placeholder}</option>;
-const SelectContent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-const SelectItem = ({ value, children }: { value: string; children: React.ReactNode }) => (
-  <option value={value}>{children}</option>
-);
-
-const Badge = ({ children, variant = "default", className = "" }: {
-  children: React.ReactNode;
-  variant?: "default" | "secondary";
-  className?: string;
-}) => {
-  const baseClasses = "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
-  const variantClasses = variant === "secondary" 
-    ? "bg-gray-100 text-gray-800" 
-    : "bg-blue-100 text-blue-800";
-  
-  return (
-    <span className={`${baseClasses} ${variantClasses} ${className}`}>
-      {children}
-    </span>
-  );
-};
-
-const Switch = ({ id, checked, onCheckedChange }: {
-  id: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-}) => (
-  <input
-    type="checkbox"
-    id={id}
-    checked={checked}
-    onChange={(e) => onCheckedChange(e.target.checked)}
-    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-  />
-);
-
-const Table = ({ children }: { children: React.ReactNode }) => (
-  <table className="w-full">{children}</table>
-);
-
-const TableHeader = ({ children }: { children: React.ReactNode }) => (
-  <thead className="bg-gray-50">{children}</thead>
-);
-
-const TableBody = ({ children }: { children: React.ReactNode }) => (
-  <tbody className="divide-y divide-gray-200">{children}</tbody>
-);
-
-const TableRow = ({ children }: { children: React.ReactNode }) => (
-  <tr className="hover:bg-gray-50">{children}</tr>
-);
-
-const TableHead = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}>
-    {children}
-  </th>
-);
-
-const TableCell = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <td className={`px-6 py-4 whitespace-nowrap text-sm ${className}`}>{children}</td>
-);
-
-const Avatar = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`inline-flex items-center justify-center rounded-full bg-gray-100 ${className}`}>
-    {children}
-  </div>
-);
-
-const AvatarFallback = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-sm font-medium text-gray-600">{children}</span>
-);
 
 export default function OrdemServicoConfiguracoesPage() {
   const { toast } = useToast();
@@ -293,6 +401,11 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   useEffect(() => {
+    // Carregar dados iniciais
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
     if (activeTab === 'agendamento') {
       fetchSchedules();
     } else if (activeTab === 'usuarios') {
@@ -320,9 +433,26 @@ export default function OrdemServicoConfiguracoesPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Iniciando fetchUsers...');
+      
       const response = await api.get('/modules/ordem_servico/config/users');
-      setUsers(Array.isArray(response.data) ? response.data : []);
+      console.log('📦 Resposta da API users:', response);
+      
+      if (Array.isArray(response.data)) {
+        console.log(`✅ ${response.data.length} usuários recebidos:`, response.data);
+        setUsers(response.data);
+      } else {
+        console.error('❌ Resposta não é um array:', response.data);
+        setUsers([]);
+        toast({
+          title: 'Erro',
+          description: 'Formato de dados inválido recebido do servidor.',
+          variant: 'destructive'
+        });
+      }
     } catch (error) {
+      console.error('❌ Erro ao carregar usuários:', error);
+      setUsers([]);
       toast({
         title: 'Erro',
         description: 'Não foi possível carregar os usuários.',
@@ -334,11 +464,6 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   const handleToggleTechnician = async (userId: string, currentStatus: boolean, systemRole: string) => {
-    // Admins usually play dual roles, but if they want to explicitly unmark themselves as technicians for assignment lists, they can.
-    // However, if logic dictates Admins are ALWAYS technicians, we should disable the switch or handle it.
-    // Prompt says: "SUPER_ADMIN e ADMIN -> podem atuar também como Técnico".
-    // "USER -> pode ser Técnico, se marcado/permitido".
-
     try {
       await api.put(`/modules/ordem_servico/config/users/${userId}/technician`, {
         is_technician: !currentStatus
@@ -407,11 +532,11 @@ export default function OrdemServicoConfiguracoesPage() {
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar Navigation */}
-        <Card className="w-full md:w-64 h-fit border-none shadow-none bg-transparent md:bg-card md:border md:shadow-sm">
-          <CardContent className="p-0 md:p-4 space-y-1">
+        <Card className="w-full md:w-64 h-fit">
+          <CardContent className="p-4 space-y-1">
             <Button
               variant={activeTab === 'agendamento' ? 'secondary' : 'ghost'}
-              className={`w-full justify-start gap-2 ${activeTab === 'agendamento' ? 'bg-secondary' : ''}`}
+              className="w-full justify-start gap-2"
               onClick={() => setActiveTab('agendamento')}
             >
               <Calendar className="h-4 w-4" />
@@ -419,7 +544,7 @@ export default function OrdemServicoConfiguracoesPage() {
             </Button>
             <Button
               variant={activeTab === 'usuarios' ? 'secondary' : 'ghost'}
-              className={`w-full justify-start gap-2 ${activeTab === 'usuarios' ? 'bg-secondary' : ''}`}
+              className="w-full justify-start gap-2"
               onClick={() => setActiveTab('usuarios')}
             >
               <Users className="h-4 w-4" />
@@ -427,7 +552,7 @@ export default function OrdemServicoConfiguracoesPage() {
             </Button>
             <Button
               variant={activeTab === 'permissoes' ? 'secondary' : 'ghost'}
-              className={`w-full justify-start gap-2 ${activeTab === 'permissoes' ? 'bg-secondary' : ''}`}
+              className="w-full justify-start gap-2"
               onClick={() => setActiveTab('permissoes')}
             >
               <Shield className="h-4 w-4" />
@@ -445,12 +570,10 @@ export default function OrdemServicoConfiguracoesPage() {
                   <CalendarClock className="h-5 w-5" />
                   Rotinas de Agendamento
                 </h2>
-                <Link href="/configuracoes/sistema/cron">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    Ver Cron do Sistema
-                    <ArrowRight className="h-3 w-3" />
-                  </Button>
-                </Link>
+                <Button variant="outline" size="sm" className="gap-2">
+                  Ver Cron do Sistema
+                  <ArrowRight className="h-3 w-3" />
+                </Button>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -486,14 +609,9 @@ export default function OrdemServicoConfiguracoesPage() {
                         value={config.audience}
                         onValueChange={(val) => setConfig({ ...config, audience: val })}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Geral (Todos)</SelectItem>
-                          <SelectItem value="admin">Administradores</SelectItem>
-                          <SelectItem value="super_admin">Super Admins</SelectItem>
-                        </SelectContent>
+                        <SelectItem value="all">Geral (Todos)</SelectItem>
+                        <SelectItem value="admin">Administradores</SelectItem>
+                        <SelectItem value="super_admin">Super Admins</SelectItem>
                       </Select>
                     </div>
 
@@ -506,16 +624,11 @@ export default function OrdemServicoConfiguracoesPage() {
                           setConfig({ ...config, cronExpression: newCron });
                         }}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="daily">Diário (Todo dia)</SelectItem>
-                          <SelectItem value="weekly">Semanal</SelectItem>
-                          <SelectItem value="monthly">Mensal</SelectItem>
-                          <SelectItem value="interval">Intervalo (Minutos)</SelectItem>
-                          <SelectItem value="custom">Personalizado</SelectItem>
-                        </SelectContent>
+                        <SelectItem value="daily">Diário (Todo dia)</SelectItem>
+                        <SelectItem value="weekly">Semanal</SelectItem>
+                        <SelectItem value="monthly">Mensal</SelectItem>
+                        <SelectItem value="interval">Intervalo (Minutos)</SelectItem>
+                        <SelectItem value="custom">Personalizado</SelectItem>
                       </Select>
                     </div>
 
@@ -559,7 +672,7 @@ export default function OrdemServicoConfiguracoesPage() {
                     ) : (
                       <div className="space-y-4">
                         {schedules.map((schedule) => (
-                          <div key={schedule.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+                          <div key={schedule.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <h3 className="font-semibold text-lg">{schedule.title}</h3>
@@ -567,15 +680,15 @@ export default function OrdemServicoConfiguracoesPage() {
                                   {schedule.enabled ? 'Ativo' : 'Inativo'}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-balance text-muted-foreground">{schedule.content}</p>
+                              <p className="text-sm text-muted-foreground">{schedule.content}</p>
                               <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                                 <span className="flex items-center gap-1">
                                   <CalendarClock className="h-3 w-3" />
                                   {schedule.cron_expression}
                                 </span>
-                                <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                <Badge variant="outline" className="text-xs">
                                   Destino: {schedule.audience === 'all' ? 'Todos' : schedule.audience}
-                                </span>
+                                </Badge>
                               </div>
                             </div>
                           </div>
@@ -596,12 +709,19 @@ export default function OrdemServicoConfiguracoesPage() {
                   Configurações de Usuários
                 </CardTitle>
                 <CardDescription>
-                  Defina quem tem acesso e quais permissões dentro deste módulo.
+                  Configure os papéis dos usuários do sistema principal dentro deste módulo. 
+                  ADMIN e SUPER_ADMIN são automaticamente administradores do módulo.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
                   <div className="text-center py-8">Carregando usuários...</div>
+                ) : users.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">Nenhum usuário encontrado</p>
+                    <p className="text-sm">Verifique se há usuários cadastrados no sistema principal.</p>
+                  </div>
                 ) : (
                   <div className="rounded-md border">
                     <Table>
@@ -609,7 +729,7 @@ export default function OrdemServicoConfiguracoesPage() {
                         <TableRow>
                           <TableHead>Usuário</TableHead>
                           <TableHead>Papel do Sistema</TableHead>
-                          <TableHead>Papéis no Módulo (OS)</TableHead>
+                          <TableHead>Papéis no Módulo</TableHead>
                           <TableHead className="text-right">Técnico?</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -632,20 +752,28 @@ export default function OrdemServicoConfiguracoesPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2 flex-wrap">
-                                {user.os_roles.admin && <Badge className="bg-purple-500 hover:bg-purple-600">Administrador</Badge>}
-                                {user.os_roles.attendant && <Badge variant="secondary">Atendente</Badge>}
-                                {user.os_roles.technician && <Badge className="bg-blue-500 hover:bg-blue-600">Técnico</Badge>}
+                                {user.os_roles?.admin && (
+                                  <Badge className="bg-purple-500 hover:bg-purple-600 text-white">
+                                    Administrador
+                                  </Badge>
+                                )}
+                                <Badge variant="secondary">Atendente</Badge>
+                                {user.os_roles?.technician && (
+                                  <Badge className="bg-blue-500 hover:bg-blue-600 text-white">
+                                    Técnico
+                                  </Badge>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end items-center gap-2">
                                 <Label htmlFor={`tech-${user.id}`} className="text-xs text-muted-foreground mr-2">
-                                  {user.os_roles.technician ? 'Sim' : 'Não'}
+                                  {user.os_roles?.technician ? 'Sim' : 'Não'}
                                 </Label>
                                 <Switch
                                   id={`tech-${user.id}`}
-                                  checked={user.os_roles.technician}
-                                  onCheckedChange={() => handleToggleTechnician(user.id, user.os_roles.technician, user.system_role)}
+                                  checked={user.os_roles?.technician || false}
+                                  onCheckedChange={(checked) => handleToggleTechnician(user.id, user.os_roles?.technician || false, user.system_role)}
                                 />
                               </div>
                             </TableCell>
