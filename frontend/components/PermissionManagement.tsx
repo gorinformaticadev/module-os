@@ -217,22 +217,22 @@ const Dialog = ({ open, onOpenChange, children }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div 
-        className="fixed inset-0 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" 
+        className="fixed inset-0 bg-black/80" 
         onClick={() => onOpenChange(false)} 
       />
-      <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border/50 bg-background/90 dark:bg-background/60 backdrop-blur-md p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-xl max-w-4xl max-h-[90vh] overflow-y-auto">
-        {children}
-      </div>
+      {children}
     </div>
   );
 };
 
 const DialogContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={className}>{children}</div>
+  <div className={`relative z-50 grid gap-4 border border-border/50 bg-background/95 dark:bg-background/95 backdrop-blur-sm p-6 shadow-2xl rounded-xl ${className}`}>
+    {children}
+  </div>
 );
 
-const DialogHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">{children}</div>
+const DialogHeader = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`flex flex-col space-y-1.5 text-center sm:text-left mb-4 ${className}`}>{children}</div>
 );
 
 const DialogTitle = ({ children }: { children: React.ReactNode }) => (
@@ -579,14 +579,16 @@ export const PermissionManagement: React.FC = () => {
 
       {/* Modal de Configuração de Perfis */}
       <Dialog open={showProfileMatrix} onOpenChange={setShowProfileMatrix}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-[95vw] h-[95vh] max-h-[95vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0 pb-4 border-b">
             <DialogTitle>Configurar Permissões por Perfil</DialogTitle>
           </DialogHeader>
-          <ProfilePermissionMatrix
-            onClose={handleCloseMatrix}
-            onSave={handleSavePermissions}
-          />
+          <div className="flex-1 overflow-y-auto mt-4">
+            <ProfilePermissionMatrix
+              onClose={handleCloseMatrix}
+              onSave={handleSavePermissions}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

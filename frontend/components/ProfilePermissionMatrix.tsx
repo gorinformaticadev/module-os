@@ -527,7 +527,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-1">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -599,57 +599,56 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-4 font-medium">Regra</th>
-                      <th className="text-center py-2 px-4 font-medium">
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${getProfileBadgeColor('admin')}`}>
-                          Administrador
-                        </div>
-                      </th>
-                      <th className="text-center py-2 px-4 font-medium">
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${getProfileBadgeColor('technician')}`}>
-                          Técnico
-                        </div>
-                      </th>
-                      <th className="text-center py-2 px-4 font-medium">
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${getProfileBadgeColor('attendant')}`}>
-                          Atendente
-                        </div>
-                      </th>
-                    </tr>
-                  </thead>
+              <table className="w-full table-fixed">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-4 font-medium w-1/2">Regra</th>
+                    <th className="text-center py-2 px-4 font-medium w-1/6">
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${getProfileBadgeColor('admin')}`}>
+                        Administrador
+                      </div>
+                    </th>
+                    <th className="text-center py-2 px-4 font-medium w-1/6">
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${getProfileBadgeColor('technician')}`}>
+                        Técnico
+                      </div>
+                    </th>
+                    <th className="text-center py-2 px-4 font-medium w-1/6">
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${getProfileBadgeColor('attendant')}`}>
+                        Atendente
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
                   <tbody>
                     {rules.map((rule) => (
                       <tr key={rule.id} className="border-b hover:bg-muted/50">
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 w-1/2">
                           <div className="flex items-center gap-2">
                             {rule.icon}
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{rule.name}</span>
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="font-medium text-sm truncate">{rule.name}</span>
                               <Tooltip content={rule.description}>
-                                <Info className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors" />
+                                <Info className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors flex-shrink-0" />
                               </Tooltip>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-4 text-center w-1/6">
                           <Checkbox
                             id={`${rule.id}-admin`}
                             checked={permissions[rule.id]?.admin || false}
                             onCheckedChange={(checked) => handlePermissionChange(rule.id, 'admin', checked)}
                           />
                         </td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-4 text-center w-1/6">
                           <Checkbox
                             id={`${rule.id}-technician`}
                             checked={permissions[rule.id]?.technician || false}
                             onCheckedChange={(checked) => handlePermissionChange(rule.id, 'technician', checked)}
                           />
                         </td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-4 text-center w-1/6">
                           <Checkbox
                             id={`${rule.id}-attendant`}
                             checked={permissions[rule.id]?.attendant || false}
@@ -660,7 +659,6 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
                     ))}
                   </tbody>
                 </table>
-              </div>
             </CardContent>
           </Card>
         ))}
