@@ -32,6 +32,7 @@ export interface UserWithPermissions {
   id: string;
   name: string;
   email: string;
+  role: string;
   permissions: UserPermission[];
   permissionSummary: {
     total: number;

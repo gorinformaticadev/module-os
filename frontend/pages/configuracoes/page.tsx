@@ -2,18 +2,235 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bell, Save, ArrowRight, CalendarClock, Calendar, Users, Settings } from 'lucide-react';
-import api from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
+import { Bell, Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield } from 'lucide-react';
+import { PermissionManagement } from '../../components/PermissionManagement';
+
+// API client simples
+const api = {
+  get: async (url: string) => {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return {
+      data: await response.json(),
+      status: response.status
+    };
+  },
+  
+  post: async (url: string, data: any) => {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return {
+      data: await response.json(),
+      status: response.status
+    };
+  },
+  
+  put: async (url: string, data: any) => {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return {
+      data: await response.json(),
+      status: response.status
+    };
+  }
+};
+
+// Hook toast simples
+const useToast = () => ({
+  toast: ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
+    console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
+    // Em produção, isso seria substituído por uma biblioteca de toast real
+  }
+});
+
+// Componentes UI simples
+const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>{children}</div>
+);
+
+const CardHeader = ({ children }: { children: React.ReactNode }) => (
+  <div className="p-6 pb-4">{children}</div>
+);
+
+const CardTitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <h3 className={`text-lg font-semibold ${className}`}>{children}</h3>
+);
+
+const CardDescription = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-sm text-gray-600 mt-1">{children}</p>
+);
+
+const CardContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`p-6 pt-0 ${className}`}>{children}</div>
+);
+
+const Button = ({ children, onClick, disabled = false, variant = "default", size = "default", className = "" }: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  variant?: "default" | "outline" | "ghost" | "secondary";
+  size?: "default" | "sm";
+  className?: string;
+}) => {
+  const baseClasses = "rounded-md font-medium transition-colors";
+  const sizeClasses = size === "sm" ? "px-3 py-1.5 text-sm" : "px-4 py-2 text-sm";
+  const variantClasses = {
+    default: "bg-blue-600 text-white hover:bg-blue-700",
+    outline: "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50",
+    ghost: "text-gray-700 hover:bg-gray-100",
+    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200"
+  };
+  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
+  
+  return (
+    <button 
+      onClick={onClick} 
+      disabled={disabled}
+      className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${disabledClasses} ${className}`}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Input = ({ placeholder, value, onChange, type = "text", className = "" }: {
+  placeholder?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  className?: string;
+}) => (
+  <input
+    type={type}
+    placeholder={placeholder}
+    value={value}
+    onChange={onChange}
+    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+  />
+);
+
+const Label = ({ children, htmlFor, className = "" }: { children: React.ReactNode; htmlFor?: string; className?: string }) => (
+  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 mb-1 ${className}`}>
+    {children}
+  </label>
+);
+
+const Select = ({ value, onValueChange, children }: {
+  value: string;
+  onValueChange: (value: string) => void;
+  children: React.ReactNode;
+}) => (
+  <select
+    value={value}
+    onChange={(e) => onValueChange(e.target.value)}
+    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+  >
+    {children}
+  </select>
+);
+
+const SelectTrigger = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const SelectValue = ({ placeholder }: { placeholder: string }) => <option value="">{placeholder}</option>;
+const SelectContent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const SelectItem = ({ value, children }: { value: string; children: React.ReactNode }) => (
+  <option value={value}>{children}</option>
+);
+
+const Badge = ({ children, variant = "default", className = "" }: {
+  children: React.ReactNode;
+  variant?: "default" | "secondary";
+  className?: string;
+}) => {
+  const baseClasses = "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
+  const variantClasses = variant === "secondary" 
+    ? "bg-gray-100 text-gray-800" 
+    : "bg-blue-100 text-blue-800";
+  
+  return (
+    <span className={`${baseClasses} ${variantClasses} ${className}`}>
+      {children}
+    </span>
+  );
+};
+
+const Switch = ({ id, checked, onCheckedChange }: {
+  id: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) => (
+  <input
+    type="checkbox"
+    id={id}
+    checked={checked}
+    onChange={(e) => onCheckedChange(e.target.checked)}
+    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+  />
+);
+
+const Table = ({ children }: { children: React.ReactNode }) => (
+  <table className="w-full">{children}</table>
+);
+
+const TableHeader = ({ children }: { children: React.ReactNode }) => (
+  <thead className="bg-gray-50">{children}</thead>
+);
+
+const TableBody = ({ children }: { children: React.ReactNode }) => (
+  <tbody className="divide-y divide-gray-200">{children}</tbody>
+);
+
+const TableRow = ({ children }: { children: React.ReactNode }) => (
+  <tr className="hover:bg-gray-50">{children}</tr>
+);
+
+const TableHead = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className}`}>
+    {children}
+  </th>
+);
+
+const TableCell = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <td className={`px-6 py-4 whitespace-nowrap text-sm ${className}`}>{children}</td>
+);
+
+const Avatar = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`inline-flex items-center justify-center rounded-full bg-gray-100 ${className}`}>
+    {children}
+  </div>
+);
+
+const AvatarFallback = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-sm font-medium text-gray-600">{children}</span>
+);
 
 export default function OrdemServicoConfiguracoesPage() {
   const { toast } = useToast();
@@ -207,6 +424,14 @@ export default function OrdemServicoConfiguracoesPage() {
             >
               <Users className="h-4 w-4" />
               Usuários
+            </Button>
+            <Button
+              variant={activeTab === 'permissoes' ? 'secondary' : 'ghost'}
+              className={`w-full justify-start gap-2 ${activeTab === 'permissoes' ? 'bg-secondary' : ''}`}
+              onClick={() => setActiveTab('permissoes')}
+            >
+              <Shield className="h-4 w-4" />
+              Permissões
             </Button>
           </CardContent>
         </Card>
@@ -403,7 +628,7 @@ export default function OrdemServicoConfiguracoesPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{user.system_role}</Badge>
+                              <Badge variant="secondary">{user.system_role}</Badge>
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2 flex-wrap">
@@ -432,6 +657,10 @@ export default function OrdemServicoConfiguracoesPage() {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {activeTab === 'permissoes' && (
+            <PermissionManagement />
           )}
         </div>
       </div>
