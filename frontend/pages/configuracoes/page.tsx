@@ -8,22 +8,62 @@ import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatri
 // Cliente API customizado para o módulo raiz (sem autenticação automática)
 const api = {
   get: async (url: string) => {
-    const response = await fetch(`http://localhost:3001${url}`, {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
+    // Função auxiliar para obter o token de forma segura (Cookie ou SessionStorage)
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+
+      // 1. Tentar ler do cookie
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+
+      // 2. Fallback para sessionStorage (criptografado em base64)
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) {
+        try { return atob(encrypted); } catch { return ''; }
+      }
+
+      return '';
+    };
+
+    const token = getToken();
+
+    // Log para depuração
+    if (!token) console.warn('⚠️ [ModulePage] Token não encontrado (Cookies/SessionSt)!');
+    // else console.log('🔑 [ModulePage] Token encontrado.');
+
+    const response = await fetch(`${baseUrl}${url}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${token}`
       }
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return { data: await response.json() };
   },
   post: async (url: string, data: any) => {
-    const response = await fetch(`http://localhost:3001${url}`, {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
+    // Duplicando lógica de token para manter consistência sem refatorar tudo para fora agora
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+      return '';
+    };
+    const token = getToken();
+
+    const response = await fetch(`${baseUrl}${url}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(data)
     });
@@ -31,11 +71,25 @@ const api = {
     return { data: await response.json() };
   },
   put: async (url: string, data: any) => {
-    const response = await fetch(`http://localhost:3001${url}`, {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
+    // Duplicando lógica de token
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+      return '';
+    };
+    const token = getToken();
+
+    const response = await fetch(`${baseUrl}${url}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(data)
     });
@@ -115,7 +169,7 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
     ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
     link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
-  
+
   return (
     <button
       className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${className || ''}`}
@@ -180,7 +234,7 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
     destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
     outline: "text-foreground",
   };
-  
+
   return (
     <div
       ref={ref}
@@ -398,10 +452,10 @@ export default function OrdemServicoConfiguracoesPage() {
     try {
       setLoading(true);
       console.log('🔍 Iniciando fetchUsers...');
-      
+
       const response = await api.get('/modules/ordem_servico/config/users');
       console.log('📦 Resposta da API users:', response);
-      
+
       if (Array.isArray(response.data)) {
         console.log(`✅ ${response.data.length} usuários recebidos:`, response.data);
         setUsers(response.data);
@@ -498,11 +552,10 @@ export default function OrdemServicoConfiguracoesPage() {
         <nav className="flex space-x-8">
           <Button
             variant="ghost"
-            className={`border-b-2 rounded-none px-1 py-3 ${
-              activeTab === 'agendamento' 
-                ? 'border-primary text-primary' 
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+            className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'agendamento'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
             onClick={() => setActiveTab('agendamento')}
           >
             <Calendar className="h-4 w-4 mr-2" />
@@ -510,11 +563,10 @@ export default function OrdemServicoConfiguracoesPage() {
           </Button>
           <Button
             variant="ghost"
-            className={`border-b-2 rounded-none px-1 py-3 ${
-              activeTab === 'usuarios' 
-                ? 'border-primary text-primary' 
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+            className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'usuarios'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
             onClick={() => setActiveTab('usuarios')}
           >
             <Users className="h-4 w-4 mr-2" />
@@ -522,11 +574,10 @@ export default function OrdemServicoConfiguracoesPage() {
           </Button>
           <Button
             variant="ghost"
-            className={`border-b-2 rounded-none px-1 py-3 ${
-              activeTab === 'permissoes' 
-                ? 'border-primary text-primary' 
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+            className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'permissoes'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
             onClick={() => setActiveTab('permissoes')}
           >
             <Shield className="h-4 w-4 mr-2" />
@@ -685,7 +736,7 @@ export default function OrdemServicoConfiguracoesPage() {
                 Configurações de Usuários
               </CardTitle>
               <CardDescription>
-                Configure os papéis dos usuários do sistema principal dentro deste módulo. 
+                Configure os papéis dos usuários do sistema principal dentro deste módulo.
                 ADMIN e SUPER_ADMIN são automaticamente administradores do módulo.
               </CardDescription>
             </CardHeader>
@@ -770,7 +821,7 @@ export default function OrdemServicoConfiguracoesPage() {
             </div>
 
             <ProfilePermissionMatrix
-              onClose={() => {}}
+              onClose={() => { }}
               onSave={() => {
                 toast({
                   title: 'Sucesso',

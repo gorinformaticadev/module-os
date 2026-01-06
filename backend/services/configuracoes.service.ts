@@ -10,7 +10,7 @@ export class OrdemServicoConfiguracoesService {
     async getUsers(tenantId: string) {
         try {
             this.logger.log(`getUsers chamado. Tenant: ${tenantId}`);
-            
+
             // First check if users table exists and is accessible
             const testQuery = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT COUNT(*)::int as count FROM users LIMIT 1`
@@ -63,7 +63,7 @@ export class OrdemServicoConfiguracoesService {
     async toggleTechnician(tenantId: string, userId: string, isTechnician: boolean) {
         try {
             this.logger.log(`toggleTechnician chamado. Tenant: ${tenantId}, User: ${userId}, isTechnician: ${isTechnician}`);
-            
+
             const existing = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT id FROM "mod_ordem_servico_staff" WHERE user_id = $1 AND tenant_id = $2`,
                 userId, tenantId
@@ -93,7 +93,7 @@ export class OrdemServicoConfiguracoesService {
     async getProfilePermissions(tenantId: string) {
         try {
             this.logger.log(`getProfilePermissions chamado. Tenant: ${tenantId}`);
-            
+
             const permissions = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT permission_id, profile, allowed FROM "mod_ordem_servico_profile_permissions" WHERE tenant_id = $1`,
                 tenantId
@@ -124,7 +124,7 @@ export class OrdemServicoConfiguracoesService {
     async updateProfilePermissions(tenantId: string, permissions: Record<string, any>) {
         try {
             this.logger.log(`updateProfilePermissions chamado. Tenant: ${tenantId}`);
-            
+
             // Primeiro, limpar permissões existentes
             await this.prisma.$executeRawUnsafe(
                 `DELETE FROM "mod_ordem_servico_profile_permissions" WHERE tenant_id = $1`,
@@ -147,6 +147,39 @@ export class OrdemServicoConfiguracoesService {
             return { success: true };
         } catch (error) {
             this.logger.error(`❌ Erro no updateProfilePermissions:`, error);
+            throw error;
+        }
+    }
+
+    async getNotifications(tenantId: string) {
+        try {
+            this.logger.log(`getNotifications chamado. Tenant: ${tenantId}`);
+            return await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT * FROM "mod_ordem_servico_notification_schedules" WHERE tenant_id = $1 ORDER BY created_at DESC`,
+                tenantId
+            );
+        } catch (error) {
+            this.logger.error(`❌ Erro no getNotifications:`, error);
+            // Se tabela não existir, retorna array vazio para não quebrar frontend
+            if (error.message?.includes('does not exist')) {
+                return [];
+            }
+            throw error;
+        }
+    }
+
+    async createNotification(tenantId: string, data: { title: string, content: string, audience: string, cronExpression: string, enabled?: boolean }) {
+        try {
+            this.logger.log(`createNotification chamado. Tenant: ${tenantId}`);
+            await this.prisma.$executeRawUnsafe(
+                `INSERT INTO "mod_ordem_servico_notification_schedules" 
+                (tenant_id, title, content, audience, cron_expression, enabled) 
+                VALUES ($1, $2, $3, $4, $5, $6)`,
+                tenantId, data.title, data.content, data.audience, data.cronExpression, data.enabled ?? true
+            );
+            return { success: true };
+        } catch (error) {
+            this.logger.error(`❌ Erro no createNotification:`, error);
             throw error;
         }
     }

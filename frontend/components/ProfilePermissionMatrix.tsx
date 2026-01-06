@@ -1,25 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { Save, X, Shield, Users, Package, Settings, BarChart3, CheckCircle, XCircle, Info } from 'lucide-react';
 
-// Cliente API customizado para o módulo raiz (sem autenticação automática)
+// Função auxiliar para recuperar token de forma segura
+const getToken = () => {
+  if (typeof window === 'undefined') return '';
+
+  // 1. Tentar ler do cookie
+  const cookies = document.cookie.split(';');
+  const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+  if (tokenCookie) return tokenCookie.split('=')[1];
+
+  // 2. Fallback para sessionStorage (criptografado em base64)
+  const encrypted = sessionStorage.getItem("@App:token");
+  if (encrypted) {
+    try { return atob(encrypted); } catch { return ''; }
+  }
+
+  return '';
+};
+
+// Cliente API customizado para o módulo raiz
 const api = {
   get: async (url: string) => {
-    const response = await fetch(`http://localhost:3001${url}`, {
+    // Usar NEXT_PUBLIC_API_URL se disponível, senão fallback (evitar localhost:3001)
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    console.log(`📡 [ProfileMatrix] GET ${baseUrl}${url}`);
+
+    const token = getToken();
+
+    const response = await fetch(`${baseUrl}${url}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${token}`
       }
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      console.error(`❌ [ProfileMatrix] GET Error: ${response.status}`);
+      throw new Error(`HTTP ${response.status}`);
+    }
     return { data: await response.json() };
   },
   post: async (url: string, data: any) => {
-    const response = await fetch(`http://localhost:3001${url}`, {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const token = getToken();
+    const response = await fetch(`${baseUrl}${url}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(data)
     });
@@ -27,11 +56,13 @@ const api = {
     return { data: await response.json() };
   },
   put: async (url: string, data: any) => {
-    const response = await fetch(`http://localhost:3001${url}`, {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const token = getToken();
+    const response = await fetch(`${baseUrl}${url}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(data)
     });
@@ -135,7 +166,7 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
     ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
     link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
-  
+
   return (
     <button
       className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${className || ''}`}
@@ -155,7 +186,7 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
     destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
     outline: "text-foreground",
   };
-  
+
   return (
     <div
       ref={ref}
@@ -376,13 +407,13 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
     try {
       setLoading(true);
       console.log('🔍 Carregando permissões de perfil...');
-      
+
       const response = await api.get('/modules/ordem_servico/config/profile-permissions');
       console.log('📦 Permissões carregadas:', response.data);
-      
+
       // Inicializar permissões com valores padrão se não existirem
       const initialPermissions: Record<string, ProfilePermissions> = {};
-      
+
       PERMISSION_RULES.forEach(rule => {
         initialPermissions[rule.id] = {
           admin: response.data?.[rule.id]?.admin ?? true, // Admin tem tudo por padrão
@@ -390,11 +421,11 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
           attendant: response.data?.[rule.id]?.attendant ?? false
         };
       });
-      
+
       setPermissions(initialPermissions);
     } catch (error) {
       console.error('❌ Erro ao carregar permissões:', error);
-      
+
       // Inicializar com valores padrão em caso de erro
       const defaultPermissions: Record<string, ProfilePermissions> = {};
       PERMISSION_RULES.forEach(rule => {
@@ -405,7 +436,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
         };
       });
       setPermissions(defaultPermissions);
-      
+
       toast({
         title: 'Aviso',
         description: 'Carregadas permissões padrão. Salve para persistir as configurações.',
@@ -430,16 +461,16 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
     try {
       setSaving(true);
       console.log('💾 Salvando permissões de perfil...', permissions);
-      
+
       await api.post('/modules/ordem_servico/config/profile-permissions', {
         permissions
       });
-      
+
       toast({
         title: 'Sucesso',
         description: 'Permissões de perfil atualizadas com sucesso!',
       });
-      
+
       onSave();
       onClose();
     } catch (error) {
@@ -606,45 +637,45 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
                     </th>
                   </tr>
                 </thead>
-                  <tbody>
-                    {rules.map((rule) => (
-                      <tr key={rule.id} className="border-b hover:bg-muted/50">
-                        <td className="py-3 px-4 w-1/2">
-                          <div className="flex items-center gap-2">
-                            {rule.icon}
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <span className="font-medium text-sm truncate">{rule.name}</span>
-                              <Tooltip content={rule.description}>
-                                <Info className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors flex-shrink-0" />
-                              </Tooltip>
-                            </div>
+                <tbody>
+                  {rules.map((rule) => (
+                    <tr key={rule.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3 px-4 w-1/2">
+                        <div className="flex items-center gap-2">
+                          {rule.icon}
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="font-medium text-sm truncate">{rule.name}</span>
+                            <Tooltip content={rule.description}>
+                              <Info className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors flex-shrink-0" />
+                            </Tooltip>
                           </div>
-                        </td>
-                        <td className="py-3 px-4 text-center w-1/6">
-                          <Checkbox
-                            id={`${rule.id}-admin`}
-                            checked={permissions[rule.id]?.admin || false}
-                            onCheckedChange={(checked) => handlePermissionChange(rule.id, 'admin', checked)}
-                          />
-                        </td>
-                        <td className="py-3 px-4 text-center w-1/6">
-                          <Checkbox
-                            id={`${rule.id}-technician`}
-                            checked={permissions[rule.id]?.technician || false}
-                            onCheckedChange={(checked) => handlePermissionChange(rule.id, 'technician', checked)}
-                          />
-                        </td>
-                        <td className="py-3 px-4 text-center w-1/6">
-                          <Checkbox
-                            id={`${rule.id}-attendant`}
-                            checked={permissions[rule.id]?.attendant || false}
-                            onCheckedChange={(checked) => handlePermissionChange(rule.id, 'attendant', checked)}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center w-1/6">
+                        <Checkbox
+                          id={`${rule.id}-admin`}
+                          checked={permissions[rule.id]?.admin || false}
+                          onCheckedChange={(checked) => handlePermissionChange(rule.id, 'admin', checked)}
+                        />
+                      </td>
+                      <td className="py-3 px-4 text-center w-1/6">
+                        <Checkbox
+                          id={`${rule.id}-technician`}
+                          checked={permissions[rule.id]?.technician || false}
+                          onCheckedChange={(checked) => handlePermissionChange(rule.id, 'technician', checked)}
+                        />
+                      </td>
+                      <td className="py-3 px-4 text-center w-1/6">
+                        <Checkbox
+                          id={`${rule.id}-attendant`}
+                          checked={permissions[rule.id]?.attendant || false}
+                          onCheckedChange={(checked) => handlePermissionChange(rule.id, 'attendant', checked)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </CardContent>
           </Card>
         ))}
@@ -661,7 +692,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
               const allowedCount = Object.values(permissions).filter(p => p[profile]).length;
               const totalCount = PERMISSION_RULES.length;
               const percentage = totalCount > 0 ? Math.round((allowedCount / totalCount) * 100) : 0;
-              
+
               return (
                 <div key={profile} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
@@ -672,7 +703,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
                     {allowedCount} de {totalCount} permissões
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                    <div 
+                    <div
                       className={`h-2 rounded-full ${getProfileBadgeColor(profile)}`}
                       style={{ width: `${percentage}%` }}
                     ></div>

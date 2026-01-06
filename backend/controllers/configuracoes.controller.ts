@@ -53,4 +53,26 @@ export class OrdemServicoConfiguracoesController {
             throw error;
         }
     }
+
+    @Get('notifications')
+    async getNotifications(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            this.logger.log(`getNotifications endpoint chamado. Tenant: ${req.user?.tenantId}`);
+            return await this.service.getNotifications(req.user.tenantId);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint getNotifications:`, error);
+            throw error;
+        }
+    }
+
+    @Post('notifications')
+    async createNotification(@Req() req: ExpressRequest & { user: any }, @Body() body: any) {
+        try {
+            this.logger.log(`createNotification endpoint chamado. Tenant: ${req.user?.tenantId}`);
+            return await this.service.createNotification(req.user.tenantId, body);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint createNotification:`, error);
+            throw error;
+        }
+    }
 }
