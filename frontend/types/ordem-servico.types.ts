@@ -25,6 +25,7 @@ export interface OrdemServico {
   equipamento_modelo?: string;
   equipamento_serie?: string;
   equipamento_acessorios?: string;
+  equipamento_estado?: string;
 
   orcamento_aprovado?: boolean;
   motivo_cancelamento?: string;
@@ -170,6 +171,7 @@ export interface CreateOrdemServicoDTO {
   equipamento_modelo?: string;
   equipamento_serie?: string;
   equipamento_acessorios?: string;
+  equipamento_estado?: string;
 }
 
 export interface UpdateOrdemServicoDTO {
@@ -191,6 +193,7 @@ export interface UpdateOrdemServicoDTO {
   equipamento_modelo?: string;
   equipamento_serie?: string;
   equipamento_acessorios?: string;
+  equipamento_estado?: string;
 }
 
 export interface OrdemServicoFilters {

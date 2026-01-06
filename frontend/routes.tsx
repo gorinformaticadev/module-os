@@ -4,6 +4,7 @@ import ordem_servicoConfiguracoesPage from './pages/configuracoes';
 import ordem_servicoClientesPage from './pages/clientes';
 import ordem_servicoProdutosPage from './pages/produtos';
 import ordem_servicoOrdensPage from './pages/ordens';
+import ordem_servicoNovaOrdemPage from './pages/ordens/new';
 
 const MODULE_ROOT = '/ordem_servico';
 
@@ -14,4 +15,5 @@ export const ModuleRoutes = [
     { path: `${MODULE_ROOT}/clientes`, component: ordem_servicoClientesPage },
     { path: `${MODULE_ROOT}/produtos`, component: ordem_servicoProdutosPage },
     { path: `${MODULE_ROOT}/ordens`, component: ordem_servicoOrdensPage },
+    { path: `${MODULE_ROOT}/ordens/new`, component: ordem_servicoNovaOrdemPage },
 ];

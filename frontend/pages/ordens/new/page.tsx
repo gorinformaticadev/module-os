@@ -82,6 +82,7 @@ export default function NewOrdemRefactoredPage() {
         equipamento_modelo: '',
         equipamento_serie: '',
         equipamento_acessorios: '',
+        equipamento_estado: '',
 
         // Values
         valor_servico: '',
@@ -164,7 +165,7 @@ export default function NewOrdemRefactoredPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
+        <div className="p-4 md:p-8 w-full mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-3">
@@ -186,11 +187,11 @@ export default function NewOrdemRefactoredPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 
                 {/* Section 1: IDENTIFICAÇÃO DO CLIENTE */}
                 <Card className="lg:col-span-1 shadow-sm border-2">
-                    <CardHeader className="bg-slate-50/50 pb-4">
+                    <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
                             <CardTitle className="text-lg">Cliente</CardTitle>
@@ -210,8 +211,8 @@ export default function NewOrdemRefactoredPage() {
                                                 placeholder="Nome, CPF/CNPJ ou Tel..."
                                                 className="pl-9"
                                                 value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleSearchClients()}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearchClients()}
                                             />
                                         </div>
                                         <Button size="icon" variant="secondary" onClick={handleSearchClients} disabled={searchingClients}>
@@ -225,7 +226,7 @@ export default function NewOrdemRefactoredPage() {
                                         {clients.map(c => (
                                             <div
                                                 key={c.id}
-                                                className="p-3 hover:bg-slate-50 cursor-pointer flex flex-col transition-colors"
+                                                className="p-3 hover:bg-muted/50 cursor-pointer flex flex-col transition-colors"
                                                 onClick={() => setSelectedClient(c)}
                                             >
                                                 <span className="font-medium text-sm">{c.name}</span>
@@ -245,11 +246,11 @@ export default function NewOrdemRefactoredPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-primary/5 rounded-lg border border-primary/20 p-4 space-y-3 relative">
+                            <div className="bg-primary/10 rounded-lg border border-primary/20 p-4 space-y-3 relative">
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute top-2 right-2 h-6 w-6 rounded-full hover:bg-red-50 hover:text-red-500"
+                                    className="absolute top-2 right-2 h-6 w-6 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-500"
                                     onClick={() => setSelectedClient(null)}
                                 >
                                     <X className="h-3 w-3" />
@@ -261,7 +262,7 @@ export default function NewOrdemRefactoredPage() {
                                 </div>
                                 <div className="pt-2 flex flex-col gap-1 text-sm border-t border-primary/10">
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="bg-white">{selectedClient.phone_primary}</Badge>
+                                        <Badge variant="outline" className="bg-background">{selectedClient.phone_primary}</Badge>
                                     </div>
                                 </div>
                             </div>
@@ -270,21 +271,21 @@ export default function NewOrdemRefactoredPage() {
                 </Card>
 
                 {/* Main Form Area */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2 xl:col-span-3 space-y-6">
 
                     {/* Section 2: DADOS DA ORDEM DE SERVIÇO */}
                     <Card className="shadow-sm border-2">
-                        <CardHeader className="bg-slate-50/50 pb-4">
+                        <CardHeader className="bg-muted/20 pb-4">
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
                                 <CardTitle className="text-lg">Dados da Ordem de Serviço</CardTitle>
                             </div>
                         </CardHeader>
-                        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 
                             <div className="space-y-2">
                                 <Label>Tipo de Serviço *</Label>
-                                <Select value={formData.tipo_servico} onValueChange={(v) => setFormData({ ...formData, tipo_servico: v })}>
+                                <Select value={formData.tipo_servico} onValueChange={(v: string) => setFormData({ ...formData, tipo_servico: v })}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
@@ -302,7 +303,11 @@ export default function NewOrdemRefactoredPage() {
                                     value={formData.status.toString()}
                                     onValueChange={(v) => setFormData({ ...formData, status: parseInt(v) })}
                                 >
-                                    <SelectTrigger className={formData.status === 0 ? "border-yellow-300 bg-yellow-50" : "border-green-300 bg-green-50"}>
+                                    <SelectTrigger className={
+                                        formData.status === 0
+                                            ? "border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
+                                            : "border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400"
+                                    }>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -311,7 +316,7 @@ export default function NewOrdemRefactoredPage() {
                                     </SelectContent>
                                 </Select>
                                 {formData.status === 0 && (
-                                    <p className="text-[10px] text-yellow-600 font-medium">📌 Notas: Não gera faturamento nem compromisso imediato.</p>
+                                    <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-medium">📌 Notas: Não gera faturamento nem compromisso imediato.</p>
                                 )}
                             </div>
 
@@ -402,36 +407,65 @@ export default function NewOrdemRefactoredPage() {
 
                     {/* Section 3: EQUIPAMENTO */}
                     <Card className="shadow-sm border-2">
-                        <CardHeader className="bg-slate-50/50 pb-4">
+                        <CardHeader className="bg-muted/20 pb-4">
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
                                 <CardTitle className="text-lg">Equipamento (Se aplicável)</CardTitle>
                             </div>
                         </CardHeader>
-                        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Tipo de Equipamento</Label>
-                                <Input placeholder="Notebook, Smartphone, Monitor..." value={formData.equipamento_tipo} onChange={(e) => setFormData({ ...formData, equipamento_tipo: e.target.value })} />
+                        <CardContent className="pt-6 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Tipo de Equipamento</Label>
+                                    <Select
+                                        value={formData.equipamento_tipo}
+                                        onValueChange={(v: string) => setFormData({ ...formData, equipamento_tipo: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="NOTEBOOK">Notebook</SelectItem>
+                                            <SelectItem value="DESKTOP">Desktop (Computador)</SelectItem>
+                                            <SelectItem value="SMARTPHONE">Smartphone</SelectItem>
+                                            <SelectItem value="TABLET">Tablet</SelectItem>
+                                            <SelectItem value="MONITOR">Monitor</SelectItem>
+                                            <SelectItem value="IMPRESSORA">Impressora</SelectItem>
+                                            <SelectItem value="OUTROS">Outros</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Marca</Label>
+                                    <Input placeholder="Dell, HP, Samsung..." value={formData.equipamento_marca} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_marca: e.target.value })} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Modelo</Label>
+                                    <Input placeholder="Vostro 3500, Galaxy S21..." value={formData.equipamento_modelo} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_modelo: e.target.value })} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Número de Série</Label>
+                                    <Input placeholder="S/N ou IMEI..." value={formData.equipamento_serie} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_serie: e.target.value })} />
+                                </div>
                             </div>
+
                             <div className="space-y-2">
-                                <Label>Marca</Label>
-                                <Input placeholder="Dell, HP, Samsung..." value={formData.equipamento_marca} onChange={(e) => setFormData({ ...formData, equipamento_marca: e.target.value })} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Modelo</Label>
-                                <Input placeholder="Vostro 3500, Galaxy S21..." value={formData.equipamento_modelo} onChange={(e) => setFormData({ ...formData, equipamento_modelo: e.target.value })} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Número de Série</Label>
-                                <Input placeholder="S/N ou IMEI..." value={formData.equipamento_serie} onChange={(e) => setFormData({ ...formData, equipamento_serie: e.target.value })} />
-                            </div>
-                            <div className="col-span-full space-y-2">
-                                <Label>Acessórios / Estado de Entrega</Label>
-                                <Textarea
-                                    placeholder="Cabo, Carregador, Riscos na tela, Capinha..."
-                                    className="min-h-[60px]"
+                                <Label>Acessórios / Outros</Label>
+                                <Input
+                                    placeholder="Cabo, Carregador, Capinha, Mouse..."
+                                    className="w-full"
                                     value={formData.equipamento_acessorios}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_acessorios: e.target.value })}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_acessorios: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Estado de Entrega / Obs</Label>
+                                <Textarea
+                                    placeholder="Riscos na tela, tampa solta, bateria descarregada..."
+                                    className="min-h-[60px]"
+                                    value={formData.equipamento_estado}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, equipamento_estado: e.target.value })}
                                 />
                             </div>
                         </CardContent>
@@ -497,7 +531,7 @@ export default function NewOrdemRefactoredPage() {
                                     <Textarea
                                         placeholder="Notas que aparecerão na impressão ou consulta online..."
                                         value={formData.observacoes_cliente}
-                                        onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
                                     />
                                 </div>
                             </CardContent>
@@ -533,7 +567,7 @@ export default function NewOrdemRefactoredPage() {
             </div>
 
             {/* Business Rules Summary Footer */}
-            <div className="bg-slate-50 p-6 rounded-xl border border-dashed text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-muted/30 p-6 rounded-xl border border-dashed text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex gap-3">
                     <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
                     <p><strong>Validação:</strong> Todos os campos com asterisco são obrigatórios. O sistema verifica a validade do CPF/CNPJ se informado.</p>

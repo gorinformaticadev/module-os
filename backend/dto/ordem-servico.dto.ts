@@ -79,6 +79,10 @@ export class CreateOrdemServicoDTO {
     @IsOptional()
     @IsString()
     equipamento_acessorios?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_estado?: string;
 }
 
 export class UpdateOrdemServicoDTO {
@@ -148,6 +152,10 @@ export class UpdateOrdemServicoDTO {
     @IsOptional()
     @IsString()
     equipamento_acessorios?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_estado?: string;
 }
 
 export class OrdemServicoFilters {
