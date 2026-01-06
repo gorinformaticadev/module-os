@@ -32,6 +32,7 @@ export interface OrdemServico {
   formatacao_backup?: boolean;
   formatacao_backup_descricao?: string;
   formatacao_senha?: string;
+  equipamento_fotos?: string[];
 
   orcamento_aprovado?: boolean;
   motivo_cancelamento?: string;
@@ -57,6 +58,8 @@ export interface Cliente {
   address_city?: string;
   address_state?: string;
   address_zip?: string;
+  observations?: string;
+  image_url?: string;
   is_active: boolean;
 }
 
@@ -184,6 +187,7 @@ export interface CreateOrdemServicoDTO {
   formatacao_backup?: boolean;
   formatacao_backup_descricao?: string;
   formatacao_senha?: string;
+  equipamento_fotos?: string[];
 }
 
 export interface UpdateOrdemServicoDTO {
@@ -212,6 +216,7 @@ export interface UpdateOrdemServicoDTO {
   formatacao_backup?: boolean;
   formatacao_backup_descricao?: string;
   formatacao_senha?: string;
+  equipamento_fotos?: string[];
 }
 
 export interface OrdemServicoFilters {

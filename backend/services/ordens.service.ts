@@ -157,8 +157,9 @@ export class OrdensService {
                     origem_solicitacao, orcamento_aprovado,
                     equipamento_tipo, equipamento_marca, equipamento_modelo, 
                     equipamento_serie, equipamento_acessorios, equipamento_estado,
-                    formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+                    formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha,
+                    equipamento_fotos
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
                 RETURNING *
             `;
 
@@ -191,7 +192,8 @@ export class OrdensService {
                 createDto.formatacao_so || null,
                 createDto.formatacao_backup || false,
                 createDto.formatacao_backup_descricao || null,
-                createDto.formatacao_senha || null
+                createDto.formatacao_senha || null,
+                createDto.equipamento_fotos ? JSON.stringify(createDto.equipamento_fotos) : null
             ) as any[];
 
             const novaOrdem = result[0];
@@ -235,13 +237,14 @@ export class OrdensService {
                 'usuario_responsavel_id', 'equipamento_tipo', 'equipamento_marca',
                 'equipamento_modelo', 'equipamento_serie', 'equipamento_acessorios',
                 'equipamento_estado', 'formatacao_so', 'formatacao_backup',
-                'formatacao_backup_descricao', 'formatacao_senha'
+                'formatacao_backup_descricao', 'formatacao_senha', 'equipamento_fotos'
             ];
 
             for (const field of fieldsToUpdate) {
                 if (updateDto[field] !== undefined) {
                     let value = updateDto[field];
                     if (field === 'usuario_responsavel_id' && value === 'UNASSIGNED') value = null;
+                    if (field === 'equipamento_fotos' && value !== null) value = JSON.stringify(value);
 
                     updateFields.push(`${field} = $${paramIndex}`);
                     params.push(value);

@@ -78,8 +78,9 @@ export class ClientesService {
             const result = await this.prisma.$queryRawUnsafe<any[]>(
                 `INSERT INTO mod_ordem_servico_clients 
                 (id, tenant_id, name, document, phone_primary, phone_secondary, address, is_active,
-                 address_zip, address_street, address_number, address_complement, address_neighborhood, address_city, address_state)
-                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                 address_zip, address_street, address_number, address_complement, address_neighborhood, address_city, address_state,
+                 observations, image_url)
+                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
                 RETURNING id`,
                 id,
                 tenantId,
@@ -95,7 +96,9 @@ export class ClientesService {
                 data.address_complement || null,
                 data.address_neighborhood || null,
                 data.address_city || null,
-                data.address_state || null
+                data.address_state || null,
+                data.observations || null,
+                data.image_url || null
             );
 
             const newId = result[0].id;
@@ -124,6 +127,9 @@ export class ClientesService {
                 `UPDATE mod_ordem_servico_clients
                 SET 
                     name = $3,
+                document = $4,
+                phone_primary = $5,
+                phone_secondary = $6,
                     document = $4,
                     phone_primary = $5,
                     phone_secondary = $6,
@@ -136,6 +142,8 @@ export class ClientesService {
                     address_neighborhood = $13,
                     address_city = $14,
                     address_state = $15,
+                    observations = $16,
+                    image_url = $17,
                     updated_at = NOW()
                 WHERE id = $1::uuid AND tenant_id = $2`,
                 id,
@@ -152,7 +160,9 @@ export class ClientesService {
                 data.address_complement || null,
                 data.address_neighborhood || null,
                 data.address_city || null,
-                data.address_state || null
+                data.address_state || null,
+                data.observations || null,
+                data.image_url || null
             );
 
             await this.auditService.log({
@@ -173,7 +183,7 @@ export class ClientesService {
         // Verificar se existem OS associadas a este cliente
         try {
             const osCountResult = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT COUNT(*) as count FROM mod_ordem_servico_os WHERE client_id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
+                `SELECT COUNT(*) as count FROM mod_ordem_servico_os WHERE client_id = $1:: uuid AND tenant_id = $2 AND deleted_at IS NULL`,
                 id, tenantId
             );
 
@@ -189,9 +199,9 @@ export class ClientesService {
                 (error.code === 'P2010' && (error.meta?.code === '42P01' || error.message?.includes('mod_ordem_servico_os')));
 
             if (isTableNotFoundError) {
-                this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}. Ignorando verificação.`);
+                this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}.Ignorando verificação.`);
             } else {
-                this.logger.error(`Erro ao verificar OS do cliente: ${error.message} (Code: ${error.code})`);
+                this.logger.error(`Erro ao verificar OS do cliente: ${error.message}(Code: ${error.code})`);
                 throw error;
             }
         }

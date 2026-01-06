@@ -11,6 +11,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -27,7 +34,14 @@ import {
     Info,
     CheckCircle2,
     AlertCircle,
-    X
+    X,
+    User,
+    Phone,
+    MapPin,
+    Camera,
+    Trash2,
+    Plus,
+    Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -37,7 +51,8 @@ import {
     TipoServico,
     TIPO_SERVICO_LABELS,
     ORIGEM_LABELS,
-    STATUS_LABELS
+    STATUS_LABELS,
+    Cliente
 } from '../../../types/ordem-servico.types';
 
 interface Client {
@@ -59,9 +74,9 @@ export default function NewOrdemRefactoredPage() {
 
     // Client State
     const [searchTerm, setSearchTerm] = useState('');
-    const [clients, setClients] = useState<Client[]>([]);
+    const [clients, setClients] = useState<Cliente[]>([]);
     const [searchingClients, setSearchingClients] = useState(false);
-    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
 
     // Technicians State
     const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -96,8 +111,13 @@ export default function NewOrdemRefactoredPage() {
         formatacao_so: '',
         formatacao_backup: false,
         formatacao_backup_descricao: '',
-        formatacao_senha: ''
+        formatacao_senha: '',
+
+        // Photos
+        equipamento_fotos: [] as string[]
     });
+
+    const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
     useEffect(() => {
         fetchTechnicians();
@@ -125,6 +145,79 @@ export default function NewOrdemRefactoredPage() {
         } finally {
             setSearchingClients(false);
         }
+    };
+
+    const [compressing, setCompressing] = useState(false);
+
+    const compressImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    resolve(dataUrl);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    };
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        if (formData.equipamento_fotos.length + files.length > 5) {
+            toast({ title: 'Limite atingido', description: 'Você pode enviar no máximo 5 fotos.', variant: 'warning' });
+            return;
+        }
+
+        setCompressing(true);
+        const newPhotos = [...formData.equipamento_fotos];
+
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const compressed = await compressImage(files[i]);
+                newPhotos.push(compressed);
+            }
+            setFormData({ ...formData, equipamento_fotos: newPhotos });
+        } catch (error) {
+            console.error('Erro ao comprimir imagem:', error);
+            toast({ title: 'Erro', description: 'Erro ao processar imagem.', variant: 'destructive' });
+        } finally {
+            setCompressing(false);
+        }
+    };
+
+    const removePhoto = (index: number) => {
+        const newPhotos = [...formData.equipamento_fotos];
+        newPhotos.splice(index, 1);
+        setFormData({ ...formData, equipamento_fotos: newPhotos });
     };
 
     const handleSave = async () => {
@@ -252,24 +345,76 @@ export default function NewOrdemRefactoredPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-primary/10 rounded-lg border border-primary/20 p-4 space-y-3 relative">
+                            <div className="bg-card rounded-lg border-2 border-primary/20 p-5 space-y-4 relative shadow-sm overflow-hidden bg-gradient-to-br from-primary/5 to-transparent">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-10 -mt-10 pointer-events-none" />
+
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute top-2 right-2 h-6 w-6 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-500"
+                                    className="absolute top-2 right-2 h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors z-10"
                                     onClick={() => setSelectedClient(null)}
                                 >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-4 w-4" />
                                 </Button>
-                                <div className="flex flex-col">
-                                    <span className="text-xs text-primary font-bold uppercase tracking-wider">Selecionado</span>
-                                    <span className="font-bold text-lg leading-tight">{selectedClient.name}</span>
-                                    <span className="text-sm text-muted-foreground">{selectedClient.document}</span>
-                                </div>
-                                <div className="pt-2 flex flex-col gap-1 text-sm border-t border-primary/10">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="bg-background">{selectedClient.phone_primary}</Badge>
+
+                                <div className="flex gap-4 items-start pt-2">
+                                    <div className="h-20 w-20 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-inner shrink-0 overflow-hidden">
+                                        {selectedClient.image_url ? (
+                                            <img src={selectedClient.image_url} alt={selectedClient.name} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <User className="h-10 w-10 text-primary" />
+                                        )}
                                     </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="px-2 py-0.5 rounded text-[10px] bg-primary text-primary-foreground font-bold uppercase tracking-wider">Selecionado</span>
+                                            {selectedClient.is_active ? (
+                                                <Badge variant="outline" className="text-[10px] h-5 border-emerald-500/50 text-emerald-600 bg-emerald-50/50">Ativo</Badge>
+                                            ) : (
+                                                <Badge variant="destructive" className="text-[10px] h-5">Inativo</Badge>
+                                            )}
+                                        </div>
+                                        <h3 className="font-bold text-xl leading-tight text-foreground truncate">{selectedClient.name}</h3>
+                                        <p className="text-sm text-muted-foreground font-medium">{selectedClient.document || 'Sem documento'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3 pt-3 border-t border-primary/10">
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="h-4 w-4 text-primary shrink-0" />
+                                        <span className="text-sm font-semibold">{selectedClient.phone_primary}</span>
+                                        {selectedClient.phone_secondary && (
+                                            <span className="text-xs text-muted-foreground italic border-l pl-2">{selectedClient.phone_secondary}</span>
+                                        )}
+                                    </div>
+
+                                    {(selectedClient.address_street || selectedClient.address_city) && (
+                                        <div className="flex items-start gap-2">
+                                            <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                            <div className="text-sm">
+                                                <p className="font-medium text-foreground/80">
+                                                    {selectedClient.address_street}{selectedClient.address_number ? `, ${selectedClient.address_number}` : ''}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {[selectedClient.address_neighborhood, selectedClient.address_city, selectedClient.address_state]
+                                                        .filter(Boolean)
+                                                        .join(' - ')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {selectedClient.observations && (
+                                        <div className="mt-2 p-3 bg-muted/40 rounded-md border border-muted-foreground/10">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <AlertCircle className="h-3 w-3 text-amber-500" />
+                                                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter">Observações do Cliente</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground italic line-clamp-2">
+                                                {selectedClient.observations}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -557,6 +702,109 @@ export default function NewOrdemRefactoredPage() {
                                     value={formData.equipamento_estado}
                                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, equipamento_estado: e.target.value })}
                                 />
+                            </div>
+
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="flex items-center gap-2">
+                                        <Camera className="h-4 w-4 text-primary" />
+                                        Fotos do Equipamento ({formData.equipamento_fotos.length}/5)
+                                    </Label>
+                                    <div className="flex items-center gap-2">
+                                        {compressing && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 gap-1.5 text-xs"
+                                            onClick={() => document.getElementById('photo-upload')?.click()}
+                                            disabled={compressing || formData.equipamento_fotos.length >= 5}
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            Adicionar Fotos
+                                        </Button>
+                                    </div>
+                                    <input
+                                        id="photo-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        className="hidden"
+                                        onChange={handlePhotoUpload}
+                                    />
+                                </div>
+
+                                {formData.equipamento_fotos.length > 0 ? (
+                                    <>
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {formData.equipamento_fotos.map((photo, index) => (
+                                                <div key={index} className="group relative w-12 h-12 rounded-md border border-muted overflow-hidden bg-muted/30 hover:border-primary/50 transition-all cursor-pointer">
+                                                    <img
+                                                        src={photo}
+                                                        alt={`Equipamento ${index + 1}`}
+                                                        className="h-full w-full object-cover"
+                                                        onClick={() => setSelectedPhoto(photo)}
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                            size="icon"
+                                                            className="h-5 w-5 rounded-full"
+                                                            onClick={() => setSelectedPhoto(photo)}
+                                                        >
+                                                            <Search className="h-2.5 w-2.5" />
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="destructive"
+                                                            size="icon"
+                                                            className="h-5 w-5 rounded-full"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                removePhoto(index);
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-2.5 w-2.5" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+                                            <DialogContent className="max-w-4xl p-0 overflow-hidden bg-transparent border-none shadow-none">
+                                                <div className="relative w-full h-full flex items-center justify-center p-4">
+                                                    {selectedPhoto && (
+                                                        <img
+                                                            src={selectedPhoto}
+                                                            alt="Visualização ampliada"
+                                                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                                                        />
+                                                    )}
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="icon"
+                                                        className="absolute top-0 right-0 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white"
+                                                        onClick={() => setSelectedPhoto(null)}
+                                                    >
+                                                        <X className="h-6 w-6" />
+                                                    </Button>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </>
+                                ) : (
+                                    <div
+                                        className="border-2 border-dashed border-muted rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary/30 hover:bg-primary/5 cursor-pointer transition-all"
+                                        onClick={() => document.getElementById('photo-upload')?.click()}
+                                    >
+                                        <Camera className="h-8 w-8 mb-2 opacity-20" />
+                                        <p className="text-xs font-medium">Nenhuma foto adicionada</p>
+                                        <p className="text-[10px] opacity-60">Ideal para registrar o estado físico na entrada</p>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

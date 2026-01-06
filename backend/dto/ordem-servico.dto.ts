@@ -100,6 +100,11 @@ export class CreateOrdemServicoDTO {
     @IsOptional()
     @IsString()
     formatacao_senha?: string;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    equipamento_fotos?: string[];
 }
 
 export class UpdateOrdemServicoDTO {
@@ -190,6 +195,11 @@ export class UpdateOrdemServicoDTO {
     @IsOptional()
     @IsString()
     formatacao_senha?: string;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    equipamento_fotos?: string[];
 }
 
 export class OrdemServicoFilters {
