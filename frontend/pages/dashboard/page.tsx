@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { 
-  Users, 
-  Package, 
-  FileText, 
-  Eye, 
-  Printer, 
-  MessageCircle, 
-  Edit, 
+import {
+  Users,
+  Package,
+  FileText,
+  Eye,
+  Printer,
+  MessageCircle,
+  Edit,
   Trash2,
   Clock,
   CheckCircle,
@@ -76,7 +76,7 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
     ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
     link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
-  
+
   return (
     <button
       className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${className || ''}`}
@@ -96,7 +96,7 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
     destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
     outline: "text-foreground",
   };
-  
+
   return (
     <div
       ref={ref}
@@ -117,12 +117,12 @@ interface OrdemServico {
 }
 
 // Componente de atalho com teclado
-const ShortcutCard = ({ 
-  title, 
-  shortcut, 
-  icon: Icon, 
-  color, 
-  onClick 
+const ShortcutCard = ({
+  title,
+  shortcut,
+  icon: Icon,
+  color,
+  onClick
 }: {
   title: string;
   shortcut: string;
@@ -131,7 +131,7 @@ const ShortcutCard = ({
   onClick: () => void;
 }) => {
   return (
-    <Card 
+    <Card
       className={`cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg ${color}`}
       onClick={onClick}
     >
@@ -149,10 +149,10 @@ const ShortcutCard = ({
 };
 
 // Componente de tabela de ordens
-const OrderTable = ({ 
-  title, 
-  orders, 
-  emptyMessage 
+const OrderTable = ({
+  title,
+  orders,
+  emptyMessage
 }: {
   title: string;
   orders: OrdemServico[];
@@ -294,14 +294,14 @@ export default function OrdemServicoDashboardPage() {
     // Implementar navegação para as respectivas páginas
     switch (action) {
       case 'clientes':
-        // Para o módulo raiz, usar os caminhos corretos
-        window.location.href = '/ordem_servico/clientes';
+        // Rotas atualizadas conforme module.json
+        window.location.href = '/modules/ordem_servico/pages/clientes';
         break;
       case 'produtos':
-        window.location.href = '/ordem_servico/produtos';
+        window.location.href = '/modules/ordem_servico/pages/produtos';
         break;
       case 'ordens':
-        window.location.href = '/ordem_servico/ordens';
+        window.location.href = '/modules/ordem_servico/pages/ordens';
         break;
     }
   };
@@ -387,7 +387,7 @@ export default function OrdemServicoDashboardPage() {
           orders={ordensOrcamento}
           emptyMessage="Nenhuma ordem em orçamento encontrada"
         />
-        
+
         <OrderTable
           title="Ordens de Serviços Em Aberto"
           orders={ordensAberto}
