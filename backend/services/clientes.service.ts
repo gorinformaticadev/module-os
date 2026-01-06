@@ -14,43 +14,37 @@ export class ClientesService {
 
     async findAll(tenantId: string, filters: any = {}) {
         const { search, status } = filters;
-        this.logger.log(`findAll chamado. Tenant: ${tenantId}, Filters: ${JSON.stringify(filters)}`);
+        this.logger.log(`📥 findAll: Tenant=${tenantId}, Filters=${JSON.stringify(filters)}`);
 
-        // Primeiro, vamos testar se a tabela existe
-        try {
-            const testQuery = `SELECT COUNT(*)::int as total FROM mod_ordem_servico_clients WHERE tenant_id = $1`;
-            const testResult = await this.prisma.$queryRawUnsafe(testQuery, tenantId);
-            this.logger.log(`Teste de conexão bem-sucedido. Total de registros: ${(testResult as any[])[0]?.total || 0}`);
-        } catch (error) {
-            this.logger.error('Erro no teste de conexão:', error);
-            throw new Error('Tabela de clientes não encontrada. Verifique se o módulo foi instalado corretamente.');
+        if (!tenantId) {
+            this.logger.error('❌ tenantId não fornecido');
+            return [];
         }
-
-        let query = `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND deleted_at IS NULL`;
-        const params: any[] = [tenantId];
-
-        if (search) {
-            query += ` AND (name ILIKE ${params.length + 1} OR document ILIKE ${params.length + 1} OR phone_primary ILIKE ${params.length + 1})`;
-            params.push(`%${search}%`);
-        }
-
-        if (status !== undefined && status !== '') {
-            query += ` AND is_active = ${params.length + 1}`;
-            params.push(status === 'true');
-        }
-
-        query += ` ORDER BY name ASC`;
-
-        this.logger.log(`Executando query: ${query}`);
-        this.logger.log(`Parâmetros: ${JSON.stringify(params)}`);
 
         try {
-            const result = await this.prisma.$queryRawUnsafe(query, ...params);
-            this.logger.log(`Query executada com sucesso. Retornando ${(result as any[]).length} registros`);
-            return result;
-        } catch (error) {
-            this.logger.error('Erro na query de clientes:', error);
-            throw error;
+            let query = `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND deleted_at IS NULL`;
+            const params: any[] = [tenantId];
+            let paramIndex = 2;
+
+            if (search) {
+                query += ` AND (name ILIKE $${paramIndex} OR document ILIKE $${paramIndex + 1} OR phone_primary ILIKE $${paramIndex + 2})`;
+                const searchVal = `%${search}%`;
+                params.push(searchVal, searchVal, searchVal);
+                paramIndex += 3;
+            }
+
+            if (status !== undefined && status !== '') {
+                query += ` AND is_active = $${paramIndex}`;
+                params.push(status === 'true' || status === true);
+                paramIndex++;
+            }
+
+            query += ` ORDER BY name ASC`;
+
+            return await this.prisma.$queryRawUnsafe(query, ...params);
+        } catch (err: any) {
+            this.logger.error('💥 ERRO FATAL NA QUERY DE CLIENTES:', err.message);
+            throw err;
         }
     }
 

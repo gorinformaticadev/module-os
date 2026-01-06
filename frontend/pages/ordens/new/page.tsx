@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,8 +74,8 @@ export default function NewOrdemRefactoredPage() {
 
     // Client State
     const [searchTerm, setSearchTerm] = useState('');
-    const [clients, setClients] = useState<Cliente[]>([]);
-    const [searchingClients, setSearchingClients] = useState(false);
+    const [allClients, setAllClients] = useState<Cliente[]>([]);
+    const [loadingClients, setLoadingClients] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
 
     // Technicians State
@@ -121,31 +121,45 @@ export default function NewOrdemRefactoredPage() {
 
     useEffect(() => {
         fetchTechnicians();
+        fetchAllClients();
     }, []);
 
     const fetchTechnicians = async () => {
         try {
             const response = await api.get('/modules/ordem_servico/config/users');
-            // Filter to only include technicians if the API supports it, or just show all available users
             setTechnicians(response.data.filter((u: any) => u.is_technician) || response.data);
         } catch (error) {
             console.error('Erro ao buscar técnicos:', error);
         }
     };
 
-    const handleSearchClients = async () => {
-        if (searchTerm.length < 2) return;
+    const fetchAllClients = async () => {
         try {
-            setSearchingClients(true);
-            const response = await api.get(`/api/ordem_servico/clientes?search=${searchTerm}&status=true`);
-            setClients(response.data);
+            setLoadingClients(true);
+            const response = await api.get('/api/ordem_servico/clientes?status=true');
+            setAllClients(response.data);
         } catch (error) {
-            console.error('Erro ao buscar clientes:', error);
-            toast({ title: 'Erro', description: 'Erro ao buscar clientes', variant: 'destructive' });
+            console.error('Erro ao buscar todos os clientes:', error);
+            toast({
+                title: 'Erro de conexão',
+                description: 'Não foi possível carregar a lista de clientes para busca.',
+                variant: 'destructive'
+            });
         } finally {
-            setSearchingClients(false);
+            setLoadingClients(false);
         }
     };
+
+    const filteredClients = useMemo(() => {
+        if (searchTerm.length < 3) return [];
+
+        const term = searchTerm.toLowerCase();
+        return allClients.filter(c =>
+            c.name.toLowerCase().includes(term) ||
+            (c.document && c.document.toLowerCase().includes(term)) ||
+            (c.phone_primary && c.phone_primary.toLowerCase().includes(term))
+        );
+    }, [searchTerm, allClients]);
 
     const [compressing, setCompressing] = useState(false);
 
@@ -320,31 +334,48 @@ export default function NewOrdemRefactoredPage() {
                                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                             <Input
                                                 id="search-client"
-                                                placeholder="Nome, CPF/CNPJ ou Tel..."
+                                                placeholder="Busque por nome, documento ou telefone..."
                                                 className="pl-9"
                                                 value={searchTerm}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearchClients()}
                                             />
                                         </div>
-                                        <Button size="icon" variant="secondary" onClick={handleSearchClients} disabled={searchingClients}>
-                                            <SearchCode className="h-4 w-4" />
+                                        <Button size="icon" variant="ghost" disabled={loadingClients}>
+                                            {loadingClients ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 text-muted-foreground" />}
                                         </Button>
                                     </div>
                                 </div>
 
-                                {clients.length > 0 && (
-                                    <div className="border rounded-md divide-y max-h-[300px] overflow-y-auto">
-                                        {clients.map(c => (
+                                {filteredClients.length > 0 && (
+                                    <div className="border rounded-md divide-y max-h-[300px] overflow-y-auto bg-card shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {filteredClients.map(c => (
                                             <div
                                                 key={c.id}
-                                                className="p-3 hover:bg-muted/50 cursor-pointer flex flex-col transition-colors"
+                                                className="p-3 hover:bg-muted/50 cursor-pointer flex items-center gap-3 transition-colors group"
                                                 onClick={() => setSelectedClient(c)}
                                             >
-                                                <span className="font-medium text-sm">{c.name}</span>
-                                                <span className="text-xs text-muted-foreground">{c.document || 'Sem documento'} • {c.phone_primary}</span>
+                                                <div className="h-10 w-10 rounded-full border bg-muted flex items-center justify-center shrink-0 overflow-hidden group-hover:border-primary/50 transition-colors">
+                                                    {c.image_url ? (
+                                                        <img src={c.image_url} alt={c.name} className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <User className="h-5 w-5 text-muted-foreground" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col min-w-0 flex-1">
+                                                    <div className="flex justify-between items-center gap-2">
+                                                        <span className="font-bold text-sm truncate group-hover:text-primary transition-colors">{c.name}</span>
+                                                        <Badge variant="outline" className="text-[9px] h-4 border-emerald-500/50 text-emerald-600 bg-emerald-50/50 shrink-0">Ativo</Badge>
+                                                    </div>
+                                                    <span className="text-[10px] text-muted-foreground font-medium truncate">{c.document || 'Sem documento'} • {c.phone_primary}</span>
+                                                </div>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+
+                                {searchTerm.length >= 3 && filteredClients.length === 0 && !loadingClients && (
+                                    <div className="p-4 text-center border rounded-md bg-muted/20 border-dashed">
+                                        <p className="text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
                                     </div>
                                 )}
 
