@@ -79,12 +79,12 @@ COMMENT ON COLUMN mod_ordem_servico_historico.acao IS 'Tipo de ação: CRIACAO, 
 
 -- Trigger para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_mod_ordem_servico_ordens_updated_at()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$ language 'plpgsql';
+$$ language 'plpgsql';
 
 CREATE TRIGGER trigger_mod_ordem_servico_ordens_updated_at
     BEFORE UPDATE ON mod_ordem_servico_ordens
