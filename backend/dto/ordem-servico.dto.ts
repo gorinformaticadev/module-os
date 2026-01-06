@@ -25,11 +25,19 @@ export class CreateOrdemServicoDTO {
     tipo_servico: string;
 
     @IsString()
+    @IsEnum(['BAIXA', 'MEDIA', 'ALTA'])
+    prioridade: 'BAIXA' | 'MEDIA' | 'ALTA';
+
+    @IsString()
     descricao: string;
 
     @IsOptional()
     @IsString()
     observacoes_internas?: string;
+
+    @IsOptional()
+    @IsString()
+    observacoes_cliente?: string;
 
     @IsOptional()
     @IsNumber()
@@ -50,6 +58,27 @@ export class CreateOrdemServicoDTO {
     @IsOptional()
     @IsEnum(StatusOS)
     status?: StatusOS;
+
+    // Equipamento
+    @IsOptional()
+    @IsString()
+    equipamento_tipo?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_marca?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_modelo?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_serie?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_acessorios?: string;
 }
 
 export class UpdateOrdemServicoDTO {
@@ -59,11 +88,20 @@ export class UpdateOrdemServicoDTO {
 
     @IsOptional()
     @IsString()
+    @IsEnum(['BAIXA', 'MEDIA', 'ALTA'])
+    prioridade?: 'BAIXA' | 'MEDIA' | 'ALTA';
+
+    @IsOptional()
+    @IsString()
     descricao?: string;
 
     @IsOptional()
     @IsString()
     observacoes_internas?: string;
+
+    @IsOptional()
+    @IsString()
+    observacoes_cliente?: string;
 
     @IsOptional()
     @IsNumber()
@@ -89,6 +127,27 @@ export class UpdateOrdemServicoDTO {
     @IsOptional()
     @IsString()
     motivo_cancelamento?: string;
+
+    // Equipamento
+    @IsOptional()
+    @IsString()
+    equipamento_tipo?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_marca?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_modelo?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_serie?: string;
+
+    @IsOptional()
+    @IsString()
+    equipamento_acessorios?: string;
 }
 
 export class OrdemServicoFilters {

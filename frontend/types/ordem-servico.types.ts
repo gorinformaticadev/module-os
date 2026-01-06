@@ -7,8 +7,10 @@ export interface OrdemServico {
   cliente_id: string;
   usuario_responsavel_id: string;
   tipo_servico: string;
+  prioridade: 'BAIXA' | 'MEDIA' | 'ALTA';
   descricao: string;
   observacoes_internas?: string;
+  observacoes_cliente?: string;
   valor_servico: number;
   forma_pagamento?: string;
   status: StatusOS;
@@ -16,11 +18,19 @@ export interface OrdemServico {
   data_previsao?: string;
   data_conclusao?: string;
   origem_solicitacao: OrigemSolicitacao;
+
+  // Equipamento
+  equipamento_tipo?: string;
+  equipamento_marca?: string;
+  equipamento_modelo?: string;
+  equipamento_serie?: string;
+  equipamento_acessorios?: string;
+
   orcamento_aprovado?: boolean;
   motivo_cancelamento?: string;
   created_at: string;
   updated_at: string;
-  
+
   // Relacionamentos
   cliente?: Cliente;
   usuario_responsavel?: Usuario;
@@ -144,25 +154,43 @@ export const TRANSICOES_PERMITIDAS: Record<StatusOS, StatusOS[]> = {
 export interface CreateOrdemServicoDTO {
   cliente_id: string;
   tipo_servico: string;
+  prioridade: 'BAIXA' | 'MEDIA' | 'ALTA';
   descricao: string;
   observacoes_internas?: string;
+  observacoes_cliente?: string;
   valor_servico?: number;
   forma_pagamento?: string;
   data_previsao?: string;
   origem_solicitacao: OrigemSolicitacao;
   status?: StatusOS;
+
+  // Equipamento
+  equipamento_tipo?: string;
+  equipamento_marca?: string;
+  equipamento_modelo?: string;
+  equipamento_serie?: string;
+  equipamento_acessorios?: string;
 }
 
 export interface UpdateOrdemServicoDTO {
   tipo_servico?: string;
+  prioridade?: 'BAIXA' | 'MEDIA' | 'ALTA';
   descricao?: string;
   observacoes_internas?: string;
+  observacoes_cliente?: string;
   valor_servico?: number;
   forma_pagamento?: string;
   data_previsao?: string;
   usuario_responsavel_id?: string;
   status?: StatusOS;
   motivo_cancelamento?: string;
+
+  // Equipamento
+  equipamento_tipo?: string;
+  equipamento_marca?: string;
+  equipamento_modelo?: string;
+  equipamento_serie?: string;
+  equipamento_acessorios?: string;
 }
 
 export interface OrdemServicoFilters {

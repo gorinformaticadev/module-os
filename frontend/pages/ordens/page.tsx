@@ -8,13 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-import { 
-  Search, 
-  Plus, 
-  Eye, 
-  Edit, 
-  Trash2, 
-  Printer, 
+import {
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Printer,
   MessageCircle,
   Filter,
   FileText
@@ -64,7 +64,7 @@ export default function OrdensPage() {
   const loadOrdens = async () => {
     try {
       setLoading(true);
-      
+
       const filters: any = {};
       if (searchTerm) filters.search = searchTerm;
       if (statusFilter !== 'all') filters.status = [statusFilter];
@@ -176,7 +176,7 @@ export default function OrdensPage() {
           <h1 className="text-3xl font-bold">Ordens de Serviço</h1>
           <p className="text-muted-foreground">Gerencie todas as ordens de serviço</p>
         </div>
-        <Button onClick={() => window.location.href = '/modules/ordem_servico/ordens/new'} className="flex items-center gap-2">
+        <Button onClick={() => window.location.href = '/modules/ordem_servico/pages/ordens/new'} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Nova Ordem
         </Button>
@@ -204,7 +204,7 @@ export default function OrdensPage() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
               <Select value={statusFilter.toString()} onValueChange={(value) => setStatusFilter(value === 'all' ? 'all' : parseInt(value) as StatusOS)}>
@@ -312,7 +312,7 @@ export default function OrdensPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          
+
                           {ordem.status !== StatusOS.FINALIZADA && ordem.status !== StatusOS.CANCELADA && (
                             <Button
                               variant="ghost"
@@ -323,7 +323,7 @@ export default function OrdensPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
-                          
+
                           <Button
                             variant="ghost"
                             size="sm"
@@ -332,7 +332,7 @@ export default function OrdensPage() {
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
-                          
+
                           {ordem.cliente?.phone_primary && (
                             <Button
                               variant="ghost"
@@ -343,7 +343,7 @@ export default function OrdensPage() {
                               <MessageCircle className="h-4 w-4" />
                             </Button>
                           )}
-                          
+
                           {(ordem.status === StatusOS.ORCAMENTO || ordem.status === StatusOS.ABERTA) && (
                             <Button
                               variant="ghost"
