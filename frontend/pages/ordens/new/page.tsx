@@ -149,7 +149,7 @@ export default function NewOrdemRefactoredPage() {
 
     const [compressing, setCompressing] = useState(false);
 
-    const compressImage = (file: File): Promise<string> => {
+    const compressImage = (file: File): Promise<Blob> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -179,8 +179,9 @@ export default function NewOrdemRefactoredPage() {
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx?.drawImage(img, 0, 0, width, height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                    resolve(dataUrl);
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                    }, 'image/jpeg', 0.6);
                 };
                 img.onerror = (err) => reject(err);
             };
@@ -202,15 +203,27 @@ export default function NewOrdemRefactoredPage() {
 
         try {
             for (let i = 0; i < files.length; i++) {
-                const compressed = await compressImage(files[i]);
-                newPhotos.push(compressed);
+                const blob = await compressImage(files[i]);
+
+                const formDataUpload = new FormData();
+                formDataUpload.append('file', blob, files[i].name || `foto-${i}.jpg`);
+
+                const { data } = await api.post('/api/ordem_servico/ordens/upload', formDataUpload, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                newPhotos.push(data.url);
             }
             setFormData({ ...formData, equipamento_fotos: newPhotos });
+            toast({ title: 'Sucesso', description: 'Fotos enviadas com sucesso.' });
         } catch (error) {
-            console.error('Erro ao comprimir imagem:', error);
-            toast({ title: 'Erro', description: 'Erro ao processar imagem.', variant: 'destructive' });
+            console.error('Erro no upload de foto:', error);
+            toast({ title: 'Erro', description: 'Falha ao enviar uma ou mais fotos.', variant: 'destructive' });
         } finally {
             setCompressing(false);
+            if (e.target) e.target.value = ''; // Limpar input para permitir selecionar o mesmo arquivo novamente
         }
     };
 

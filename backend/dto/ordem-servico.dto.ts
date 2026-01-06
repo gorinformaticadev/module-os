@@ -59,6 +59,10 @@ export class CreateOrdemServicoDTO {
     @IsEnum(StatusOS)
     status?: StatusOS;
 
+    @IsOptional()
+    @IsString()
+    usuario_responsavel_id?: string;
+
     // Equipamento
     @IsOptional()
     @IsString()

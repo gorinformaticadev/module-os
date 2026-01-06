@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { Request as ExpressRequest } from 'express';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req, HttpException, HttpStatus, Logger, UseInterceptors, UploadedFile, Res, BadRequestException } from '@nestjs/common';
+import { Request as ExpressRequest, Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ClientesService } from '../services/clientes.service';
 import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
 import { PermissionGuard } from '../guards/permission.guard';
 import { RequireClientsPermission } from '../decorators/require-permission.decorator';
+import { Public } from '@core/common/decorators/public.decorator';
 
 @Controller('api/ordem_servico/clientes')
 @UseGuards(JwtAuthGuard, PermissionGuard)
@@ -70,5 +74,73 @@ export class ClientesController {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
         return this.clientesService.delete(tenantId, id, userId);
+    }
+
+    @Post('upload')
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadFile(@UploadedFile() file: any, @Req() req: ExpressRequest & { user: any }) {
+        try {
+            if (!file) {
+                throw new BadRequestException('Nenhum arquivo enviado');
+            }
+
+            // 1. Recuperação e Validação do Buffer
+            let bufferData = file.buffer;
+
+            if (bufferData && typeof bufferData === 'object' && !Buffer.isBuffer(bufferData)) {
+                if (bufferData.type === 'Buffer' && Array.isArray(bufferData.data)) {
+                    bufferData = Buffer.from(bufferData.data);
+                } else {
+                    const values = Object.values(bufferData) as number[];
+                    bufferData = Buffer.from(values);
+                }
+            }
+
+            if ((!bufferData || !Buffer.isBuffer(bufferData)) && file.path) {
+                bufferData = fs.readFileSync(file.path);
+            }
+
+            if (!Buffer.isBuffer(bufferData)) {
+                throw new Error('Falha crítica: Buffer inválido.');
+            }
+
+            // 2. Caminho Seguro e Isolado por Tenant
+            const tenantId = req.user?.tenantId || 'global';
+            const uploadDir = path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'clientes', tenantId);
+
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+            // 3. Salvar Arquivo
+            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+            const filePath = path.join(uploadDir, uniqueName);
+            fs.writeFileSync(filePath, bufferData);
+
+            // 4. Retornar URL Pública
+            return { url: `/api/ordem_servico/clientes/uploads/${tenantId}/${uniqueName}` };
+        } catch (error) {
+            this.logger.error('Erro no upload de foto do cliente:', error);
+            throw new HttpException('Erro ao processar upload: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Get('uploads/:tenantId/:filename')
+    @Public()
+    async serveFile(@Param('filename') filename: string, @Param('tenantId') tenantId: string, @Res() res: Response) {
+        try {
+            const filePath = path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'clientes', tenantId, filename);
+
+            if (!filePath.startsWith(path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'clientes'))) {
+                return res.status(403).json({ message: 'Acesso negado' });
+            }
+
+            if (fs.existsSync(filePath)) {
+                res.sendFile(filePath);
+            } else {
+                res.status(404).json({ message: 'Arquivo não encontrado' });
+            }
+        } catch (error) {
+            this.logger.error('Erro ao servir arquivo:', error);
+            res.status(500).json({ message: 'Erro interno ao buscar imagem' });
+        }
     }
 }

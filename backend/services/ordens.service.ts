@@ -92,7 +92,10 @@ export class OrdensService {
                 ORDER BY os.created_at DESC
             `;
 
-            const ordens = await this.prisma.$queryRawUnsafe(query, ...params) as any[];
+            const ordens = (await this.prisma.$queryRawUnsafe(query, ...params) as any[]).map(os => ({
+                ...os,
+                equipamento_fotos: os.equipamento_fotos ? (typeof os.equipamento_fotos === 'string' ? JSON.parse(os.equipamento_fotos) : os.equipamento_fotos) : []
+            }));
 
             this.logger.log(`✅ ${ordens.length} ordens de serviço encontradas`);
             return ordens;
@@ -130,12 +133,20 @@ export class OrdensService {
 
             const result = await this.prisma.$queryRawUnsafe(query, id, tenantId) as any[];
 
-            if (result.length === 0) {
-                return null;
+            const ordem = result[0];
+            if (ordem.equipamento_fotos) {
+                try {
+                    ordem.equipamento_fotos = typeof ordem.equipamento_fotos === 'string' ? JSON.parse(ordem.equipamento_fotos) : ordem.equipamento_fotos;
+                } catch (e) {
+                    this.logger.error(`Erro ao parsear fotos da OS ${id}:`, e);
+                    ordem.equipamento_fotos = [];
+                }
+            } else {
+                ordem.equipamento_fotos = [];
             }
 
             this.logger.log(`✅ Ordem de serviço ${id} encontrada`);
-            return result[0];
+            return ordem;
         } catch (error) {
             this.logger.error(`❌ Erro ao buscar ordem de serviço ${id}:`, error);
             throw error;
@@ -197,6 +208,15 @@ export class OrdensService {
             ) as any[];
 
             const novaOrdem = result[0];
+            if (novaOrdem.equipamento_fotos) {
+                try {
+                    novaOrdem.equipamento_fotos = typeof novaOrdem.equipamento_fotos === 'string' ? JSON.parse(novaOrdem.equipamento_fotos) : novaOrdem.equipamento_fotos;
+                } catch (e) {
+                    novaOrdem.equipamento_fotos = [];
+                }
+            } else {
+                novaOrdem.equipamento_fotos = [];
+            }
 
             // Registrar no histórico
             await this.registrarHistorico(
@@ -268,6 +288,15 @@ export class OrdensService {
 
             const result = await this.prisma.$queryRawUnsafe(query, ...params) as any[];
             const ordemAtualizada = result[0];
+            if (ordemAtualizada.equipamento_fotos) {
+                try {
+                    ordemAtualizada.equipamento_fotos = typeof ordemAtualizada.equipamento_fotos === 'string' ? JSON.parse(ordemAtualizada.equipamento_fotos) : ordemAtualizada.equipamento_fotos;
+                } catch (e) {
+                    ordemAtualizada.equipamento_fotos = [];
+                }
+            } else {
+                ordemAtualizada.equipamento_fotos = [];
+            }
 
             // Registrar alterações no histórico
             await this.registrarAlteracoesHistorico(tenantId, id, userId, ordemAtual, updateDto);

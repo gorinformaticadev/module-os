@@ -127,9 +127,6 @@ export class ClientesService {
                 `UPDATE mod_ordem_servico_clients
                 SET 
                     name = $3,
-                document = $4,
-                phone_primary = $5,
-                phone_secondary = $6,
                     document = $4,
                     phone_primary = $5,
                     phone_secondary = $6,
