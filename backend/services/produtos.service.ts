@@ -18,29 +18,20 @@ export class ProdutosService {
         const { search, status } = filters;
         this.logger.log(`findAll chamado. Tenant: ${tenantId}, Filters: ${JSON.stringify(filters)}`);
 
-        if (!tenantId) {
-            this.logger.error('tenantId não fornecido para findAll');
-            return [];
-        }
-
         // Base query
-        let query = `SELECT * FROM mod_ordem_servico_products p WHERE p.tenant_id = $1 AND p.deleted_at IS NULL`;
+        let query = `SELECT * FROM mod_ordem_servico_products WHERE tenant_id = $1 AND deleted_at IS NULL`;
         const params: any[] = [tenantId];
-        let paramIndex = 2;
 
         // Search filter
         if (search) {
-            query += ` AND (p.name ILIKE $${paramIndex} OR p.code ILIKE $${paramIndex + 1})`;
-            const searchVal = `%${search}%`;
-            params.push(searchVal, searchVal);
-            paramIndex += 2;
+            query += ` AND (name ILIKE ${params.length + 1} OR code ILIKE ${params.length + 1})`;
+            params.push(`%${search}%`);
         }
 
         // Status filter
         if (status !== undefined && status !== '') {
-            query += ` AND is_active = $${paramIndex}`;
+            query += ` AND is_active = ${params.length + 1}`;
             params.push(status === 'true');
-            paramIndex++;
         }
 
         query += ` ORDER BY name ASC`;

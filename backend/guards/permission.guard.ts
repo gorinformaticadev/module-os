@@ -1,20 +1,18 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PermissionService } from '../services/permission.service';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
-  private readonly logger = new Logger(PermissionGuard.name);
-
   constructor(
     private readonly permissionService: PermissionService,
     private readonly reflector: Reflector
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Buscar metadados de permissão necessária
     const requiredPermission = this.reflector.get<{ resource: string; action: string }>(
-      'permission',
+      'permission', 
       context.getHandler()
     );
 
@@ -48,16 +46,13 @@ export class PermissionGuard implements CanActivate {
 
       return true;
 
-    } catch (error: any) {
-      this.logger.error(`❌ ERRO NO PERMISSION GUARD:`, error);
-      if (error.stack) this.logger.error(error.stack);
-
+    } catch (error) {
       if (error instanceof ForbiddenException) {
         throw error;
       }
-
+      
       // Em caso de erro no sistema, negar acesso por segurança
-      throw new ForbiddenException(`Erro ao verificar permissões: ${error.message}`);
+      throw new ForbiddenException('Erro ao verificar permissões');
     }
   }
 }

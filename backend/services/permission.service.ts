@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
-import {
-  IPermissionService,
-  UserPermission,
-  PermissionUpdate,
+import { 
+  IPermissionService, 
+  UserPermission, 
+  PermissionUpdate, 
   AvailablePermission,
   UserWithPermissions,
   PermissionAudit
@@ -16,21 +16,11 @@ export class PermissionService implements IPermissionService {
   private permissionCache = new Map<string, UserPermission[]>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
-  // Assuming the user wants a separate logger for PermissionGuard context within this service,
-  // or this was a copy-paste error in the instruction and the original logger is sufficient.
-  // To make it syntactically correct and follow the instruction literally (adding a logger for PermissionGuard),
-  // it must have a different name than the existing 'logger'.
-  // If the intent was to *replace* the existing logger, the instruction would be different.
-  // If the intent was to add a logger *to* the PermissionGuard class itself, this change is in the wrong file.
-  // Given the constraint to make the change faithfully and syntactically correct within this file,
-  // I'll add a new logger with a distinct name.
-  private readonly permissionGuardLogger = new Logger('PermissionGuard');
-
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async getUserPermissions(tenantId: string, userId: string): Promise<UserPermission[]> {
     const cacheKey = `${tenantId}:${userId}`;
-
+    
     // Verificar cache
     if (this.permissionCache.has(cacheKey)) {
       this.logger.log(`Permissões encontradas no cache para usuário ${userId}`);
@@ -39,7 +29,7 @@ export class PermissionService implements IPermissionService {
 
     try {
       this.logger.log(`Buscando permissões para usuário ${userId} no tenant ${tenantId}`);
-
+      
       const permissions = await this.prisma.$queryRawUnsafe<any[]>(
         `SELECT 
           id, user_id, tenant_id, resource, action, allowed, 
@@ -50,7 +40,7 @@ export class PermissionService implements IPermissionService {
         tenantId, userId
       );
 
-      const userPermissions: UserPermission[] = permissions.map((p: any) => ({
+      const userPermissions: UserPermission[] = permissions.map(p => ({
         id: p.id,
         userId: p.user_id,
         tenantId: p.tenant_id,
@@ -71,17 +61,16 @@ export class PermissionService implements IPermissionService {
       this.logger.log(`✅ ${userPermissions.length} permissões encontradas para usuário ${userId}`);
       return userPermissions;
 
-    } catch (error: any) {
+    } catch (error) {
       this.logger.error(`❌ Erro ao buscar permissões do usuário ${userId}:`, error);
-      this.logger.error(error.stack);
       throw error;
     }
   }
 
   async updateUserPermissions(
-    tenantId: string,
-    userId: string,
-    permissions: PermissionUpdate[],
+    tenantId: string, 
+    userId: string, 
+    permissions: PermissionUpdate[], 
     changedBy: string
   ): Promise<void> {
     try {
@@ -89,7 +78,7 @@ export class PermissionService implements IPermissionService {
 
       // Buscar permissões atuais para auditoria
       const currentPermissions = await this.getUserPermissions(tenantId, userId);
-
+      
       for (const permission of permissions) {
         const current = currentPermissions.find(
           p => p.resource === permission.resource && p.action === permission.action
@@ -130,7 +119,7 @@ export class PermissionService implements IPermissionService {
 
       // Limpar cache
       this.permissionCache.delete(`${tenantId}:${userId}`);
-
+      
       this.logger.log(`✅ Permissões atualizadas com sucesso para usuário ${userId}`);
 
     } catch (error) {
@@ -143,36 +132,31 @@ export class PermissionService implements IPermissionService {
     try {
       // 🔑 BYPASS AUTOMÁTICO: Verificar se o usuário é ADMIN ou SUPER_ADMIN
       const users = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT id, role, name FROM users WHERE id = $1`,
+        `SELECT role, name, email FROM users WHERE id = $1`,
         userId
       );
 
-      if (users && users.length > 0) {
-        const user = users[0];
-        const userRole = (user.role || '').toUpperCase().trim();
-
-        if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'SUPERADMIN') {
-          this.logger.log(`🔓 BYPASS: Usuário ${user.name} acessando como ${userRole}`);
-          return true;
-        }
+      const user = users[0];
+      if (user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')) {
+        this.logger.log(`🔓 BYPASS ADMIN: ${user.name} (${user.role}) tem acesso automático a ${resource}:${action}`);
+        return true;
       }
 
       // Verificação normal de permissões para outros usuários
       const permissions = await this.getUserPermissions(tenantId, userId);
       const permission = permissions.find(p => p.resource === resource && p.action === action);
-
+      
       const hasAccess = permission?.allowed || false;
-
+      
       if (!hasAccess) {
-        this.logger.warn(`❌ Acesso negado: usuário ${userId} tentao acessar ${resource}:${action}`);
+        this.logger.warn(`❌ Acesso negado: usuário ${userId} tentou acessar ${resource}:${action}`);
         // Registrar tentativa de acesso negado
         await this.logAccessDenied(tenantId, userId, resource, action);
       }
 
       return hasAccess;
-    } catch (error: any) {
-      this.logger.error(`❌ Erro em hasPermission para ${resource}:${action}:`, error);
-      this.logger.error(error.stack);
+    } catch (error) {
+      this.logger.error(`❌ Erro ao verificar permissão ${resource}:${action} para usuário ${userId}:`, error);
       return false;
     }
   }
@@ -196,12 +180,11 @@ export class PermissionService implements IPermissionService {
 
       for (const user of users) {
         const permissions = await this.getUserPermissions(tenantId, user.id);
-
+        
         // 🔑 BYPASS AUTOMÁTICO: Se for ADMIN ou SUPER_ADMIN, considerar todas as permissões como permitidas
         let permissionSummary;
-
-        const userRole = (user.role || '').toUpperCase().trim();
-        if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'SUPERADMIN') {
+        
+        if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
           const totalAvailablePermissions = AVAILABLE_PERMISSIONS.reduce((total, group) => total + group.actions.length, 0);
           permissionSummary = {
             total: totalAvailablePermissions,
@@ -309,7 +292,7 @@ export class PermissionService implements IPermissionService {
 
       const audits = await this.prisma.$queryRawUnsafe<any[]>(query, ...params);
 
-      return audits.map((audit: any) => ({
+      return audits.map(audit => ({
         id: audit.id,
         tenantId: audit.tenant_id,
         userId: audit.user_id,

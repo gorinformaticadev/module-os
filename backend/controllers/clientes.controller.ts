@@ -15,27 +15,21 @@ export class ClientesController {
     private readonly logger = new Logger(ClientesController.name);
 
     constructor(private readonly clientesService: ClientesService) {
-        fs.appendFileSync('backend_debug.log', `[${new Date().toISOString()}] ClientesController Constructor called\n`);
+        console.log('✅✅✅ CLIENTES CONTROLLER INSTANCIADO COM SISTEMA DE PERMISSÕES!!! ✅✅✅');
     }
 
     @Get()
-    async findAll(@Query() query: any, @Req() req: ExpressRequest & { user: any }) {
+    @RequireClientsPermission('view')
+    async findAll(@Query() filters: any, @Req() req: ExpressRequest & { user: any }) {
+        this.logger.log('📥 GET findAll chamado');
         const tenantId = req.user?.tenantId;
-        
-        if (!tenantId) {
-            throw new HttpException('Tenant não identificado', HttpStatus.UNAUTHORIZED);
-        }
-
         try {
-            const filters = {
-                search: query.search,
-                status: query.status
-            };
-            
-            return await this.clientesService.findAll(tenantId, filters);
+            const result = await this.clientesService.findAll(tenantId, filters);
+            this.logger.log(`🔙 Retornando ${(result as any[]).length} clientes`);
+            return result;
         } catch (error) {
-            this.logger.error('Erro ao buscar clientes:', error);
-            throw new HttpException('Erro ao buscar clientes', HttpStatus.INTERNAL_SERVER_ERROR);
+            this.logger.error('❌ Erro no findAll:', error);
+            throw new HttpException('Erro ao buscar clientes: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
