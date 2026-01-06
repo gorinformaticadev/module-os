@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Search, Plus, Edit, RefreshCw, UploadCloud, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit, RefreshCw, UploadCloud, Image as ImageIcon, Trash2, XCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,7 +23,9 @@ export default function OrdemServicoProdutosPage() {
     const [uploading, setUploading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     // Filter State
     const [searchTerm, setSearchTerm] = useState('');
@@ -51,14 +53,14 @@ export default function OrdemServicoProdutosPage() {
             setLoading(true);
             const response = await api.get('/api/ordem_servico/produtos');
             console.log('🔍 DEBUG: Produtos recebidos:', response.data);
-            
+
             // Debug das URLs de imagem
             response.data.forEach((product: any) => {
                 if (product.image_url) {
                     console.log(`🖼️ Produto ${product.code}: URL = "${product.image_url}"`);
                 }
             });
-            
+
             setProducts(response.data);
         } catch (error) {
             console.error('Erro get produtos:', error);
@@ -323,10 +325,12 @@ export default function OrdemServicoProdutosPage() {
                                         <tr key={p.id} className="border-t hover:bg-muted/50">
                                             <td className="p-3">
                                                 {p.image_url && p.image_url.trim() !== '' ? (
-                                                    <img 
-                                                        src={p.image_url} 
-                                                        alt="Prod" 
-                                                        className="h-8 w-8 object-cover rounded bg-muted" 
+                                                    <img
+                                                        src={p.image_url}
+
+                                                        alt="Prod"
+                                                        className="h-8 w-8 object-cover rounded bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                                                        onClick={() => setPreviewImage(p.image_url)}
                                                         onError={(e) => {
                                                             console.error('Image load error:', p.image_url);
                                                             e.currentTarget.style.display = 'none';
@@ -335,7 +339,7 @@ export default function OrdemServicoProdutosPage() {
                                                         onLoad={() => console.log('Image loaded successfully:', p.image_url)}
                                                     />
                                                 ) : null}
-                                                <div className="h-8 w-8 bg-muted rounded flex items-center justify-center" style={{display: (p.image_url && p.image_url.trim() !== '') ? 'none' : 'flex'}}>
+                                                <div className="h-8 w-8 bg-muted rounded flex items-center justify-center" style={{ display: (p.image_url && p.image_url.trim() !== '') ? 'none' : 'flex' }}>
                                                     <ImageIcon className="h-4 w-4 text-muted-foreground" />
                                                 </div>
                                             </td>
@@ -365,7 +369,7 @@ export default function OrdemServicoProdutosPage() {
                                                         profit_margin: (p.cost_price > 0 && p.price > 0)
                                                             ? (((Number(p.price) - Number(p.cost_price)) / Number(p.cost_price)) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
                                                             : '',
-                                                        description: p.description,
+                                                        description: p.description || '',
                                                         type: p.type || 'PRODUCT',
                                                         image_url: p.image_url || '',
                                                         is_active: p.is_active
@@ -398,6 +402,9 @@ export default function OrdemServicoProdutosPage() {
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
                         <DialogTitle>{editingId ? 'Editar' : 'Novo'} Item</DialogTitle>
+                        <DialogDescription>
+                            Preencha os dados do {formData.type === 'SERVICE' ? 'serviço' : 'produto'} abaixo.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
 
@@ -469,10 +476,10 @@ export default function OrdemServicoProdutosPage() {
                             <div className="flex items-center gap-4">
                                 {formData.image_url && formData.image_url.trim() !== '' && (
                                     <div className="relative">
-                                        <img 
-                                            src={formData.image_url} 
-                                            alt="Preview" 
-                                            className="h-16 w-16 object-cover rounded border" 
+                                        <img
+                                            src={formData.image_url}
+                                            alt="Preview"
+                                            className="h-16 w-16 object-cover rounded border"
                                             onError={(e) => {
                                                 console.error('Preview image load error:', formData.image_url);
                                                 e.currentTarget.style.display = 'none';
@@ -535,6 +542,9 @@ export default function OrdemServicoProdutosPage() {
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>Confirmar Exclusão</DialogTitle>
+                        <DialogDescription>
+                            Esta ação é irreversível e removerá o item do sistema.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 text-center">
                         <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -548,6 +558,38 @@ export default function OrdemServicoProdutosPage() {
                         <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
                         <Button variant="destructive" onClick={confirmDelete}>Excluir Item</Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal de Preview de Imagem */}
+            <Dialog open={!!previewImage} onOpenChange={(open: boolean) => !open && setPreviewImage(null)}>
+                <DialogContent className="max-w-3xl p-0 overflow-hidden bg-transparent border-none shadow-none">
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>Preview da Imagem</DialogTitle>
+                        <DialogDescription>Visualização ampliada do produto</DialogDescription>
+                    </DialogHeader>
+                    {previewImage && (
+                        <div className="relative w-full h-full flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+                            <img
+                                src={previewImage}
+                                alt="Preview"
+                                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                            />
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 text-white hover:bg-black/20 rounded-full"
+                                onClick={(e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    setPreviewImage(null);
+                                }}
+                            >
+                                <div className="bg-black/50 rounded-full p-1">
+                                    <XCircle className="h-6 w-6" />
+                                </div>
+                            </Button>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>
