@@ -90,7 +90,13 @@ export default function NewOrdemRefactoredPage() {
 
         // Observations
         observacoes_internas: '',
-        observacoes_cliente: ''
+        observacoes_cliente: '',
+
+        // Formatação
+        formatacao_so: '',
+        formatacao_backup: false,
+        formatacao_backup_descricao: '',
+        formatacao_senha: ''
     });
 
     useEffect(() => {
@@ -391,6 +397,90 @@ export default function NewOrdemRefactoredPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {/* Campos Condicionais: FORMATAÇÃO */}
+                            {formData.tipo_servico === 'FORMATACAO' && (
+                                <div className="col-span-full mt-4 p-4 border-2 border-primary/20 bg-primary/5 rounded-lg space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Wrench className="h-4 w-4 text-primary" />
+                                        <h4 className="text-sm font-semibold uppercase tracking-wider">Detalhes da Formatação</h4>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Sistema Operacional</Label>
+                                            <Select value={formData.formatacao_so} onValueChange={(v) => setFormData({ ...formData, formatacao_so: v })}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecione o SO" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Windows 10">Windows 10</SelectItem>
+                                                    <SelectItem value="Windows 11">Windows 11</SelectItem>
+                                                    <SelectItem value="Linux">Linux</SelectItem>
+                                                    <SelectItem value="MacOS">MacOS</SelectItem>
+                                                    <SelectItem value="Outro">Outro</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>Precisa de Backup?</Label>
+                                            <Select
+                                                value={formData.formatacao_backup ? "sim" : "nao"}
+                                                onValueChange={(v) => setFormData({ ...formData, formatacao_backup: v === "sim" })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="nao">Não</SelectItem>
+                                                    <SelectItem value="sim">Sim</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>Possui Senha?</Label>
+                                            <Select
+                                                value={formData.formatacao_senha ? "sim" : "nao"}
+                                                onValueChange={(v) => {
+                                                    if (v === "nao") setFormData({ ...formData, formatacao_senha: '' });
+                                                    else if (!formData.formatacao_senha) setFormData({ ...formData, formatacao_senha: ' ' }); // Trigger display
+                                                }}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="nao">Não</SelectItem>
+                                                    <SelectItem value="sim">Sim</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {formData.formatacao_senha !== '' && (
+                                            <div className="space-y-2">
+                                                <Label>Digite a Senha</Label>
+                                                <Input
+                                                    placeholder="Senha do sistema/BIOS"
+                                                    value={formData.formatacao_senha}
+                                                    onChange={(e) => setFormData({ ...formData, formatacao_senha: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {formData.formatacao_backup && (
+                                        <div className="space-y-2 mt-4">
+                                            <Label>O que deve ser salvo no Backup? (Pastas, Arquivos, Apps...)</Label>
+                                            <Textarea
+                                                placeholder="Ex: Pasta Documentos, Fotos, Desktop..."
+                                                value={formData.formatacao_backup_descricao}
+                                                onChange={(e) => setFormData({ ...formData, formatacao_backup_descricao: e.target.value })}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="col-span-full space-y-2">
                                 <Label>Descrição do Problema / Serviço Solicitado *</Label>

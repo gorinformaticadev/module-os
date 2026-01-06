@@ -156,8 +156,9 @@ export class OrdensService {
                     valor_servico, forma_pagamento, status, data_abertura, data_previsao, 
                     origem_solicitacao, orcamento_aprovado,
                     equipamento_tipo, equipamento_marca, equipamento_modelo, 
-                    equipamento_serie, equipamento_acessorios
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15, $16, $17, $18, $19, $20)
+                    equipamento_serie, equipamento_acessorios, equipamento_estado,
+                    formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
                 RETURNING *
             `;
 
@@ -185,7 +186,12 @@ export class OrdensService {
                 createDto.equipamento_marca || null,
                 createDto.equipamento_modelo || null,
                 createDto.equipamento_serie || null,
-                createDto.equipamento_acessorios || null
+                createDto.equipamento_acessorios || null,
+                createDto.equipamento_estado || null,
+                createDto.formatacao_so || null,
+                createDto.formatacao_backup || false,
+                createDto.formatacao_backup_descricao || null,
+                createDto.formatacao_senha || null
             ) as any[];
 
             const novaOrdem = result[0];
@@ -227,7 +233,9 @@ export class OrdensService {
                 'tipo_servico', 'prioridade', 'descricao', 'observacoes_internas',
                 'observacoes_cliente', 'valor_servico', 'forma_pagamento', 'data_previsao',
                 'usuario_responsavel_id', 'equipamento_tipo', 'equipamento_marca',
-                'equipamento_modelo', 'equipamento_serie', 'equipamento_acessorios'
+                'equipamento_modelo', 'equipamento_serie', 'equipamento_acessorios',
+                'equipamento_estado', 'formatacao_so', 'formatacao_backup',
+                'formatacao_backup_descricao', 'formatacao_senha'
             ];
 
             for (const field of fieldsToUpdate) {

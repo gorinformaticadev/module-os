@@ -27,6 +27,12 @@ export interface OrdemServico {
   equipamento_acessorios?: string;
   equipamento_estado?: string;
 
+  // Formatação (Campos Condicionais)
+  formatacao_so?: string;
+  formatacao_backup?: boolean;
+  formatacao_backup_descricao?: string;
+  formatacao_senha?: string;
+
   orcamento_aprovado?: boolean;
   motivo_cancelamento?: string;
   created_at: string;
@@ -172,6 +178,12 @@ export interface CreateOrdemServicoDTO {
   equipamento_serie?: string;
   equipamento_acessorios?: string;
   equipamento_estado?: string;
+
+  // Formatação (Campos Condicionais)
+  formatacao_so?: string;
+  formatacao_backup?: boolean;
+  formatacao_backup_descricao?: string;
+  formatacao_senha?: string;
 }
 
 export interface UpdateOrdemServicoDTO {
@@ -194,6 +206,12 @@ export interface UpdateOrdemServicoDTO {
   equipamento_serie?: string;
   equipamento_acessorios?: string;
   equipamento_estado?: string;
+
+  // Formatação (Campos Condicionais)
+  formatacao_so?: string;
+  formatacao_backup?: boolean;
+  formatacao_backup_descricao?: string;
+  formatacao_senha?: string;
 }
 
 export interface OrdemServicoFilters {

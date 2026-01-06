@@ -83,6 +83,23 @@ export class CreateOrdemServicoDTO {
     @IsOptional()
     @IsString()
     equipamento_estado?: string;
+
+    // Formatação
+    @IsOptional()
+    @IsString()
+    formatacao_so?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    formatacao_backup?: boolean;
+
+    @IsOptional()
+    @IsString()
+    formatacao_backup_descricao?: string;
+
+    @IsOptional()
+    @IsString()
+    formatacao_senha?: string;
 }
 
 export class UpdateOrdemServicoDTO {
@@ -156,6 +173,23 @@ export class UpdateOrdemServicoDTO {
     @IsOptional()
     @IsString()
     equipamento_estado?: string;
+
+    // Formatação
+    @IsOptional()
+    @IsString()
+    formatacao_so?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    formatacao_backup?: boolean;
+
+    @IsOptional()
+    @IsString()
+    formatacao_backup_descricao?: string;
+
+    @IsOptional()
+    @IsString()
+    formatacao_senha?: string;
 }
 
 export class OrdemServicoFilters {
