@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req, HttpException, HttpStatus, UploadedFile, UseInterceptors, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
-import { JwtAuthGuard } from '../../../apps/backend/src/core/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
 import { PermissionGuard } from '../guards/permission.guard';
 import { RequireProductsPermission } from '../decorators/require-permission.decorator';
 import { ProdutosService } from '../services/produtos.service';

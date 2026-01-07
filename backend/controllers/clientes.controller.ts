@@ -1,164 +1,125 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req, HttpException, HttpStatus, Logger, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req, HttpException, HttpStatus, Logger, UseInterceptors, UploadedFile, Res, BadRequestException } from '@nestjs/common';
 import { Request as ExpressRequest, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ClientesService } from '../services/clientes.service';
-import { JwtAuthGuard } from '../../../apps/backend/src/core/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
 import { PermissionGuard } from '../guards/permission.guard';
 import { RequireClientsPermission } from '../decorators/require-permission.decorator';
-import { Public } from '../../../apps/backend/src/core/common/decorators/public.decorator';
+import { Public } from '@core/common/decorators/public.decorator';
 
 @Controller('api/ordem_servico/clientes')
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class ClientesController {
     private readonly logger = new Logger(ClientesController.name);
 
     constructor(private readonly clientesService: ClientesService) {
-        this.logger.log('✅✅✅ CLIENTES CONTROLLER INICIADO COM SISTEMA DE PERMISSÕES!!! ✅✅✅');
-        this.logger.log('🔍 Constructor: ClientesService injetado com sucesso');
-    }
-
-    @Get('test')
-    async test() {
-        this.logger.log('🔍 Test endpoint chamado');
-        return { message: 'ClientesController funcionando!' };
+        console.log('✅✅✅ CLIENTES CONTROLLER INSTANCIADO COM SISTEMA DE PERMISSÕES!!! ✅✅✅');
     }
 
     @Get()
-    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequireClientsPermission('view')
     async findAll(@Query() filters: any, @Req() req: ExpressRequest & { user: any }) {
+        this.logger.log('📥 GET findAll chamado');
+        const tenantId = req.user?.tenantId;
         try {
-            this.logger.log(`🔍 ClientesController.findAll chamado`);
-            this.logger.log(`🔍 Query params recebidos: ${JSON.stringify(filters)}`);
-            
-            const tenantId = req.user?.tenantId;
-            this.logger.log(`🔍 TenantId: ${tenantId}`);
-            
             const result = await this.clientesService.findAll(tenantId, filters);
-            this.logger.log(`🔍 Resultado obtido do service: ${JSON.stringify(result)}`);
+            this.logger.log(`🔙 Retornando ${(result as any[]).length} clientes`);
             return result;
         } catch (error) {
-            this.logger.error(`❌ Erro no controller findAll: ${error.message}`);
-            this.logger.error(`❌ Stack trace: ${error.stack}`);
-            throw error;
+            this.logger.error('❌ Erro no findAll:', error);
+            throw new HttpException('Erro ao buscar clientes: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Get(':id')
-    @UseGuards(JwtAuthGuard, PermissionGuard)
-    @RequireClientsPermission('view')
-    async findById(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
+    @RequireClientsPermission('view_details')
+    async findOne(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
-        return this.clientesService.findById(tenantId, id);
+        const client = await this.clientesService.findById(tenantId, id);
+        if (!client) {
+            throw new HttpException('Cliente não encontrado', HttpStatus.NOT_FOUND);
+        }
+        return client;
     }
 
     @Post()
-    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequireClientsPermission('create')
     async create(@Body() data: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
-        return this.clientesService.create(tenantId, data, userId);
+        try {
+            return await this.clientesService.create(tenantId, data, userId);
+        } catch (error) {
+            throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @Put(':id')
-    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequireClientsPermission('edit')
     async update(@Param('id') id: string, @Body() data: any, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
-        return this.clientesService.update(tenantId, id, data, userId);
+        try {
+            return await this.clientesService.update(tenantId, id, data, userId);
+        } catch (error) {
+            throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @Delete(':id')
-    @UseGuards(JwtAuthGuard, PermissionGuard)
     @RequireClientsPermission('delete')
-    async delete(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
+    async remove(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
         const tenantId = req.user?.tenantId;
         const userId = req.user?.id;
         return this.clientesService.delete(tenantId, id, userId);
     }
 
     @Post('upload')
-    @UseGuards(JwtAuthGuard, PermissionGuard)
-    @RequireClientsPermission('upload_images')
     @UseInterceptors(FileInterceptor('file'))
     async uploadFile(@UploadedFile() file: any, @Req() req: ExpressRequest & { user: any }) {
-        if (!file) {
-            throw new HttpException('Nenhum arquivo enviado', HttpStatus.BAD_REQUEST);
-        }
-
         try {
-            // Validar tipo de arquivo
-            const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-            if (!allowedMimeTypes.includes(file.mimetype)) {
-                throw new HttpException('Tipo de arquivo não permitido', HttpStatus.BAD_REQUEST);
+            if (!file) {
+                throw new BadRequestException('Nenhum arquivo enviado');
             }
 
-            // Validar tamanho (5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                throw new HttpException('Arquivo muito grande. Máximo 5MB', HttpStatus.BAD_REQUEST);
-            }
-
-            // Recuperação e validação do Buffer
+            // 1. Recuperação e Validação do Buffer
             let bufferData = file.buffer;
-            
-            // Verifica se "parece" um buffer, mas é um objeto (JSON)
+
             if (bufferData && typeof bufferData === 'object' && !Buffer.isBuffer(bufferData)) {
-                const keys = Object.keys(bufferData);
-                
-                try {
-                    // Cenário A: JSON representation { type: 'Buffer', data: [...] }
-                    if (bufferData.type === 'Buffer' && Array.isArray(bufferData.data)) {
-                        this.logger.log('Restaurando buffer do formato JSON padrão...');
-                        bufferData = Buffer.from(bufferData.data);
-                    }
-                    // Cenário B: Object com chaves numéricas { '0': 255, '1': 10... }
-                    else if (keys.length > 0 && keys.every(k => !isNaN(parseInt(k)))) {
-                        this.logger.log('Restaurando buffer do formato Array-Like Object...');
-                        const values = Object.values(bufferData) as number[];
-                        bufferData = Buffer.from(values);
-                    }
-                } catch (e) {
-                    this.logger.error(`Falha na recuperação do buffer: ${e.message}`);
+                if (bufferData.type === 'Buffer' && Array.isArray(bufferData.data)) {
+                    bufferData = Buffer.from(bufferData.data);
+                } else {
+                    const values = Object.values(bufferData) as number[];
+                    bufferData = Buffer.from(values);
                 }
             }
 
-            // Fallback: Ler do path se existir (caso Multer configure diferente)
             if ((!bufferData || !Buffer.isBuffer(bufferData)) && file.path) {
-                this.logger.log(`Buffer inválido, usando fallback para path: ${file.path}`);
                 bufferData = fs.readFileSync(file.path);
             }
 
-            // Verificação final de integridade
             if (!Buffer.isBuffer(bufferData)) {
-                throw new Error('Falha crítica: O arquivo não pôde ser processado (Buffer inválido).');
+                throw new Error('Falha crítica: Buffer inválido.');
             }
 
+            // 2. Caminho Seguro e Isolado por Tenant
             const tenantId = req.user?.tenantId || 'global';
-            const uploadDir = path.resolve(process.cwd(), 'uploads', 'clientes', tenantId);
-            
-            // Criar diretório se não existir
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
+            const uploadDir = path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'clientes', tenantId);
 
-            // Gerar nome único
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+            // 3. Salvar Arquivo
             const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
             const filePath = path.join(uploadDir, uniqueName);
-
-            // Salvar arquivo
             fs.writeFileSync(filePath, bufferData);
-            
-            this.logger.log(`File uploaded successfully: ${uniqueName}`);
-            
-            const fileUrl = `/uploads/clientes/${tenantId}/${uniqueName}`;
 
-            return { url: fileUrl };
+            // 4. Retornar URL Pública
+            return { url: `/api/ordem_servico/clientes/uploads/${tenantId}/${uniqueName}` };
         } catch (error) {
-            this.logger.error('Erro no upload:', error);
-            throw new HttpException(`Erro ao processar upload: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+            this.logger.error('Erro no upload de foto do cliente:', error);
+            throw new HttpException('Erro ao processar upload: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -166,9 +127,9 @@ export class ClientesController {
     @Public()
     async serveFile(@Param('filename') filename: string, @Param('tenantId') tenantId: string, @Res() res: Response) {
         try {
-            const filePath = path.resolve(process.cwd(), 'uploads', 'clientes', tenantId, filename);
+            const filePath = path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'clientes', tenantId, filename);
 
-            if (!filePath.startsWith(path.resolve(process.cwd(), 'uploads', 'clientes'))) {
+            if (!filePath.startsWith(path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'clientes'))) {
                 return res.status(403).json({ message: 'Acesso negado' });
             }
 

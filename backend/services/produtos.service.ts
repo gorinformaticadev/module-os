@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../../apps/backend/src/core/prisma/prisma.service';
-import { AuditService } from '../../../apps/backend/src/core/audit/audit.service';
+import { PrismaService } from '@core/prisma/prisma.service';
+import { AuditService } from '@core/audit/audit.service';
 import { randomUUID } from 'crypto';
 
 @Injectable()
