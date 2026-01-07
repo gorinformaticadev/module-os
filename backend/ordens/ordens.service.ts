@@ -173,7 +173,7 @@ export class OrdensService {
                     formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha,
                     data_abertura, orcamento_aprovado
                 ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), $24
+                    $1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), $24
                 )
                 RETURNING *
             `;
@@ -294,7 +294,7 @@ export class OrdensService {
             const query = `
                 UPDATE mod_ordem_servico_ordens 
                 SET ${updateFields.join(', ')}
-                WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}
+                WHERE id = ${paramIndex}::uuid AND tenant_id = ${paramIndex + 1}
                 RETURNING *
             `;
 
@@ -343,7 +343,7 @@ export class OrdensService {
             const query = `
                 UPDATE mod_ordem_servico_ordens 
                 SET ${updateFields.join(', ')}
-                WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}
+                WHERE id = ${paramIndex}::uuid AND tenant_id = ${paramIndex + 1}
                 RETURNING *
             `;
 
@@ -386,13 +386,13 @@ export class OrdensService {
 
             // Primeiro excluir histórico
             await this.prisma.$executeRawUnsafe(
-                `DELETE FROM mod_ordem_servico_historico WHERE ordem_servico_id = $1`,
+                `DELETE FROM mod_ordem_servico_historico WHERE ordem_servico_id = $1::uuid`,
                 id
             );
 
             // Depois excluir a ordem
             const result = await this.prisma.$executeRawUnsafe(
-                `DELETE FROM mod_ordem_servico_ordens WHERE id = $1 AND tenant_id = $2`,
+                `DELETE FROM mod_ordem_servico_ordens WHERE id = $1::uuid AND tenant_id = $2`,
                 id,
                 tenantId
             );
@@ -412,7 +412,7 @@ export class OrdensService {
             const query = `
                 UPDATE mod_ordem_servico_ordens 
                 SET status = 1, orcamento_aprovado = true, updated_at = NOW()
-                WHERE id = $1 AND tenant_id = $2 AND status = 0
+                WHERE id = $1::uuid AND tenant_id = $2 AND status = 0
                 RETURNING *
             `;
 
@@ -568,7 +568,7 @@ export class OrdensService {
             await this.prisma.$executeRawUnsafe(
                 `INSERT INTO mod_ordem_servico_historico 
                  (tenant_id, ordem_servico_id, usuario_id, acao, valor_anterior, valor_novo, observacoes)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                 VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7)`,
                 tenantId,
                 ordemId,
                 usuarioId,
