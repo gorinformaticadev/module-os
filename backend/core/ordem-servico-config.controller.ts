@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, UseGuards, Put } from '@nestjs/common';
-import { Roles } from '@core/common/decorators/roles.decorator';
-import { RolesGuard } from '@core/common/guards/roles.guard';
-import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
+import { Roles } from '@core/decorators/roles.decorator';
+import { RolesGuard } from '@core/guards/roles.guard';
+import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
 import { PrismaService } from '@core/prisma/prisma.service';
 import { OrdemServicoCronService } from './ordem-servico-cron.service';
 
