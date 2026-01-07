@@ -1,15 +1,17 @@
-import { OrdemServicoController } from './controllers/ordemServico.controller';
-import { ClientesController } from './controllers/clientes.controller';
-import { OrdemServicoConfiguracoesController } from './controllers/configuracoes.controller';
-import { PermissionController } from './controllers/permission.controller';
-import { TemplateController } from './controllers/template.controller';
-import { ProdutosController } from './controllers/produtos.controller';
+import { ClientesController } from './clientes/clientes.controller';
+import { ProdutosController } from './produtos/produtos.controller';
+import { OrdensController } from './ordens/ordens.controller';
+import { ConfiguracoesController } from './configuracoes/configuracoes.controller';
+import { PermissionController } from './shared/controllers/permission.controller';
+import { TemplateController } from './shared/controllers/template.controller';
+import { OrdemServicoConfigController } from './core/ordem-servico-config.controller';
 
 export const ModuleRoutes = [
-    OrdemServicoController,
     ClientesController,
-    OrdemServicoConfiguracoesController,
+    ProdutosController,
+    OrdensController,
+    ConfiguracoesController,
     PermissionController,
     TemplateController,
-    ProdutosController
+    OrdemServicoConfigController
 ];

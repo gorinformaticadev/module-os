@@ -3,10 +3,10 @@ import { Request as ExpressRequest, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ClientesService } from '../services/clientes.service';
-import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
-import { PermissionGuard } from '../guards/permission.guard';
-import { RequireClientsPermission } from '../decorators/require-permission.decorator';
+import { ClientesService } from './clientes.service';
+import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
+import { PermissionGuard } from '../shared/guards/permission.guard';
+import { RequireClientsPermission } from '../shared/decorators/require-permission.decorator';
 import { Public } from '@core/common/decorators/public.decorator';
 
 @Controller('api/ordem_servico/clientes')

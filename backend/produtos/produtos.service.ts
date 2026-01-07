@@ -24,13 +24,13 @@ export class ProdutosService {
 
         // Search filter
         if (search) {
-            query += ` AND (name ILIKE ${params.length + 1} OR code ILIKE ${params.length + 1})`;
+            query += ` AND (name ILIKE $${params.length + 1} OR code ILIKE $${params.length + 1})`;
             params.push(`%${search}%`);
         }
 
         // Status filter
         if (status !== undefined && status !== '') {
-            query += ` AND is_active = ${params.length + 1}`;
+            query += ` AND is_active = $${params.length + 1}`;
             params.push(status === 'true');
         }
 

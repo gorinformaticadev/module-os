@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req, HttpException, HttpStatus, UploadedFile, UseInterceptors, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
-import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
-import { PermissionGuard } from '../guards/permission.guard';
-import { RequireProductsPermission } from '../decorators/require-permission.decorator';
-import { ProdutosService } from '../services/produtos.service';
+import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
+import { PermissionGuard } from '../shared/guards/permission.guard';
+import { RequireProductsPermission } from '../shared/decorators/require-permission.decorator';
+import { ProdutosService } from './produtos.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -141,5 +141,4 @@ export class ProdutosController {
             throw new HttpException(`Erro ao processar upload: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 }

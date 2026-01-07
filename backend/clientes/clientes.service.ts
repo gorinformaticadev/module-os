@@ -30,12 +30,12 @@ export class ClientesService {
         const params: any[] = [tenantId];
 
         if (search) {
-            query += ` AND (name ILIKE ${params.length + 1} OR document ILIKE ${params.length + 1} OR phone_primary ILIKE ${params.length + 1})`;
+            query += ` AND (name ILIKE $${params.length + 1} OR document ILIKE $${params.length + 1} OR phone_primary ILIKE $${params.length + 1})`;
             params.push(`%${search}%`);
         }
 
         if (status !== undefined && status !== '') {
-            query += ` AND is_active = ${params.length + 1}`;
+            query += ` AND is_active = $${params.length + 1}`;
             params.push(status === 'true');
         }
 
@@ -71,8 +71,7 @@ export class ClientesService {
             throw new Error('Erro interno: Tenant ID não identificado. Faça login novamente.');
         }
 
-        // const id = randomUUID(); // Let database generate it
-        const id = randomUUID(); // Generate UUID manually since table doesn't have DEFAULT
+        const id = randomUUID();
 
         try {
             const result = await this.prisma.$queryRawUnsafe<any[]>(
@@ -180,7 +179,7 @@ export class ClientesService {
         // Verificar se existem OS associadas a este cliente
         try {
             const osCountResult = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT COUNT(*) as count FROM mod_ordem_servico_os WHERE client_id = $1:: uuid AND tenant_id = $2 AND deleted_at IS NULL`,
+                `SELECT COUNT(*) as count FROM mod_ordem_servico_ordens WHERE cliente_id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
                 id, tenantId
             );
 
@@ -193,12 +192,12 @@ export class ClientesService {
             // Check for Postgres code 42P01 (undefined_table) or Prisma P2010 which wraps it
             const isTableNotFoundError =
                 error.code === '42P01' ||
-                (error.code === 'P2010' && (error.meta?.code === '42P01' || error.message?.includes('mod_ordem_servico_os')));
+                (error.code === 'P2010' && (error.meta?.code === '42P01' || error.message?.includes('mod_ordem_servico_ordens')));
 
             if (isTableNotFoundError) {
-                this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}.Ignorando verificação.`);
+                this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}. Ignorando verificação.`);
             } else {
-                this.logger.error(`Erro ao verificar OS do cliente: ${error.message}(Code: ${error.code})`);
+                this.logger.error(`Erro ao verificar OS do cliente: ${error.message} (Code: ${error.code})`);
                 throw error;
             }
         }

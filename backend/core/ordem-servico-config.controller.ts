@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, UseGuards, Put } from '@nestjs/common';
-import { Roles } from '@core/roles.decorator';
-import { RolesGuard } from '@core/roles.guard';
-import { JwtAuthGuard } from '@core/jwt-auth.guard';
+import { Roles } from '@core/common/decorators/roles.decorator';
+import { RolesGuard } from '@core/common/guards/roles.guard';
+import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { PrismaService } from '@core/prisma/prisma.service';
-import { OrdemServicoCronService } from './cron.service';
+import { OrdemServicoCronService } from './ordem-servico-cron.service';
 
 @Controller('modules/ordem_servico/config')
 @UseGuards(JwtAuthGuard, RolesGuard)

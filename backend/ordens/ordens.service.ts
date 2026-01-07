@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
-import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../dto/ordem-servico.dto';
+import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../shared/dto/ordem-servico.dto';
 
 @Injectable()
 export class OrdensService {
@@ -134,14 +134,14 @@ export class OrdensService {
             const result = await this.prisma.$queryRawUnsafe(query, id, tenantId) as any[];
 
             const ordem = result[0];
-            if (ordem.equipamento_fotos) {
+            if (ordem && ordem.equipamento_fotos) {
                 try {
                     ordem.equipamento_fotos = typeof ordem.equipamento_fotos === 'string' ? JSON.parse(ordem.equipamento_fotos) : ordem.equipamento_fotos;
                 } catch (e) {
                     this.logger.error(`Erro ao parsear fotos da OS ${id}:`, e);
                     ordem.equipamento_fotos = [];
                 }
-            } else {
+            } else if (ordem) {
                 ordem.equipamento_fotos = [];
             }
 

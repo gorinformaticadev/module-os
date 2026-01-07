@@ -274,17 +274,17 @@ export class PermissionService implements IPermissionService {
       const params: any[] = [tenantId];
 
       if (userId) {
-        query += ` AND user_id = ${params.length + 1}`;
+        query += ` AND user_id = $${params.length + 1}`;
         params.push(userId);
       }
 
       if (startDate) {
-        query += ` AND changed_at >= ${params.length + 1}`;
+        query += ` AND changed_at >= $${params.length + 1}`;
         params.push(startDate);
       }
 
       if (endDate) {
-        query += ` AND changed_at <= ${params.length + 1}`;
+        query += ` AND changed_at <= $${params.length + 1}`;
         params.push(endDate);
       }
 

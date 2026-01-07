@@ -18,14 +18,26 @@ export interface PermissionUpdate {
 
 export interface AvailablePermission {
   resource: string;
-  resourceLabel: string;
-  actions: PermissionAction[];
+  name: string;
+  description: string;
+  actions: {
+    action: string;
+    name: string;
+    description: string;
+  }[];
 }
 
-export interface PermissionAction {
-  action: string;
-  actionLabel: string;
-  description: string;
+export interface UserWithPermissions {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  permissions: UserPermission[];
+  permissionSummary: {
+    total: number;
+    allowed: number;
+    denied: number;
+  };
 }
 
 export interface PermissionAudit {
@@ -47,17 +59,5 @@ export interface IPermissionService {
   hasPermission(tenantId: string, userId: string, resource: string, action: string): Promise<boolean>;
   getAvailablePermissions(): AvailablePermission[];
   getUsersWithPermissions(tenantId: string): Promise<UserWithPermissions[]>;
-}
-
-export interface UserWithPermissions {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  permissions: UserPermission[];
-  permissionSummary: {
-    total: number;
-    allowed: number;
-    denied: number;
-  };
+  getPermissionAudit(tenantId: string, userId?: string, startDate?: Date, endDate?: Date): Promise<PermissionAudit[]>;
 }

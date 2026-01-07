@@ -1,14 +1,14 @@
 import { Controller, Get, Put, Post, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
-import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
-import { OrdemServicoConfiguracoesService } from '../services/configuracoes.service';
+import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
+import { ConfiguracoesService } from './configuracoes.service';
 
 @Controller('modules/ordem_servico/config')
 @UseGuards(JwtAuthGuard)
-export class OrdemServicoConfiguracoesController {
-    private readonly logger = new Logger(OrdemServicoConfiguracoesController.name);
+export class ConfiguracoesController {
+    private readonly logger = new Logger(ConfiguracoesController.name);
 
-    constructor(private readonly service: OrdemServicoConfiguracoesService) { }
+    constructor(private readonly service: ConfiguracoesService) { }
 
     @Get('users')
     async getUsers(@Req() req: ExpressRequest & { user: any }) {

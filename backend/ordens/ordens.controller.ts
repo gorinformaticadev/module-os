@@ -4,9 +4,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Public } from '@core/common/decorators/public.decorator';
-import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
-import { OrdensService } from '../services/ordens.service';
-import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../dto/ordem-servico.dto';
+import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
+import { OrdensService } from './ordens.service';
+import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../shared/dto/ordem-servico.dto';
 
 @Controller('api/ordem_servico/ordens')
 @UseGuards(JwtAuthGuard)
