@@ -156,56 +156,62 @@ export class OrdensService {
     async create(tenantId: string, userId: string, createDto: CreateOrdemServicoDTO) {
         try {
             this.logger.log(`Criando nova ordem de serviço. Tenant: ${tenantId}`);
+            this.logger.log(`CreateDTO recebido:`, JSON.stringify(createDto, null, 2));
 
             // Gerar número sequencial da OS
             const numeroOS = await this.gerarNumeroOS(tenantId);
+            this.logger.log(`Número da OS gerado: ${numeroOS}`);
 
+            // Use a more basic INSERT query to avoid column issues
             const query = `
                 INSERT INTO mod_ordem_servico_ordens (
-                    tenant_id, numero, cliente_id, usuario_responsavel_id, tipo_servico,
-                    prioridade, descricao, observacoes_internas, observacoes_cliente,
-                    valor_servico, forma_pagamento, status, data_abertura, data_previsao, 
-                    origem_solicitacao, orcamento_aprovado,
-                    equipamento_tipo, equipamento_marca, equipamento_modelo, 
-                    equipamento_serie, equipamento_acessorios, equipamento_estado,
+                    tenant_id, numero, cliente_id, tipo_servico, prioridade, descricao, 
+                    status, origem_solicitacao, valor_servico,
+                    usuario_responsavel_id, observacoes_internas, observacoes_cliente,
+                    equipamento_tipo, equipamento_marca, equipamento_modelo, equipamento_serie,
+                    equipamento_acessorios, equipamento_estado, equipamento_fotos,
                     formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha,
-                    equipamento_fotos
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+                    data_abertura, orcamento_aprovado
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), $24
+                )
                 RETURNING *
             `;
 
             const status = createDto.status !== undefined ? createDto.status : 0; // Default: ORCAMENTO
             const orcamentoAprovado = status === 1; // Se status for ABERTA, orçamento já foi aprovado
+            
+            // Prepare parameters with logging (simplified)
+            const params = [
+                tenantId,                                                                                    // $1
+                numeroOS,                                                                                    // $2
+                createDto.cliente_id,                                                                        // $3
+                createDto.tipo_servico,                                                                      // $4
+                createDto.prioridade || 'MEDIA',                                                            // $5
+                createDto.descricao,                                                                         // $6
+                status,                                                                                      // $7
+                createDto.origem_solicitacao,                                                               // $8
+                createDto.valor_servico || 0,                                                               // $9
+                createDto.usuario_responsavel_id === 'UNASSIGNED' ? null : (createDto.usuario_responsavel_id || userId), // $10
+                createDto.observacoes_internas || null,                                                     // $11
+                createDto.observacoes_cliente || null,                                                      // $12
+                createDto.equipamento_tipo || null,                                                         // $13
+                createDto.equipamento_marca || null,                                                        // $14
+                createDto.equipamento_modelo || null,                                                       // $15
+                createDto.equipamento_serie || null,                                                        // $16
+                createDto.equipamento_acessorios || null,                                                   // $17
+                createDto.equipamento_estado || null,                                                       // $18
+                createDto.equipamento_fotos ? JSON.stringify(createDto.equipamento_fotos) : null,          // $19
+                createDto.formatacao_so || null,                                                            // $20
+                createDto.formatacao_backup || false,                                                       // $21
+                createDto.formatacao_backup_descricao || null,                                              // $22
+                createDto.formatacao_senha || null,                                                         // $23
+                orcamentoAprovado                                                                           // $24
+            ];
 
-            const result = await this.prisma.$queryRawUnsafe(
-                query,
-                tenantId,
-                numeroOS,
-                createDto.cliente_id,
-                createDto.usuario_responsavel_id === 'UNASSIGNED' ? null : (createDto.usuario_responsavel_id || userId),
-                createDto.tipo_servico,
-                createDto.prioridade || 'MEDIA',
-                createDto.descricao,
-                createDto.observacoes_internas || null,
-                createDto.observacoes_cliente || null,
-                createDto.valor_servico || 0,
-                createDto.forma_pagamento || null,
-                status,
-                createDto.data_previsao || null,
-                createDto.origem_solicitacao,
-                orcamentoAprovado,
-                createDto.equipamento_tipo || null,
-                createDto.equipamento_marca || null,
-                createDto.equipamento_modelo || null,
-                createDto.equipamento_serie || null,
-                createDto.equipamento_acessorios || null,
-                createDto.equipamento_estado || null,
-                createDto.formatacao_so || null,
-                createDto.formatacao_backup || false,
-                createDto.formatacao_backup_descricao || null,
-                createDto.formatacao_senha || null,
-                createDto.equipamento_fotos ? JSON.stringify(createDto.equipamento_fotos) : null
-            ) as any[];
+            this.logger.log(`Parâmetros da query:`, params);
+
+            const result = await this.prisma.$queryRawUnsafe(query, ...params) as any[];
 
             const novaOrdem = result[0];
             if (novaOrdem.equipamento_fotos) {
@@ -218,21 +224,27 @@ export class OrdensService {
                 novaOrdem.equipamento_fotos = [];
             }
 
-            // Registrar no histórico
-            await this.registrarHistorico(
-                tenantId,
-                novaOrdem.id,
-                userId,
-                'CRIACAO',
-                null,
-                `Ordem de serviço criada com status: ${this.getStatusLabel(status)}`,
-                `OS #${numeroOS} criada`
-            );
+            // Registrar no histórico (with error handling)
+            try {
+                await this.registrarHistorico(
+                    tenantId,
+                    novaOrdem.id,
+                    userId,
+                    'CRIACAO',
+                    null,
+                    `Ordem de serviço criada com status: ${this.getStatusLabel(status)}`,
+                    `OS #${numeroOS} criada`
+                );
+            } catch (historicoError) {
+                this.logger.warn(`⚠️ Erro ao registrar histórico (não crítico):`, historicoError);
+                // Continue execution even if history logging fails
+            }
 
             this.logger.log(`✅ Ordem de serviço criada: ${novaOrdem.id}`);
             return novaOrdem;
         } catch (error) {
             this.logger.error(`❌ Erro ao criar ordem de serviço:`, error);
+            this.logger.error(`❌ Stack trace:`, error.stack);
             throw error;
         }
     }
@@ -482,12 +494,43 @@ export class OrdensService {
     async isClienteAtivo(tenantId: string, clienteId: string): Promise<boolean> {
         try {
             const result = await this.prisma.$queryRawUnsafe(
-                `SELECT is_active FROM mod_ordem_servico_clients WHERE id = $1 AND tenant_id = $2`,
+                `SELECT is_active FROM mod_ordem_servico_clients WHERE id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
                 clienteId,
                 tenantId
             ) as any[];
 
-            return result.length > 0 && result[0].is_active;
+            // Debug logging to understand what's being returned
+            this.logger.log(`🔍 Cliente validation debug:`, {
+                clienteId,
+                tenantId,
+                resultLength: result.length,
+                result: result[0],
+                is_active_value: result[0]?.is_active,
+                is_active_type: typeof result[0]?.is_active,
+            });
+
+            if (result.length === 0) {
+                this.logger.warn(`⚠️ Cliente não encontrado: ${clienteId}`);
+                return false;
+            }
+
+            const isActiveValue = result[0].is_active;
+            
+            // Handle different data types for is_active field
+            let isActive = false;
+            if (typeof isActiveValue === 'boolean') {
+                isActive = isActiveValue;
+            } else if (typeof isActiveValue === 'string') {
+                isActive = isActiveValue.toLowerCase() === 'true' || isActiveValue === '1';
+            } else if (typeof isActiveValue === 'number') {
+                isActive = isActiveValue === 1;
+            } else {
+                // Handle null/undefined as inactive
+                isActive = false;
+            }
+
+            this.logger.log(`✅ Cliente ${clienteId} ativo: ${isActive}`);
+            return isActive;
         } catch (error) {
             this.logger.error(`❌ Erro ao verificar se cliente está ativo:`, error);
             return false;

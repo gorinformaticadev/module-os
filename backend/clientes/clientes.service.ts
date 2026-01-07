@@ -26,10 +26,20 @@ export class ClientesService {
                 SELECT
                     id,
                     name,
+                    document,
                     phone_primary,
+                    phone_secondary,
                     image_url,
                     is_active,
-                    email
+                    email,
+                    observations,
+                    address_street,
+                    address_number,
+                    address_neighborhood,
+                    address_city,
+                    address_state,
+                    address_zip,
+                    address_complement
                 FROM mod_ordem_servico_clients
                 WHERE tenant_id = $1
                     AND deleted_at IS NULL
@@ -52,10 +62,20 @@ export class ClientesService {
             SELECT
                 id,
                 name,
+                document,
                 phone_primary,
+                phone_secondary,
                 image_url,
                 is_active,
-                email
+                email,
+                observations,
+                address_street,
+                address_number,
+                address_neighborhood,
+                address_city,
+                address_state,
+                address_zip,
+                address_complement
             FROM mod_ordem_servico_clients
             WHERE tenant_id = $1
                 AND deleted_at IS NULL

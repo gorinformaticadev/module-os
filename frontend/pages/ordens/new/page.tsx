@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
@@ -18,8 +16,6 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import {
     CalendarIcon,
     Save,
@@ -95,7 +91,6 @@ export default function NewOrdemRefactoredPage() {
         prioridade: 'MEDIA',
         descricao: '',
         status: StatusOS.ABERTA, // Default: Aberta as per scope
-        data_abertura: new Date(),
         usuario_responsavel_id: '',
         origem_solicitacao: 'PRESENCIAL' as OrigemSolicitacao,
 
@@ -109,7 +104,6 @@ export default function NewOrdemRefactoredPage() {
 
         // Values
         valor_servico: '',
-        observacoes_financeiras: '',
 
         // Observations
         observacoes_internas: '',
@@ -301,13 +295,66 @@ export default function NewOrdemRefactoredPage() {
             // Business Rule: Se Status = Orçamento (0), não pode ter execução imediata (bloqueado em backend/relatório)
             // But here we just send what's in the form.
 
+            // Create payload matching the DTO structure exactly
             const payload = {
-                ...formData,
                 cliente_id: selectedClient.id,
+                tipo_servico: formData.tipo_servico,
+                prioridade: formData.prioridade,
+                descricao: formData.descricao,
+                observacoes_internas: formData.observacoes_internas || undefined,
+                observacoes_cliente: formData.observacoes_cliente || undefined,
+                valor_servico: formData.valor_servico ? parseFloat(formData.valor_servico.replace(',', '.')) : undefined,
+                origem_solicitacao: formData.origem_solicitacao,
                 status: Number(formData.status),
-                valor_servico: formData.valor_servico ? parseFloat(formData.valor_servico.replace(',', '.')) : 0,
-                data_abertura: formData.data_abertura.toISOString()
+                usuario_responsavel_id: formData.usuario_responsavel_id || undefined,
+                
+                // Equipment fields
+                equipamento_tipo: formData.equipamento_tipo || undefined,
+                equipamento_marca: formData.equipamento_marca || undefined,
+                equipamento_modelo: formData.equipamento_modelo || undefined,
+                equipamento_serie: formData.equipamento_serie || undefined,
+                equipamento_acessorios: formData.equipamento_acessorios || undefined,
+                equipamento_estado: formData.equipamento_estado || undefined,
+                
+                // Formatting fields
+                formatacao_so: formData.formatacao_so || undefined,
+                formatacao_backup: formData.formatacao_backup || undefined,
+                formatacao_backup_descricao: formData.formatacao_backup_descricao || undefined,
+                formatacao_senha: formData.formatacao_senha || undefined
             };
+
+            // Handle photos separately - only include if there are valid photos
+            const validPhotos = Array.isArray(formData.equipamento_fotos) 
+                ? formData.equipamento_fotos
+                    .filter(photo => photo && typeof photo === 'string' && photo.trim() !== '')
+                    .map(photo => String(photo).trim())
+                : [];
+
+            if (validPhotos.length > 0) {
+                payload.equipamento_fotos = validPhotos;
+            }
+
+            // Remove undefined values to keep payload clean
+            Object.keys(payload).forEach(key => {
+                if (payload[key] === undefined) {
+                    delete payload[key];
+                }
+            });
+
+            // Debug: Log the payload to see what's being sent
+            console.log('🔍 Payload being sent:', JSON.stringify(payload, null, 2));
+            console.log('📸 Photos handling:', {
+                originalPhotos: formData.equipamento_fotos,
+                validPhotos: payload.equipamento_fotos || 'not included',
+                hasPhotos: !!payload.equipamento_fotos,
+                photosCount: payload.equipamento_fotos?.length || 0
+            });
+            console.log('👤 Selected client debug:', {
+                clientId: selectedClient.id,
+                clientName: selectedClient.name,
+                isActive: selectedClient.is_active,
+                isActiveType: typeof selectedClient.is_active
+            });
 
             const response = await api.post('/api/ordem_servico/ordens', payload);
 
@@ -662,29 +709,6 @@ export default function NewOrdemRefactoredPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Data de Entrada</Label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={`w-full justify-start text-left font-normal`}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {format(formData.data_abertura, "PPP", { locale: ptBR })}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            selected={formData.data_abertura}
-                                            onSelect={(d) => d && setFormData({ ...formData, data_abertura: d })}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-
-                            <div className="space-y-2">
                                 <Label>Técnico Responsável (Opcional)</Label>
                                 <Select
                                     value={formData.usuario_responsavel_id}
@@ -990,14 +1014,6 @@ export default function NewOrdemRefactoredPage() {
                                         />
                                     </div>
                                     <p className="text-[10px] text-muted-foreground italic">Nota: Não gera cobrança automática nesta etapa.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Observações Financeiras</Label>
-                                    <Textarea
-                                        placeholder="Formas de pgto combinadas, descontos..."
-                                        value={formData.observacoes_financeiras}
-                                        onChange={(e) => setFormData({ ...formData, observacoes_financeiras: e.target.value })}
-                                    />
                                 </div>
                             </CardContent>
                         </Card>
