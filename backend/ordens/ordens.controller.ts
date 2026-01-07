@@ -64,6 +64,17 @@ export class OrdensController {
         }
     }
 
+    @Get('technicians')
+    async getTechnicians(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            this.logger.log(`Buscando técnicos. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.getTechnicians(req.user.tenantId);
+        } catch (error) {
+            this.logger.error(`Erro ao buscar técnicos:`, error);
+            throw error;
+        }
+    }
+
     @Get(':id')
     async findOne(
         @Req() req: ExpressRequest & { user: any },

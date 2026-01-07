@@ -190,11 +190,11 @@ export default function NewOrdemRefactoredPage() {
 
     const fetchTechnicians = async () => {
         try {
-            const response = await api.get('/modules/ordem_servico/config/users');
-            // Filter to only include technicians if the API supports it, or just show all available users
-            setTechnicians(response.data.filter((u: any) => u.is_technician) || response.data);
+            const response = await api.get('/api/ordem_servico/ordens/technicians');
+            setTechnicians(response.data);
         } catch (error) {
             console.error('Erro ao buscar técnicos:', error);
+            toast({ title: 'Erro', description: 'Erro ao carregar técnicos', variant: 'destructive' });
         }
     };
 
@@ -752,16 +752,19 @@ export default function NewOrdemRefactoredPage() {
                             <div className="space-y-2">
                                 <Label>Técnico Responsável (Opcional)</Label>
                                 <Select
-                                    value={formData.usuario_responsavel_id}
-                                    onValueChange={(v) => setFormData({ ...formData, usuario_responsavel_id: v })}
+                                    value={formData.usuario_responsavel_id || 'NONE'}
+                                    onValueChange={(v) => setFormData({ ...formData, usuario_responsavel_id: v === 'NONE' ? '' : v })}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecione um técnico" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="UNASSIGNED">Ninguém selecionado</SelectItem>
+                                        <SelectItem value="NONE">Nenhum técnico selecionado</SelectItem>
                                         {technicians.map(t => (
-                                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                            <SelectItem key={t.id} value={t.id}>
+                                                {t.name}
+                                                {t.email && <span className="text-xs text-muted-foreground ml-2">({t.email})</span>}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

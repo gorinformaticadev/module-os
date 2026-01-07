@@ -192,7 +192,7 @@ export class OrdensService {
                 status,                                                                                      // $7
                 createDto.origem_solicitacao,                                                               // $8
                 createDto.valor_servico || 0,                                                               // $9
-                createDto.usuario_responsavel_id === 'UNASSIGNED' ? null : (createDto.usuario_responsavel_id || userId), // $10
+                createDto.usuario_responsavel_id === 'UNASSIGNED' || createDto.usuario_responsavel_id === 'NONE' || !createDto.usuario_responsavel_id ? null : createDto.usuario_responsavel_id, // $10
                 createDto.observacoes_internas || null,                                                     // $11
                 createDto.observacoes_cliente || null,                                                      // $12
                 createDto.equipamento_tipo || null,                                                         // $13
@@ -275,7 +275,7 @@ export class OrdensService {
             for (const field of fieldsToUpdate) {
                 if (updateDto[field] !== undefined) {
                     let value = updateDto[field];
-                    if (field === 'usuario_responsavel_id' && value === 'UNASSIGNED') value = null;
+                    if (field === 'usuario_responsavel_id' && (value === 'UNASSIGNED' || value === 'NONE' || !value)) value = null;
                     if (field === 'equipamento_fotos' && value !== null) value = JSON.stringify(value);
 
                     updateFields.push(`${field} = $${paramIndex}`);
@@ -668,6 +668,27 @@ export class OrdensService {
             return result;
         } catch (error) {
             this.logger.error(`❌ Erro ao buscar tipos de equipamento:`, error);
+            throw error;
+        }
+    }
+
+    async getTechnicians(tenantId: string) {
+        try {
+            this.logger.log(`Buscando técnicos. Tenant: ${tenantId}`);
+            
+            const result = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT u.id, u.name, u.email 
+                 FROM users u
+                 INNER JOIN mod_ordem_servico_user_roles osr ON u.id = osr.user_id AND u."tenantId" = osr.tenant_id
+                 WHERE u."tenantId" = $1 AND u."isLocked" = false AND osr.is_technician = true
+                 ORDER BY u.name ASC`,
+                tenantId
+            );
+
+            this.logger.log(`✅ ${result.length} técnicos encontrados`);
+            return result;
+        } catch (error) {
+            this.logger.error(`❌ Erro ao buscar técnicos:`, error);
             throw error;
         }
     }

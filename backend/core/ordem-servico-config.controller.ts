@@ -150,4 +150,103 @@ export class OrdemServicoConfigController {
         );
         return { success: true };
     }
+
+    // ==================== USUÁRIOS/TÉCNICOS ====================
+    
+    @Get('users')
+    async getUsers(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            // Primeiro, tentar com a nova tabela de papéis
+            const result = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT 
+                    u.id, 
+                    u.name, 
+                    u.email, 
+                    u.role as system_role,
+                    COALESCE(osr.is_technician, false) as is_technician,
+                    COALESCE(osr.is_attendant, true) as is_attendant,
+                    COALESCE(osr.is_admin, (u.role = 'SUPER_ADMIN' OR u.role = 'ADMIN')) as is_admin
+                 FROM users u
+                 LEFT JOIN mod_ordem_servico_user_roles osr ON u.id = osr.user_id AND u."tenantId" = osr.tenant_id
+                 WHERE u."tenantId" = $1 AND u."isLocked" = false
+                 ORDER BY u.name ASC`,
+                req.user.tenantId
+            );
+            
+            // Formatar dados para o frontend
+            const usersWithOSRoles = result.map(user => ({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                system_role: user.system_role,
+                os_roles: {
+                    admin: user.is_admin,
+                    attendant: user.is_attendant,
+                    technician: user.is_technician
+                }
+            }));
+            
+            return usersWithOSRoles;
+        } catch (error) {
+            console.error('Erro ao buscar usuários com papéis OS, tentando fallback:', error);
+            
+            // Fallback: usar apenas a tabela users
+            const result = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT id, name, email, role as system_role FROM users 
+                 WHERE "tenantId" = $1 AND "isLocked" = false
+                 ORDER BY name ASC`,
+                req.user.tenantId
+            );
+            
+            // Formatar dados para o frontend (sem papéis específicos do módulo)
+            const usersWithOSRoles = result.map(user => ({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                system_role: user.system_role,
+                os_roles: {
+                    admin: user.system_role === 'SUPER_ADMIN' || user.system_role === 'ADMIN',
+                    attendant: true, // Por padrão, todos podem ser atendentes
+                    technician: false // Por padrão, ninguém é técnico até executar a migração
+                }
+            }));
+            
+            return usersWithOSRoles;
+        }
+    }
+
+    @Get('technicians')
+    async getTechnicians(@Req() req: ExpressRequest & { user: any }) {
+        const result = await this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT u.id, u.name, u.email 
+             FROM users u
+             INNER JOIN mod_ordem_servico_user_roles osr ON u.id = osr.user_id AND u."tenantId" = osr.tenant_id
+             WHERE u."tenantId" = $1 AND u."isLocked" = false AND osr.is_technician = true
+             ORDER BY u.name ASC`,
+            req.user.tenantId
+        );
+        return result;
+    }
+
+    @Put('users/:id/technician')
+    async updateUserTechnician(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') userId: string,
+        @Body() body: { is_technician: boolean }
+    ) {
+        // Inserir ou atualizar o papel do usuário
+        await this.prisma.$queryRawUnsafe(
+            `INSERT INTO mod_ordem_servico_user_roles (tenant_id, user_id, is_technician, is_attendant, is_admin)
+             VALUES ($1, $2, $3, true, false)
+             ON CONFLICT (tenant_id, user_id) 
+             DO UPDATE SET 
+                is_technician = $3,
+                updated_at = CURRENT_TIMESTAMP`,
+            req.user.tenantId,
+            userId,
+            body.is_technician
+        );
+        
+        return { success: true, message: 'Configuração de técnico atualizada' };
+    }
 }
