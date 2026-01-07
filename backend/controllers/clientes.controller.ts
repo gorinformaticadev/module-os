@@ -20,18 +20,20 @@ export class ClientesController {
 
     @Get()
     @RequireClientsPermission('view')
-    async findAll(@Query() filters: any, @Req() req: ExpressRequest & { user: any }) {
-        this.logger.log('📥 GET findAll chamado');
-        const tenantId = req.user?.tenantId;
-        try {
-            const result = await this.clientesService.findAll(tenantId, filters);
-            this.logger.log(`🔙 Retornando ${(result as any[]).length} clientes`);
-            return result;
-        } catch (error) {
-            this.logger.error('❌ Erro no findAll:', error);
-            throw new HttpException('Erro ao buscar clientes: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+@Get()
+async findAll(@Query() filters: any, @Req() req) {
+  const tenantId = req.user?.tenantId;
+
+  const safeFilters = {
+    ...filters,
+    search: typeof filters?.search === 'string'
+      ? filters.search.trim()
+      : ''
+  };
+
+  return this.clientesService.findAll(tenantId, safeFilters);
+}
+
 
     @Get(':id')
     @RequireClientsPermission('view_details')

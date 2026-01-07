@@ -70,34 +70,33 @@ export default function OrdemServicoClientesPage() {
         is_active: true
     });
 
-    useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            fetchClients();
-        }, 500);
+        useEffect(() => {
+    if (!searchTerm || searchTerm.trim().length < 2) {
+        setClients([]);
+        return;
+    }
 
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, statusFilter]);
+    const timer = setTimeout(() => {
+        fetchClients(searchTerm.trim());
+    }, 500);
 
-    const fetchClients = async () => {
-        try {
-            setLoading(true);
-            const params: any = {};
-            if (searchTerm) params.search = searchTerm;
-            if (statusFilter !== 'all') params.status = statusFilter === 'active' ? 'true' : 'false';
+    return () => clearTimeout(timer);
+    }, [searchTerm]);
 
-            const response = await api.get('/api/ordem_servico/clientes', { params });
-            setClients(response.data);
-        } catch (error) {
-            console.error(error);
-            toast({
-                title: 'Erro ao carregar',
-                description: 'Não foi possível carregar a lista de clientes.',
-                variant: 'destructive'
-            });
-        } finally {
-            setLoading(false);
-        }
+
+    const fetchClients = async (term: string) => {
+    try {
+        const response = await api.get(
+        '/api/ordem_servico/clientes',
+        { params: { search: term, status: true } }
+        );
+        setClients(response.data || []);
+    } catch (error) {
+        console.error(error);
+        setClients([]);
+    }
     };
+
 
     const handleClearFilters = () => {
         setSearchTerm('');
