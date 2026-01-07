@@ -7,6 +7,29 @@ export class ConfiguracoesService {
 
     constructor(private readonly prisma: PrismaService) { }
 
+    private getDefaultPermissions() {
+        // Permissões padrão caso a tabela não exista
+        const defaultPermissions: Record<string, Record<string, boolean>> = {};
+        
+        const permissions = [
+            'dashboard_view', 'dashboard_export',
+            'orders_view', 'orders_create', 'orders_edit', 'orders_delete', 'orders_assign',
+            'clients_view', 'clients_create', 'clients_edit', 'clients_delete',
+            'products_view', 'products_create', 'products_edit', 'products_delete',
+            'config_view', 'config_users', 'config_permissions', 'config_system'
+        ];
+
+        permissions.forEach(permId => {
+            defaultPermissions[permId] = {
+                admin: true, // Admin tem tudo
+                technician: ['dashboard_view', 'orders_view', 'orders_create', 'orders_edit', 'clients_view', 'products_view'].includes(permId),
+                attendant: ['dashboard_view', 'orders_view', 'orders_create', 'clients_view', 'clients_create', 'clients_edit', 'products_view'].includes(permId)
+            };
+        });
+
+        return defaultPermissions;
+    }
+
     async getUsers(tenantId: string) {
         try {
             this.logger.log(`Buscando usuários para tenant ${tenantId}`);
@@ -43,16 +66,30 @@ export class ConfiguracoesService {
             this.logger.log(`Buscando permissões de perfil para tenant ${tenantId}`);
             
             const permissions = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT * FROM mod_ordem_servico_profile_permissions WHERE tenant_id = $1 ORDER BY profile_name ASC`,
+                `SELECT profile, permission_id, allowed 
+                 FROM mod_ordem_servico_profile_permissions 
+                 WHERE tenant_id = $1 OR tenant_id = 'default'
+                 ORDER BY profile ASC, permission_id ASC`,
                 tenantId
             );
 
             this.logger.log(`✅ ${permissions.length} permissões de perfil encontradas`);
-            return permissions;
+            
+            // Transformar array em objeto estruturado
+            const structuredPermissions: Record<string, Record<string, boolean>> = {};
+            
+            permissions.forEach(perm => {
+                if (!structuredPermissions[perm.permission_id]) {
+                    structuredPermissions[perm.permission_id] = {};
+                }
+                structuredPermissions[perm.permission_id][perm.profile] = perm.allowed;
+            });
+
+            return structuredPermissions;
         } catch (error) {
             this.logger.error(`❌ Erro ao buscar permissões de perfil:`, error);
-            // Se a tabela não existir, retornar array vazio
-            return [];
+            // Se a tabela não existir, retornar permissões padrão
+            return this.getDefaultPermissions();
         }
     }
 
@@ -60,9 +97,34 @@ export class ConfiguracoesService {
         try {
             this.logger.log(`Atualizando permissões de perfil para tenant ${tenantId}`);
             
-            // Implementar lógica de atualização de permissões
-            // Por enquanto, apenas retornar sucesso
+            // Primeiro, deletar todas as permissões existentes para este tenant
+            await this.prisma.$executeRawUnsafe(
+                `DELETE FROM mod_ordem_servico_profile_permissions WHERE tenant_id = $1`,
+                tenantId
+            );
+
+            // Inserir as novas permissões
+            const insertPromises = [];
             
+            for (const [permissionId, profiles] of Object.entries(permissions)) {
+                for (const [profileName, allowed] of Object.entries(profiles as Record<string, boolean>)) {
+                    insertPromises.push(
+                        this.prisma.$executeRawUnsafe(
+                            `INSERT INTO mod_ordem_servico_profile_permissions 
+                             (tenant_id, profile, permission_id, allowed, created_at, updated_at)
+                             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+                            tenantId,
+                            profileName,
+                            permissionId,
+                            allowed
+                        )
+                    );
+                }
+            }
+
+            await Promise.all(insertPromises);
+            
+            this.logger.log(`✅ Permissões de perfil atualizadas com sucesso`);
             return { success: true, permissions };
         } catch (error) {
             this.logger.error(`❌ Erro ao atualizar permissões de perfil:`, error);
