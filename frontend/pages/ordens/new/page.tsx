@@ -54,6 +54,7 @@ import {
     STATUS_LABELS,
     Cliente
 } from '../../../types/ordem-servico.types';
+import ClientModal from '../../../components/ClientModal';
 
 interface Client {
     id: string;
@@ -77,6 +78,7 @@ export default function NewOrdemRefactoredPage() {
     const [clients, setClients] = useState<Cliente[]>([]);
     const [searchingClients, setSearchingClients] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
+    const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
     // Technicians State
     const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -158,6 +160,16 @@ export default function NewOrdemRefactoredPage() {
             // 📋 Campo vazio = sem lista
             setClients([]);
         }
+    };
+
+    const handleClientCreated = (newClient: Cliente) => {
+        // Seleciona automaticamente o cliente recém-criado
+        setSelectedClient(newClient);
+        toast({
+            title: 'Cliente selecionado!',
+            description: `${newClient.name} foi selecionado automaticamente.`,
+            variant: 'default'
+        });
     };
 
     const fetchTechnicians = async () => {
@@ -371,11 +383,11 @@ export default function NewOrdemRefactoredPage() {
                                 )}
 
                                 <div className="flex flex-col gap-2 pt-2">
-                                    <Button variant="outline" className="w-full gap-2 border-dashed" onClick={() => window.location.href = '/modules/ordem_servico/pages/clientes'}>
+                                    <Button variant="outline" className="w-full gap-2 border-dashed" onClick={() => setIsClientModalOpen(true)}>
                                         <UserPlus className="h-4 w-4" /> Cadastrar Novo Cliente
                                     </Button>
                                     <p className="text-[10px] text-center text-muted-foreground italic">
-                                        Se o cliente não existir, cadastre-o primeiro.
+                                        Cadastre um novo cliente diretamente aqui.
                                     </p>
                                 </div>
                             </div>
@@ -954,6 +966,13 @@ export default function NewOrdemRefactoredPage() {
                     <p><strong>Restrição:</strong> Clientes inativos não podem abrir novas ordens de serviço. Reative o cliente para prosseguir.</p>
                 </div>
             </div>
+
+            {/* Modal de Novo Cliente */}
+            <ClientModal
+                isOpen={isClientModalOpen}
+                onClose={() => setIsClientModalOpen(false)}
+                onClientCreated={handleClientCreated}
+            />
         </div>
     );
 }
