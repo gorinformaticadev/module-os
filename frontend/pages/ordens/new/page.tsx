@@ -123,6 +123,43 @@ export default function NewOrdemRefactoredPage() {
         fetchTechnicians();
     }, []);
 
+    // 🔍 PADRÃO OFICIAL DE BUSCA - CLIENTES (com debounce)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchClients();
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const fetchClients = async () => {
+        const safeSearch = typeof searchTerm === 'string' ? searchTerm.trim() : '';
+        
+        // 🔒 Evita busca curta
+        if (safeSearch.length > 0 && safeSearch.length < 2) {
+            setClients([]);
+            return;
+        }
+
+        // ✅ Só busca se tiver 2+ caracteres
+        if (safeSearch.length >= 2) {
+            try {
+                setSearchingClients(true);
+                const response = await api.get(`/api/ordem_servico/clientes?search=${safeSearch}`);
+                setClients(response.data);
+            } catch (error) {
+                console.error('Erro ao buscar clientes:', error);
+                toast({ title: 'Erro', description: 'Erro ao buscar clientes', variant: 'destructive' });
+                setClients([]);
+            } finally {
+                setSearchingClients(false);
+            }
+        } else {
+            // 📋 Campo vazio = sem lista
+            setClients([]);
+        }
+    };
+
     const fetchTechnicians = async () => {
         try {
             const response = await api.get('/modules/ordem_servico/config/users');
@@ -130,20 +167,6 @@ export default function NewOrdemRefactoredPage() {
             setTechnicians(response.data.filter((u: any) => u.is_technician) || response.data);
         } catch (error) {
             console.error('Erro ao buscar técnicos:', error);
-        }
-    };
-
-    const handleSearchClients = async () => {
-        if (searchTerm.length < 2) return;
-        try {
-            setSearchingClients(true);
-            const response = await api.get(`/api/ordem_servico/clientes?search=${searchTerm}&status=true`);
-            setClients(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar clientes:', error);
-            toast({ title: 'Erro', description: 'Erro ao buscar clientes', variant: 'destructive' });
-        } finally {
-            setSearchingClients(false);
         }
     };
 
@@ -315,21 +338,20 @@ export default function NewOrdemRefactoredPage() {
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="search-client">Buscar Cliente</Label>
-                                    <div className="flex gap-2">
-                                        <div className="relative flex-1">
-                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input
-                                                id="search-client"
-                                                placeholder="Nome, CPF/CNPJ ou Tel..."
-                                                className="pl-9"
-                                                value={searchTerm}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearchClients()}
-                                            />
-                                        </div>
-                                        <Button size="icon" variant="secondary" onClick={handleSearchClients} disabled={searchingClients}>
-                                            <SearchCode className="h-4 w-4" />
-                                        </Button>
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="search-client"
+                                            placeholder="Digite 2+ letras para buscar..."
+                                            className="pl-9"
+                                            value={searchTerm}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                                        />
+                                        {searchingClients && (
+                                            <div className="absolute right-2.5 top-2.5">
+                                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
