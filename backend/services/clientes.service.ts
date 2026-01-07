@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
-import { AuditService } from '@core/audit/audit.service';
+import { PrismaService } from '../../../apps/backend/src/core/prisma/prisma.service';
+import { AuditService } from '../../../apps/backend/src/core/audit/audit.service';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -10,78 +10,91 @@ export class ClientesService {
     constructor(
         private prisma: PrismaService,
         private auditService: AuditService
-    ) { }
+    ) {
+        this.logger.log('✅✅✅ CLIENTES SERVICE INICIADO!!! ✅✅✅');
+    }
 
     async findAll(tenantId: string, filters: any = {}) {
         const { search, status } = filters;
         this.logger.log(`findAll chamado. Tenant: ${tenantId}, Filters: ${JSON.stringify(filters)}`);
 
-        // Primeiro, vamos testar se a tabela existe
         try {
-            const testQuery = `SELECT COUNT(*)::int as total FROM mod_ordem_servico_clients WHERE tenant_id = $1`;
-            const testResult = await this.prisma.$queryRawUnsafe(testQuery, tenantId);
-            this.logger.log(`Teste de conexão bem-sucedido. Total de registros: ${(testResult as any[])[0]?.total || 0}`);
-        } catch (error) {
-            this.logger.error('Erro no teste de conexão:', error);
-            throw new Error('Tabela de clientes não encontrada. Verifique se o módulo foi instalado corretamente.');
-        }
+            // Base query
+            let query = `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND deleted_at IS NULL`;
+            const params: any[] = [tenantId];
 
-        let query = `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND deleted_at IS NULL`;
-        const params: any[] = [tenantId];
+            // Search filter
+            if (search) {
+                query += ` AND (name ILIKE $${params.length + 1} OR document ILIKE $${params.length + 1})`;
+                params.push(`%${search}%`);
+            }
 
-        if (search) {
-            query += ` AND (name ILIKE ${params.length + 1} OR document ILIKE ${params.length + 1} OR phone_primary ILIKE ${params.length + 1})`;
-            params.push(`%${search}%`);
-        }
+            // Status filter
+            if (status !== undefined && status !== '') {
+                this.logger.log(`🔍 Aplicando filtro de status: ${status} (tipo: ${typeof status})`);
+                query += ` AND is_active = $${params.length + 1}`;
+                params.push(status === 'true');
+            }
 
-        if (status !== undefined && status !== '') {
-            query += ` AND is_active = ${params.length + 1}`;
-            params.push(status === 'true');
-        }
+            query += ` ORDER BY name ASC`;
 
-        query += ` ORDER BY name ASC`;
+            this.logger.log(`🔍 Query final: ${query}`);
+            this.logger.log(`🔍 Parâmetros: ${JSON.stringify(params)}`);
 
-        this.logger.log(`Executando query: ${query}`);
-        this.logger.log(`Parâmetros: ${JSON.stringify(params)}`);
-
-        try {
             const result = await this.prisma.$queryRawUnsafe(query, ...params);
-            this.logger.log(`Query executada com sucesso. Retornando ${(result as any[]).length} registros`);
+            this.logger.log(`🔍 Resultado da query: ${JSON.stringify(result)}`);
             return result;
         } catch (error) {
-            this.logger.error('Erro na query de clientes:', error);
+            this.logger.error(`❌ Erro na query findAll: ${error.message}`);
+            this.logger.error(`❌ Stack trace: ${error.stack}`);
             throw error;
         }
     }
 
     async findById(tenantId: string, id: string) {
         const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND id = $2::uuid AND deleted_at IS NULL LIMIT 1`,
+            `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL LIMIT 1`,
             tenantId, id
         );
         return result[0];
     }
 
+    async findByDocument(tenantId: string, document: string) {
+        const result = await this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND document = $2 AND deleted_at IS NULL LIMIT 1`,
+            tenantId, document
+        );
+        return result[0];
+    }
+
     async create(tenantId: string, data: any, userId: string) {
+        // Validation
         if (!data.name || !data.phone_primary) {
             throw new Error('Nome e Telefone principal são obrigatórios');
         }
+
         if (!tenantId) {
             this.logger.error('Tentativa de criação sem Tenant ID');
             throw new Error('Erro interno: Tenant ID não identificado. Faça login novamente.');
         }
 
-        // const id = randomUUID(); // Let database generate it
-        const id = randomUUID(); // Generate UUID manually since table doesn't have DEFAULT
+        // Check uniqueness if document provided
+        if (data.document) {
+            const existing = await this.findByDocument(tenantId, data.document);
+            if (existing) {
+                throw new Error(`O documento "${data.document}" já está em uso por outro cliente.`);
+            }
+        }
+
+        const id = randomUUID();
 
         try {
-            const result = await this.prisma.$queryRawUnsafe<any[]>(
+            await this.prisma.$executeRawUnsafe(
                 `INSERT INTO mod_ordem_servico_clients 
                 (id, tenant_id, name, document, phone_primary, phone_secondary, address, is_active,
                  address_zip, address_street, address_number, address_complement, address_neighborhood, address_city, address_state,
                  observations, image_url)
-                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-                RETURNING id`,
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
                 id,
                 tenantId,
                 data.name,
@@ -101,25 +114,31 @@ export class ClientesService {
                 data.image_url || null
             );
 
-            const newId = result[0].id;
-
             await this.auditService.log({
                 action: 'CREATE_CLIENT',
                 userId,
                 tenantId,
-                details: { clientId: newId, name: data.name }
+                details: { clientId: id, name: data.name }
             });
 
-            return { id: newId, ...data };
+            return { id, ...data };
         } catch (error) {
             this.logger.error('Erro ao criar cliente:', error);
-            throw new Error('Erro ao salvar no banco de dados. Verifique os dados e tente novamente.');
+            throw new Error('Erro ao salvar cliente. Verifique os dados e tente novamente.');
         }
     }
 
     async update(tenantId: string, id: string, data: any, userId: string) {
         if (!data.name || !data.phone_primary) {
             throw new Error('Nome e Telefone principal são obrigatórios');
+        }
+
+        // Check uniqueness if document changed
+        if (data.document) {
+            const existingDocument = await this.findByDocument(tenantId, data.document);
+            if (existingDocument && existingDocument.id !== id) {
+                throw new Error(`O documento "${data.document}" já está em uso por outro cliente.`);
+            }
         }
 
         try {
@@ -142,7 +161,7 @@ export class ClientesService {
                     observations = $16,
                     image_url = $17,
                     updated_at = NOW()
-                WHERE id = $1::uuid AND tenant_id = $2`,
+                WHERE id = $1 AND tenant_id = $2`,
                 id,
                 tenantId,
                 data.name,
@@ -180,7 +199,7 @@ export class ClientesService {
         // Verificar se existem OS associadas a este cliente
         try {
             const osCountResult = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT COUNT(*) as count FROM mod_ordem_servico_os WHERE client_id = $1:: uuid AND tenant_id = $2 AND deleted_at IS NULL`,
+                `SELECT COUNT(*) as count FROM mod_ordem_servico_os WHERE client_id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
                 id, tenantId
             );
 
@@ -196,15 +215,15 @@ export class ClientesService {
                 (error.code === 'P2010' && (error.meta?.code === '42P01' || error.message?.includes('mod_ordem_servico_os')));
 
             if (isTableNotFoundError) {
-                this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}.Ignorando verificação.`);
+                this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}. Ignorando verificação.`);
             } else {
-                this.logger.error(`Erro ao verificar OS do cliente: ${error.message}(Code: ${error.code})`);
+                this.logger.error(`Erro ao verificar OS do cliente: ${error.message} (Code: ${error.code})`);
                 throw error;
             }
         }
 
         await this.prisma.$executeRawUnsafe(
-            `UPDATE mod_ordem_servico_clients SET deleted_at = NOW() WHERE id = $1::uuid AND tenant_id = $2`,
+            `UPDATE mod_ordem_servico_clients SET deleted_at = NOW() WHERE id = $1 AND tenant_id = $2`,
             id, tenantId
         );
 
