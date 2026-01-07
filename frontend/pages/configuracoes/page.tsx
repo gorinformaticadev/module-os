@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield } from 'lucide-react';
 import { PermissionManagement } from '../../components/PermissionManagement';
 import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatrix';
+import { TiposServicoManager } from '../../components/TiposServicoManager';
+import { TiposEquipamentoManager } from '../../components/TiposEquipamentoManager';
 
 // Cliente API customizado para o módulo raiz (sem autenticação automática)
 const api = {
@@ -583,6 +585,17 @@ export default function OrdemServicoConfiguracoesPage() {
             <Shield className="h-4 w-4 mr-2" />
             Permissões
           </Button>
+          <Button
+            variant="ghost"
+            className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'opcoes-os'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            onClick={() => setActiveTab('opcoes-os')}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Opções OS
+          </Button>
         </nav>
       </div>
 
@@ -829,6 +842,30 @@ export default function OrdemServicoConfiguracoesPage() {
                 });
               }}
             />
+          </div>
+        )}
+
+        {activeTab === 'opcoes-os' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Opções OS
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Configurações específicas do módulo Ordem de Serviço
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Tipos de Serviço */}
+              <TiposServicoManager />
+              
+              {/* Tipos de Equipamento */}
+              <TiposEquipamentoManager />
+            </div>
           </div>
         )}
       </div>
