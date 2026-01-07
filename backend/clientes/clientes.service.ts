@@ -27,7 +27,8 @@ export class ClientesService {
                     id,
                     name,
                     phone_primary,
-                    image_url
+                    image_url,
+                    is_active
                 FROM mod_ordem_servico_clients
                 WHERE tenant_id = $1
                     AND deleted_at IS NULL
@@ -50,7 +51,8 @@ export class ClientesService {
                 id,
                 name,
                 phone_primary,
-                image_url
+                image_url,
+                is_active
             FROM mod_ordem_servico_clients
             WHERE tenant_id = $1
                 AND deleted_at IS NULL

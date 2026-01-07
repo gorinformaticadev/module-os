@@ -42,7 +42,9 @@ import {
     Trash2,
     Plus,
     Loader2,
-    Edit
+    Edit,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -82,6 +84,7 @@ export default function NewOrdemRefactoredPage() {
     const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
     const [isClientModalOpen, setIsClientModalOpen] = useState(false);
     const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
+    const [isObservationsExpanded, setIsObservationsExpanded] = useState(false);
 
     // Technicians State
     const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -168,6 +171,7 @@ export default function NewOrdemRefactoredPage() {
     const handleClientCreated = (newClient: Cliente) => {
         // Seleciona automaticamente o cliente recém-criado
         setSelectedClient(newClient);
+        setIsObservationsExpanded(false); // Reset expansion state
         toast({
             title: 'Cliente selecionado!',
             description: `${newClient.name} foi selecionado automaticamente.`,
@@ -422,7 +426,10 @@ export default function NewOrdemRefactoredPage() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
-                                        onClick={() => setSelectedClient(null)}
+                                        onClick={() => {
+                                            setSelectedClient(null);
+                                            setIsObservationsExpanded(false);
+                                        }}
                                         title="Remover seleção"
                                     >
                                         <X className="h-3 w-3" />
@@ -478,13 +485,93 @@ export default function NewOrdemRefactoredPage() {
 
                                     {selectedClient.observations && (
                                         <div className="mt-2 p-3 bg-muted/40 rounded-md border border-muted-foreground/10">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <AlertCircle className="h-3 w-3 text-amber-500" />
-                                                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter">Observações do Cliente</span>
+                                            <div 
+                                                className="flex items-center justify-between cursor-pointer hover:bg-muted/20 -m-1 p-1 rounded transition-colors"
+                                                onClick={() => setIsObservationsExpanded(!isObservationsExpanded)}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <AlertCircle className="h-3 w-3 text-amber-500" />
+                                                    <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter">
+                                                        Informações do Cliente
+                                                    </span>
+                                                </div>
+                                                {isObservationsExpanded ? (
+                                                    <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                                                ) : (
+                                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                                )}
                                             </div>
-                                            <p className="text-xs text-muted-foreground italic line-clamp-2">
-                                                {selectedClient.observations}
-                                            </p>
+                                            
+                                            {isObservationsExpanded ? (
+                                                <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                    {/* Observações */}
+                                                    <div>
+                                                        <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                            Observações
+                                                        </h4>
+                                                        <p className="text-xs text-muted-foreground italic">
+                                                            {selectedClient.observations}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    {/* Informações Adicionais */}
+                                                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-muted-foreground/10">
+                                                        {selectedClient.document && (
+                                                            <div>
+                                                                <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                                    Documento
+                                                                </h4>
+                                                                <p className="text-xs font-mono text-foreground/80">
+                                                                    {selectedClient.document}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        <div>
+                                                            <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                                Status
+                                                            </h4>
+                                                            <div className="flex items-center gap-1">
+                                                                <div className={`h-2 w-2 rounded-full ${selectedClient.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
+                                                                <span className="text-xs font-medium">
+                                                                    {selectedClient.is_active ? 'Ativo' : 'Inativo'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {selectedClient.phone_secondary && (
+                                                            <div>
+                                                                <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                                    Tel. Secundário
+                                                                </h4>
+                                                                <p className="text-xs text-foreground/80">
+                                                                    {selectedClient.phone_secondary}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {(selectedClient.address_zip || selectedClient.address_complement) && (
+                                                            <div>
+                                                                <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                                    Detalhes Endereço
+                                                                </h4>
+                                                                <div className="text-xs text-foreground/80 space-y-0.5">
+                                                                    {selectedClient.address_zip && (
+                                                                        <p>CEP: {selectedClient.address_zip}</p>
+                                                                    )}
+                                                                    {selectedClient.address_complement && (
+                                                                        <p>Compl.: {selectedClient.address_complement}</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-muted-foreground italic line-clamp-2 mt-2">
+                                                    {selectedClient.observations}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                 </div>
