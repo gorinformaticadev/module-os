@@ -47,8 +47,6 @@ import api from '@/lib/api';
 import {
     StatusOS,
     OrigemSolicitacao,
-    TipoServico,
-    TIPO_SERVICO_LABELS,
     ORIGEM_LABELS,
     STATUS_LABELS,
     Cliente
@@ -85,9 +83,14 @@ export default function NewOrdemRefactoredPage() {
     // Technicians State
     const [technicians, setTechnicians] = useState<Technician[]>([]);
 
+    // Service and Equipment Types State
+    const [tiposServico, setTiposServico] = useState<{ id: string; nome: string; is_default: boolean }[]>([]);
+    const [tiposEquipamento, setTiposEquipamento] = useState<{ id: string; nome: string }[]>([]);
+    const [loadingTipos, setLoadingTipos] = useState(false);
+
     // Form State
     const [formData, setFormData] = useState({
-        tipo_servico: 'MANUTENCAO',
+        tipo_servico: '', // Will be set when types are loaded
         prioridade: 'MEDIA',
         descricao: '',
         status: StatusOS.ABERTA, // Default: Aberta as per scope
@@ -123,6 +126,8 @@ export default function NewOrdemRefactoredPage() {
 
     useEffect(() => {
         fetchTechnicians();
+        fetchTiposServico();
+        fetchTiposEquipamento();
     }, []);
 
     // 🔍 PADRÃO OFICIAL DE BUSCA - CLIENTES (com debounce)
@@ -190,6 +195,35 @@ export default function NewOrdemRefactoredPage() {
             setTechnicians(response.data.filter((u: any) => u.is_technician) || response.data);
         } catch (error) {
             console.error('Erro ao buscar técnicos:', error);
+        }
+    };
+
+    const fetchTiposServico = async () => {
+        try {
+            setLoadingTipos(true);
+            const response = await api.get('/api/ordem_servico/ordens/tipos-servico');
+            setTiposServico(response.data);
+            
+            // Set default service type if available
+            if (response.data.length > 0 && !formData.tipo_servico) {
+                const defaultType = response.data.find((t: any) => t.is_default) || response.data[0];
+                setFormData(prev => ({ ...prev, tipo_servico: defaultType.nome }));
+            }
+        } catch (error) {
+            console.error('Erro ao buscar tipos de serviço:', error);
+            toast({ title: 'Erro', description: 'Erro ao carregar tipos de serviço', variant: 'destructive' });
+        } finally {
+            setLoadingTipos(false);
+        }
+    };
+
+    const fetchTiposEquipamento = async () => {
+        try {
+            const response = await api.get('/api/ordem_servico/ordens/tipos-equipamento');
+            setTiposEquipamento(response.data);
+        } catch (error) {
+            console.error('Erro ao buscar tipos de equipamento:', error);
+            toast({ title: 'Erro', description: 'Erro ao carregar tipos de equipamento', variant: 'destructive' });
         }
     };
 
@@ -642,13 +676,20 @@ export default function NewOrdemRefactoredPage() {
 
                             <div className="space-y-2">
                                 <Label>Tipo de Serviço *</Label>
-                                <Select value={formData.tipo_servico} onValueChange={(v: string) => setFormData({ ...formData, tipo_servico: v })}>
+                                <Select 
+                                    value={formData.tipo_servico} 
+                                    onValueChange={(v: string) => setFormData({ ...formData, tipo_servico: v })}
+                                    disabled={loadingTipos}
+                                >
                                     <SelectTrigger>
-                                        <SelectValue />
+                                        <SelectValue placeholder={loadingTipos ? "Carregando..." : "Selecione o tipo de serviço"} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(TIPO_SERVICO_LABELS).map(([k, l]) => (
-                                            <SelectItem key={k} value={k}>{l}</SelectItem>
+                                        {tiposServico.map((tipo) => (
+                                            <SelectItem key={tipo.id} value={tipo.nome}>
+                                                {tipo.nome}
+                                                {tipo.is_default && <span className="text-xs text-muted-foreground ml-2">(Padrão)</span>}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -843,13 +884,11 @@ export default function NewOrdemRefactoredPage() {
                                             <SelectValue placeholder="Selecione..." />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="NOTEBOOK">Notebook</SelectItem>
-                                            <SelectItem value="DESKTOP">Desktop (Computador)</SelectItem>
-                                            <SelectItem value="SMARTPHONE">Smartphone</SelectItem>
-                                            <SelectItem value="TABLET">Tablet</SelectItem>
-                                            <SelectItem value="MONITOR">Monitor</SelectItem>
-                                            <SelectItem value="IMPRESSORA">Impressora</SelectItem>
-                                            <SelectItem value="OUTROS">Outros</SelectItem>
+                                            {tiposEquipamento.map((tipo) => (
+                                                <SelectItem key={tipo.id} value={tipo.nome}>
+                                                    {tipo.nome}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>

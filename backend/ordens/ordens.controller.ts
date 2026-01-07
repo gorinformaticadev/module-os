@@ -42,6 +42,28 @@ export class OrdensController {
         }
     }
 
+    @Get('tipos-servico')
+    async getTiposServico(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            this.logger.log(`Buscando tipos de serviço. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.getTiposServico(req.user.tenantId);
+        } catch (error) {
+            this.logger.error(`Erro ao buscar tipos de serviço:`, error);
+            throw error;
+        }
+    }
+
+    @Get('tipos-equipamento')
+    async getTiposEquipamento(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            this.logger.log(`Buscando tipos de equipamento. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.getTiposEquipamento(req.user.tenantId);
+        } catch (error) {
+            this.logger.error(`Erro ao buscar tipos de equipamento:`, error);
+            throw error;
+        }
+    }
+
     @Get(':id')
     async findOne(
         @Req() req: ExpressRequest & { user: any },

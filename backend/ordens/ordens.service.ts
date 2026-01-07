@@ -633,4 +633,42 @@ export class OrdensService {
         };
         return labels[status] || 'Desconhecido';
     }
+
+    async getTiposServico(tenantId: string) {
+        try {
+            this.logger.log(`Buscando tipos de serviço. Tenant: ${tenantId}`);
+            
+            const result = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT id, nome, is_default FROM mod_ordem_servico_tipos_servico 
+                 WHERE tenant_id = $1 
+                 ORDER BY is_default DESC, nome ASC`,
+                tenantId
+            );
+
+            this.logger.log(`✅ ${result.length} tipos de serviço encontrados`);
+            return result;
+        } catch (error) {
+            this.logger.error(`❌ Erro ao buscar tipos de serviço:`, error);
+            throw error;
+        }
+    }
+
+    async getTiposEquipamento(tenantId: string) {
+        try {
+            this.logger.log(`Buscando tipos de equipamento. Tenant: ${tenantId}`);
+            
+            const result = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT id, nome FROM mod_ordem_servico_tipos_equipamento 
+                 WHERE tenant_id = $1 
+                 ORDER BY nome ASC`,
+                tenantId
+            );
+
+            this.logger.log(`✅ ${result.length} tipos de equipamento encontrados`);
+            return result;
+        } catch (error) {
+            this.logger.error(`❌ Erro ao buscar tipos de equipamento:`, error);
+            throw error;
+        }
+    }
 }
