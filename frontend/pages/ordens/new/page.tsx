@@ -41,7 +41,8 @@ import {
     Camera,
     Trash2,
     Plus,
-    Loader2
+    Loader2,
+    Edit
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -55,6 +56,7 @@ import {
     Cliente
 } from '../../../types/ordem-servico.types';
 import ClientModal from '../../../components/ClientModal';
+import ClientEditModal from '../../../components/ClientEditModal';
 
 interface Client {
     id: string;
@@ -79,6 +81,7 @@ export default function NewOrdemRefactoredPage() {
     const [searchingClients, setSearchingClients] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
     const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+    const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
 
     // Technicians State
     const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -168,6 +171,16 @@ export default function NewOrdemRefactoredPage() {
         toast({
             title: 'Cliente selecionado!',
             description: `${newClient.name} foi selecionado automaticamente.`,
+            variant: 'default'
+        });
+    };
+
+    const handleClientUpdated = (updatedClient: Cliente) => {
+        // Atualiza o cliente selecionado com os novos dados
+        setSelectedClient(updatedClient);
+        toast({
+            title: 'Cliente atualizado!',
+            description: `Os dados de ${updatedClient.name} foram atualizados.`,
             variant: 'default'
         });
     };
@@ -395,14 +408,26 @@ export default function NewOrdemRefactoredPage() {
                             <div className="bg-card rounded-lg border-2 border-primary/20 p-5 space-y-4 relative shadow-sm overflow-hidden bg-gradient-to-br from-primary/5 to-transparent">
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-10 -mt-10 pointer-events-none" />
 
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute top-2 right-2 h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors z-10"
-                                    onClick={() => setSelectedClient(null)}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
+                                <div className="absolute -top-1 right-1 flex gap-1 z-10">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 rounded-full hover:bg-blue-500/10 hover:text-blue-600 transition-colors"
+                                        onClick={() => setIsEditClientModalOpen(true)}
+                                        title="Editar cliente"
+                                    >
+                                        <Edit className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                        onClick={() => setSelectedClient(null)}
+                                        title="Remover seleção"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </div>
 
                                 <div className="flex gap-4 items-start pt-2">
                                     <div className="h-20 w-20 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-inner shrink-0 overflow-hidden">
@@ -972,6 +997,14 @@ export default function NewOrdemRefactoredPage() {
                 isOpen={isClientModalOpen}
                 onClose={() => setIsClientModalOpen(false)}
                 onClientCreated={handleClientCreated}
+            />
+
+            {/* Modal de Edição de Cliente */}
+            <ClientEditModal
+                isOpen={isEditClientModalOpen}
+                onClose={() => setIsEditClientModalOpen(false)}
+                client={selectedClient}
+                onClientUpdated={handleClientUpdated}
             />
         </div>
     );
