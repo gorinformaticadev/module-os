@@ -115,14 +115,14 @@ Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={`flex flex-col space-y-1.5 p-4 ${className || ''}`} {...props} />
+    <div ref={ref} className={`flex flex-col space-y-1 p-3 ${className || ''}`} {...props} />
   )
 );
 CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={`text-base font-semibold leading-none tracking-tight ${className || ''}`} {...props} />
+    <h3 ref={ref} className={`text-sm font-semibold leading-none tracking-tight ${className || ''}`} {...props} />
   )
 );
 CardTitle.displayName = "CardTitle";
@@ -136,7 +136,7 @@ CardDescription.displayName = "CardDescription";
 
 const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={`p-4 pt-0 ${className || ''}`} {...props} />
+    <div ref={ref} className={`p-3 pt-0 ${className || ''}`} {...props} />
   )
 );
 CardContent.displayName = "CardContent";
@@ -337,26 +337,26 @@ export function TiposServicoManager() {
           Gerencie os tipos de serviço disponíveis. Apenas o nome é necessário.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2">
         {showForm && (
-          <form onSubmit={handleSubmit} className="space-y-3 p-3 border rounded-lg bg-muted/50">
+          <form onSubmit={handleSubmit} className="space-y-2 p-2 border rounded-lg bg-muted/50">
             <div className="space-y-1">
               <label className="text-xs font-medium">Nome *</label>
               <Input
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 placeholder="Ex: Instalação de Software"
-                className="h-8 text-sm"
+                className="h-7 text-xs"
                 required
               />
             </div>
             <div className="flex gap-2">
-              <Button type="submit" size="sm" className="h-7 text-xs">
-                <Save className="h-4 w-4 mr-2" />
+              <Button type="submit" size="sm" className="h-6 text-xs px-2">
+                <Save className="h-3 w-3 mr-1" />
                 {editingId ? 'Atualizar' : 'Criar'}
               </Button>
-              <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={handleCancel}>
-                <X className="h-4 w-4 mr-2" />
+              <Button type="button" variant="outline" size="sm" className="h-6 text-xs px-2" onClick={handleCancel}>
+                <X className="h-3 w-3 mr-1" />
                 Cancelar
               </Button>
             </div>
@@ -364,35 +364,35 @@ export function TiposServicoManager() {
         )}
 
         {loading ? (
-          <div className="text-center py-4 text-muted-foreground text-sm">Carregando tipos de serviço...</div>
+          <div className="text-center py-3 text-muted-foreground text-xs">Carregando...</div>
         ) : tipos.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground border-2 border-dashed rounded-lg">
-            <AlertTriangle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-medium">Nenhum tipo encontrado</p>
-            <p className="text-xs">Clique em "Novo Tipo" para adicionar um tipo de serviço</p>
+          <div className="text-center py-3 text-muted-foreground border-2 border-dashed rounded-lg">
+            <AlertTriangle className="h-8 w-8 mx-auto mb-1 opacity-50" />
+            <p className="text-xs font-medium">Nenhum tipo encontrado</p>
+            <p className="text-xs opacity-75">Clique em "Novo Tipo"</p>
           </div>
         ) : (
           <div className="space-y-1">
             {tipos.map((tipo) => (
-              <div key={tipo.id} className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 transition-colors min-h-[40px]">
+              <div key={tipo.id} className="flex items-center justify-between p-1.5 border rounded hover:bg-muted/50 transition-colors min-h-[32px]">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{tipo.nome}</span>
+                    <span className="text-xs font-medium">{tipo.nome}</span>
                     {tipo.is_default && (
-                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                      <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
                         Padrão
                       </Badge>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-3 ml-4">
+                <div className="flex gap-2 ml-2">
                   <Edit2 
-                    className="h-5 w-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" 
+                    className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors" 
                     onClick={() => handleEdit(tipo)}
                   />
                   {!tipo.is_default && (
                     <Trash2 
-                      className="h-5 w-5 text-muted-foreground hover:text-destructive cursor-pointer transition-colors" 
+                      className="h-4 w-4 text-muted-foreground hover:text-destructive cursor-pointer transition-colors" 
                       onClick={() => handleDelete(tipo.id, tipo.nome, tipo.is_default)}
                     />
                   )}
