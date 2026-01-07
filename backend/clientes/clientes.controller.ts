@@ -138,4 +138,45 @@ export class ClientesController {
             res.status(500).json({ message: 'Erro interno ao buscar imagem' });
         }
     }
+
+    @Get('cep/:cep')
+    @Public()
+    async consultarCEP(@Param('cep') cep: string) {
+        try {
+            const cleanCEP = cep.replace(/\D/g, '');
+            
+            if (cleanCEP.length !== 8) {
+                throw new HttpException('CEP deve ter 8 dígitos', HttpStatus.BAD_REQUEST);
+            }
+
+            this.logger.log(`Consultando CEP: ${cleanCEP}`);
+            
+            // Fazer requisição para ViaCEP
+            const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+            const data = await response.json();
+            
+            if (data.erro) {
+                throw new HttpException('CEP não encontrado', HttpStatus.NOT_FOUND);
+            }
+
+            // Retornar dados padronizados
+            return {
+                cep: data.cep,
+                logradouro: data.logradouro || '',
+                bairro: data.bairro || '',
+                localidade: data.localidade || '',
+                uf: data.uf || '',
+                complemento: data.complemento || '',
+                success: true
+            };
+        } catch (error) {
+            this.logger.error('Erro ao consultar CEP:', error);
+            
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            
+            throw new HttpException('Erro interno ao consultar CEP', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

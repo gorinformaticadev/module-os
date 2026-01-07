@@ -51,6 +51,7 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
         document: '',
         phone_primary: '',
         phone_secondary: '',
+        email: '',
         address_zip: '',
         address_street: '',
         address_number: '',
@@ -71,6 +72,7 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                 document: client.document || '',
                 phone_primary: client.phone_primary || '',
                 phone_secondary: client.phone_secondary || '',
+                email: (client as any).email || '',
                 address_zip: client.address_zip || '',
                 address_street: client.address_street || '',
                 address_number: client.address_number || '',
@@ -92,6 +94,7 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
             document: '',
             phone_primary: '',
             phone_secondary: '',
+            email: '',
             address_zip: '',
             address_street: '',
             address_number: '',
@@ -144,6 +147,70 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
             return 'Telefone deve ter no máximo 11 dígitos';
         }
         return '';
+    };
+
+    const maskCEP = (value: string) => {
+        return value
+            .replace(/\D/g, '')
+            .replace(/^(\d{5})(\d)/, '$1-$2')
+            .slice(0, 9);
+    };
+
+    const fetchAddressByCEP = async (cep: string) => {
+        const cleanCEP = cep.replace(/\D/g, '');
+        console.log('🔍 Buscando CEP (Edit):', cleanCEP);
+        
+        if (cleanCEP.length !== 8) {
+            console.log('❌ CEP inválido - deve ter 8 dígitos');
+            return;
+        }
+
+        try {
+            console.log('📡 Fazendo requisição para endpoint interno...');
+            const response = await api.get(`/api/ordem_servico/clientes/cep/${cleanCEP}`);
+            const data = response.data;
+            
+            console.log('📋 Resposta da API:', data);
+            
+            if (data.success) {
+                console.log('✅ CEP encontrado, preenchendo campos...');
+                setFormData(prev => ({
+                    ...prev,
+                    address_street: data.logradouro || '',
+                    address_neighborhood: data.bairro || '',
+                    address_city: data.localidade || '',
+                    address_state: data.uf || ''
+                }));
+                
+                toast({
+                    title: 'CEP encontrado!',
+                    description: `Endereço preenchido automaticamente: ${data.localidade}/${data.uf}`,
+                    variant: 'default'
+                });
+            } else {
+                console.log('❌ CEP não encontrado na base de dados');
+                toast({
+                    title: 'CEP não encontrado',
+                    description: 'Verifique o CEP informado.',
+                    variant: 'destructive'
+                });
+            }
+        } catch (error: any) {
+            console.error('❌ Erro ao buscar CEP:', error);
+            
+            let errorMessage = 'Não foi possível consultar o CEP.';
+            if (error.response?.status === 404) {
+                errorMessage = 'CEP não encontrado.';
+            } else if (error.response?.status === 400) {
+                errorMessage = 'CEP inválido.';
+            }
+            
+            toast({
+                title: 'Erro na consulta',
+                description: errorMessage,
+                variant: 'destructive'
+            });
+        }
     };
 
     const validateDocument = (document: string) => {
@@ -472,6 +539,18 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                             />
                         </div>
 
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-client-email" className="text-xs font-bold uppercase tracking-wider text-slate-500">Email</Label>
+                            <Input
+                                id="edit-client-email"
+                                type="email"
+                                className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                value={formData.email}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
+                                placeholder="cliente@email.com"
+                            />
+                        </div>
+
                         <div className="md:col-span-2 space-y-2">
                             <Label htmlFor="edit-client-observations" className="text-xs font-bold uppercase tracking-wider text-slate-500">Observações Gerais</Label>
                             <Textarea
@@ -499,13 +578,54 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div className="space-y-2">
                                     <Label htmlFor="edit-client-zip" className="text-xs font-bold uppercase tracking-wider text-slate-500">CEP</Label>
-                                    <Input
-                                        id="edit-client-zip"
-                                        className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
-                                        value={formData.address_zip}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, address_zip: e.target.value })}
-                                        placeholder="00000-000"
-                                    />
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="edit-client-zip"
+                                            className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                            value={formData.address_zip}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                const maskedCEP = maskCEP(e.target.value);
+                                                setFormData({ ...formData, address_zip: maskedCEP });
+                                            }}
+                                            onBlur={() => {
+                                                const cleanCEP = formData.address_zip.replace(/\D/g, '');
+                                                console.log('🔍 CEP onBlur (Edit):', cleanCEP);
+                                                if (cleanCEP.length === 8) {
+                                                    fetchAddressByCEP(formData.address_zip);
+                                                }
+                                            }}
+                                            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                                if (e.key === 'Tab' || e.key === 'Enter') {
+                                                    const cleanCEP = formData.address_zip.replace(/\D/g, '');
+                                                    if (cleanCEP.length === 8) {
+                                                        fetchAddressByCEP(formData.address_zip);
+                                                    }
+                                                }
+                                            }}
+                                            placeholder="00000-000"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-11 w-11 shrink-0"
+                                            onClick={() => {
+                                                const cleanCEP = formData.address_zip.replace(/\D/g, '');
+                                                if (cleanCEP.length === 8) {
+                                                    fetchAddressByCEP(formData.address_zip);
+                                                } else {
+                                                    toast({
+                                                        title: 'CEP incompleto',
+                                                        description: 'Digite um CEP com 8 dígitos.',
+                                                        variant: 'destructive'
+                                                    });
+                                                }
+                                            }}
+                                            title="Buscar endereço"
+                                        >
+                                            🔍
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">

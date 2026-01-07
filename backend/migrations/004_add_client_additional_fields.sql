@@ -8,9 +8,11 @@ ADD COLUMN IF NOT EXISTS address_neighborhood VARCHAR(100),
 ADD COLUMN IF NOT EXISTS address_city VARCHAR(100),
 ADD COLUMN IF NOT EXISTS address_state VARCHAR(2),
 ADD COLUMN IF NOT EXISTS observations TEXT,
-ADD COLUMN IF NOT EXISTS image_url TEXT;
+ADD COLUMN IF NOT EXISTS image_url TEXT,
+ADD COLUMN IF NOT EXISTS email VARCHAR(255);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_clients_city ON mod_ordem_servico_clients(address_city);
 CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_clients_state ON mod_ordem_servico_clients(address_state);
 CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_clients_active ON mod_ordem_servico_clients(is_active);
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_clients_email ON mod_ordem_servico_clients(email);

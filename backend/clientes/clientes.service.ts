@@ -28,13 +28,15 @@ export class ClientesService {
                     name,
                     phone_primary,
                     image_url,
-                    is_active
+                    is_active,
+                    email
                 FROM mod_ordem_servico_clients
                 WHERE tenant_id = $1
                     AND deleted_at IS NULL
                     AND (
                         LOWER(name) LIKE LOWER($2)
                         OR phone_primary LIKE $2
+                        OR LOWER(email) LIKE LOWER($2)
                     )
                 ORDER BY name ASC
                 LIMIT 20
@@ -52,7 +54,8 @@ export class ClientesService {
                 name,
                 phone_primary,
                 image_url,
-                is_active
+                is_active,
+                email
             FROM mod_ordem_servico_clients
             WHERE tenant_id = $1
                 AND deleted_at IS NULL
@@ -86,8 +89,8 @@ export class ClientesService {
                 `INSERT INTO mod_ordem_servico_clients 
                 (id, tenant_id, name, document, phone_primary, phone_secondary, address, is_active,
                  address_zip, address_street, address_number, address_complement, address_neighborhood, address_city, address_state,
-                 observations, image_url)
-                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                 observations, image_url, email)
+                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
                 RETURNING id`,
                 id,
                 tenantId,
@@ -105,7 +108,8 @@ export class ClientesService {
                 data.address_city || null,
                 data.address_state || null,
                 data.observations || null,
-                data.image_url || null
+                data.image_url || null,
+                data.email || null
             );
 
             const newId = result[0].id;
@@ -148,6 +152,7 @@ export class ClientesService {
                     address_state = $15,
                     observations = $16,
                     image_url = $17,
+                    email = $18,
                     updated_at = NOW()
                 WHERE id = $1::uuid AND tenant_id = $2`,
                 id,
@@ -166,7 +171,8 @@ export class ClientesService {
                 data.address_city || null,
                 data.address_state || null,
                 data.observations || null,
-                data.image_url || null
+                data.image_url || null,
+                data.email || null
             );
 
             await this.auditService.log({
