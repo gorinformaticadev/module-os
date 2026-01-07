@@ -119,67 +119,25 @@ export default function NewOrdemRefactoredPage() {
 
     const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
-    // useEffect(() => {
-    //     fetchTechnicians();
-    // }, []);
-
-    // Busca automática com debounce quando o usuário digita
     useEffect(() => {
-        const searchClients = async () => {
-            if (searchTerm.length < 2) {
-                setClients([]);
-                return;
-            }
-            
-            try {
-                setSearchingClients(true);
-                const params: any = {};
-                if (searchTerm) params.search = searchTerm;
-                params.status = 'true'; // Buscar apenas clientes ativos
-                
-                const response = await api.get('/api/ordem_servico/clientes', { params });
-                setClients(response.data);
-            } catch (error) {
-                console.error('Erro ao buscar clientes:', error);
-                toast({ title: 'Erro', description: 'Erro ao buscar clientes', variant: 'destructive' });
-            } finally {
-                setSearchingClients(false);
-            }
-        };
+        fetchTechnicians();
+    }, []);
 
-        if (searchTerm.length >= 2) {
-            const delayDebounceFn = setTimeout(() => {
-                searchClients();
-            }, 500);
-            return () => clearTimeout(delayDebounceFn);
-        } else {
-            // Limpa a lista quando o termo de busca é muito pequeno
-            setClients([]);
+    const fetchTechnicians = async () => {
+        try {
+            const response = await api.get('/modules/ordem_servico/config/users');
+            // Filter to only include technicians if the API supports it, or just show all available users
+            setTechnicians(response.data.filter((u: any) => u.is_technician) || response.data);
+        } catch (error) {
+            console.error('Erro ao buscar técnicos:', error);
         }
-    }, [searchTerm]);
-
-    // const fetchTechnicians = async () => {
-    //     try {
-    //         const response = await api.get('/modules/ordem_servico/config/users');
-    //         // Filter to only include technicians if the API supports it, or just show all available users
-    //         setTechnicians(response.data.filter((u: any) => u.is_technician) || response.data);
-    //     } catch (error) {
-    //         console.error('Erro ao buscar técnicos:', error);
-    //     }
-    // };
+    };
 
     const handleSearchClients = async () => {
-        if (searchTerm.length < 2) {
-            toast({ title: 'Busca inválida', description: 'Digite pelo menos 2 caracteres para buscar', variant: 'warning' });
-            return;
-        }
+        if (searchTerm.length < 2) return;
         try {
             setSearchingClients(true);
-            const params: any = {};
-            if (searchTerm) params.search = searchTerm;
-            params.status = 'true'; // Buscar apenas clientes ativos
-            
-            const response = await api.get('/api/ordem_servico/clientes', { params });
+            const response = await api.get(`/api/ordem_servico/clientes?search=${searchTerm}&status=true`);
             setClients(response.data);
         } catch (error) {
             console.error('Erro ao buscar clientes:', error);
@@ -362,17 +320,12 @@ export default function NewOrdemRefactoredPage() {
                                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                             <Input
                                                 id="search-client"
-                                                placeholder="Nome, CPF/CNPJ ou Tel... (mín. 2 caracteres)"
-                                                className="pl-9 pr-8"
+                                                placeholder="Nome, CPF/CNPJ ou Tel..."
+                                                className="pl-9"
                                                 value={searchTerm}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                                                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearchClients()}
                                             />
-                                            {searchingClients && (
-                                                <div className="absolute right-2.5 top-2.5">
-                                                    <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                                                </div>
-                                            )}
                                         </div>
                                         <Button size="icon" variant="secondary" onClick={handleSearchClients} disabled={searchingClients}>
                                             <SearchCode className="h-4 w-4" />
