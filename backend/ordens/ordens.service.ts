@@ -94,7 +94,16 @@ export class OrdensService {
 
             const ordens = (await this.prisma.$queryRawUnsafe(query, ...params) as any[]).map(os => ({
                 ...os,
-                equipamento_fotos: os.equipamento_fotos ? (typeof os.equipamento_fotos === 'string' ? JSON.parse(os.equipamento_fotos) : os.equipamento_fotos) : []
+                equipamento_fotos: os.equipamento_fotos ? (typeof os.equipamento_fotos === 'string' ? JSON.parse(os.equipamento_fotos) : os.equipamento_fotos) : [],
+                cliente: {
+                    name: os.cliente_nome,
+                    phone_primary: os.cliente_telefone,
+                    is_active: os.cliente_ativo
+                },
+                responsavel: {
+                    name: os.responsavel_nome,
+                    email: os.responsavel_email
+                }
             }));
 
             this.logger.log(`✅ ${ordens.length} ordens de serviço encontradas`);
@@ -143,6 +152,26 @@ export class OrdensService {
                 }
             } else if (ordem) {
                 ordem.equipamento_fotos = [];
+            }
+
+            // Estruturar dados do cliente e responsável
+            if (ordem) {
+                ordem.cliente = {
+                    name: ordem.cliente_nome,
+                    phone_primary: ordem.cliente_telefone,
+                    is_active: ordem.cliente_ativo,
+                    // Incluir dados de endereço se necessário
+                    address_street: ordem.cliente_endereco_rua,
+                    address_number: ordem.cliente_endereco_numero,
+                    address_neighborhood: ordem.cliente_endereco_bairro,
+                    address_city: ordem.cliente_endereco_cidade,
+                    address_state: ordem.cliente_endereco_estado,
+                    address_zip: ordem.cliente_endereco_cep
+                };
+                ordem.responsavel = {
+                    name: ordem.responsavel_nome,
+                    email: ordem.responsavel_email
+                };
             }
 
             this.logger.log(`✅ Ordem de serviço ${id} encontrada`);
