@@ -87,7 +87,7 @@ export class OrdensService {
                     u.email as responsavel_email
                 FROM mod_ordem_servico_ordens os
                 LEFT JOIN mod_ordem_servico_clients c ON os.cliente_id = c.id
-                LEFT JOIN users u ON os.usuario_responsavel_id::uuid = u.id
+                LEFT JOIN users u ON os.usuario_responsavel_id = u.id
                 ${whereClause}
                 ORDER BY os.created_at DESC
             `;
@@ -127,7 +127,7 @@ export class OrdensService {
                     u.email as responsavel_email
                 FROM mod_ordem_servico_ordens os
                 LEFT JOIN mod_ordem_servico_clients c ON os.cliente_id = c.id
-                LEFT JOIN users u ON os.usuario_responsavel_id::uuid = u.id
+                LEFT JOIN users u ON os.usuario_responsavel_id = u.id
                 WHERE os.id = $1 AND os.tenant_id = $2
             `;
 

@@ -21,24 +21,117 @@ import {
 } from 'lucide-react';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../../types/ordem-servico.types';
 
-// Simulação de API client para módulo raiz
-const apiClient = {
+// Cliente API customizado para o módulo raiz
+const api = {
   get: async (url: string) => {
-    console.log('API GET:', url);
-    // Simular dados para demonstração
-    return { data: [] };
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+    // Função auxiliar para obter o token de forma segura (Cookie ou SessionStorage)
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+
+      // 1. Tentar ler do cookie
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+
+      // 2. Fallback para sessionStorage (criptografado em base64)
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) {
+        try { return atob(encrypted); } catch { return ''; }
+      }
+
+      return '';
+    };
+
+    const token = getToken();
+
+    // Log para depuração
+    if (!token) console.warn('⚠️ [OrdensPage] Token não encontrado (Cookies/SessionSt)!');
+
+    const response = await fetch(`${baseUrl}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
   },
   post: async (url: string, data: any) => {
-    console.log('API POST:', url, data);
-    return { data: {} };
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+      return '';
+    };
+    const token = getToken();
+
+    const response = await fetch(`${baseUrl}${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
   },
   put: async (url: string, data: any) => {
-    console.log('API PUT:', url, data);
-    return { data: {} };
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+      return '';
+    };
+    const token = getToken();
+
+    const response = await fetch(`${baseUrl}${url}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
   },
   delete: async (url: string) => {
-    console.log('API DELETE:', url);
-    return { data: {} };
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+      return '';
+    };
+    const token = getToken();
+
+    const response = await fetch(`${baseUrl}${url}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
   }
 };
 
@@ -79,7 +172,7 @@ export default function OrdensPage() {
         }
       });
 
-      const response = await apiClient.get(`/api/ordem_servico/ordens?${queryParams.toString()}`);
+      const response = await api.get(`/api/ordem_servico/ordens?${queryParams.toString()}`);
       setOrdens(response.data || []);
     } catch (error) {
       console.error('Erro ao carregar ordens:', error);
@@ -110,7 +203,7 @@ export default function OrdensPage() {
     if (!confirm(`Tem certeza que deseja excluir a OS #${ordem.numero}?`)) return;
 
     try {
-      await apiClient.delete(`/api/ordem_servico/ordens/${ordem.id}`);
+      await api.delete(`/api/ordem_servico/ordens/${ordem.id}`);
       toast({
         title: "Sucesso",
         description: "Ordem de serviço excluída com sucesso"
