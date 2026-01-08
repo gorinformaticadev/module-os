@@ -187,7 +187,23 @@ export default function OrdensPage() {
   };
 
   useEffect(() => {
-    loadOrdens();
+    const timer = setTimeout(() => {
+      // Validation for short search terms
+      if (searchTerm && searchTerm.trim().length > 0 && searchTerm.trim().length < 2) {
+        // Can optionally set empty list or just do nothing
+        // For now, let's respect the user's view but avoid the API call if we want strictness, 
+        // OR allow loadOrdens to handle it. 
+        // The guide suggests stopping at frontend.
+        // But let's follow the guide's "useEffect" pattern exactly if possible.
+        // Guide says:
+        // if (safeSearch.length > 0 && safeSearch.length < 2) { setClients([]); return; }
+        setOrdens([]);
+        return;
+      }
+      loadOrdens();
+    }, 500); // Increased debounce slightly to be safe
+
+    return () => clearTimeout(timer);
   }, [searchTerm, statusFilter, origemFilter]);
 
   // Ações das ordens

@@ -53,6 +53,7 @@ import {
 } from '../../../types/ordem-servico.types';
 import ClientModal from '../../../components/ClientModal';
 import ClientEditModal from '../../../components/ClientEditModal';
+import ClientOrdersList from '../../../components/ClientOrdersList';
 
 interface Client {
     id: string;
@@ -141,7 +142,7 @@ export default function NewOrdemRefactoredPage() {
 
     const fetchClients = async () => {
         const safeSearch = typeof searchTerm === 'string' ? searchTerm.trim() : '';
-        
+
         // 🔒 Evita busca curta
         if (safeSearch.length > 0 && safeSearch.length < 2) {
             setClients([]);
@@ -203,7 +204,7 @@ export default function NewOrdemRefactoredPage() {
             setLoadingTipos(true);
             const response = await api.get('/api/ordem_servico/ordens/tipos-servico');
             setTiposServico(response.data);
-            
+
             // Set default service type if available
             if (response.data.length > 0 && !formData.tipo_servico) {
                 const defaultType = response.data.find((t: any) => t.is_default) || response.data[0];
@@ -341,7 +342,7 @@ export default function NewOrdemRefactoredPage() {
                 origem_solicitacao: formData.origem_solicitacao,
                 status: Number(formData.status),
                 usuario_responsavel_id: formData.usuario_responsavel_id || undefined,
-                
+
                 // Equipment fields
                 equipamento_tipo: formData.equipamento_tipo || undefined,
                 equipamento_marca: formData.equipamento_marca || undefined,
@@ -349,7 +350,7 @@ export default function NewOrdemRefactoredPage() {
                 equipamento_serie: formData.equipamento_serie || undefined,
                 equipamento_acessorios: formData.equipamento_acessorios || undefined,
                 equipamento_estado: formData.equipamento_estado || undefined,
-                
+
                 // Formatting fields
                 formatacao_so: formData.formatacao_so || undefined,
                 formatacao_backup: formData.formatacao_backup || undefined,
@@ -358,7 +359,7 @@ export default function NewOrdemRefactoredPage() {
             };
 
             // Handle photos separately - only include if there are valid photos
-            const validPhotos = Array.isArray(formData.equipamento_fotos) 
+            const validPhotos = Array.isArray(formData.equipamento_fotos)
                 ? formData.equipamento_fotos
                     .filter(photo => photo && typeof photo === 'string' && photo.trim() !== '')
                     .map(photo => String(photo).trim())
@@ -563,10 +564,11 @@ export default function NewOrdemRefactoredPage() {
                                             </div>
                                         </div>
                                     )}
+                                    <ClientOrdersList clientId={selectedClient.id} clientName={selectedClient.name} />
 
                                     {selectedClient.observations && (
                                         <div className="mt-2 p-3 bg-muted/40 rounded-md border border-muted-foreground/10">
-                                            <div 
+                                            <div
                                                 className="flex items-center justify-between cursor-pointer hover:bg-muted/20 -m-1 p-1 rounded transition-colors"
                                                 onClick={() => setIsObservationsExpanded(!isObservationsExpanded)}
                                             >
@@ -582,7 +584,7 @@ export default function NewOrdemRefactoredPage() {
                                                     <ChevronDown className="h-3 w-3 text-muted-foreground" />
                                                 )}
                                             </div>
-                                            
+
                                             {isObservationsExpanded ? (
                                                 <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                                                     {/* Observações */}
@@ -594,7 +596,7 @@ export default function NewOrdemRefactoredPage() {
                                                             {selectedClient.observations}
                                                         </p>
                                                     </div>
-                                                    
+
                                                     {/* Informações Adicionais */}
                                                     <div className="grid grid-cols-2 gap-3 pt-2 border-t border-muted-foreground/10">
                                                         {selectedClient.document && (
@@ -607,7 +609,7 @@ export default function NewOrdemRefactoredPage() {
                                                                 </p>
                                                             </div>
                                                         )}
-                                                        
+
                                                         <div>
                                                             <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
                                                                 Status
@@ -619,7 +621,7 @@ export default function NewOrdemRefactoredPage() {
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        
+
                                                         {selectedClient.phone_secondary && (
                                                             <div>
                                                                 <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
@@ -630,7 +632,7 @@ export default function NewOrdemRefactoredPage() {
                                                                 </p>
                                                             </div>
                                                         )}
-                                                        
+
                                                         {(selectedClient.address_zip || selectedClient.address_complement) && (
                                                             <div>
                                                                 <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
@@ -676,8 +678,8 @@ export default function NewOrdemRefactoredPage() {
 
                             <div className="space-y-2">
                                 <Label>Tipo de Serviço *</Label>
-                                <Select 
-                                    value={formData.tipo_servico} 
+                                <Select
+                                    value={formData.tipo_servico}
                                     onValueChange={(v: string) => setFormData({ ...formData, tipo_servico: v })}
                                     disabled={loadingTipos}
                                 >

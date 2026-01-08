@@ -30,9 +30,21 @@ export class OrdensService {
 
             // Aplicar filtros
             if (filters.search) {
-                whereClause += ` AND (os.numero ILIKE $${paramIndex} OR c.name ILIKE $${paramIndex} OR os.descricao ILIKE $${paramIndex})`;
-                params.push(`%${filters.search}%`);
-                paramIndex++;
+                const searchParam = filters.search.trim();
+                // Bloquear buscas muito curtas para performance (exceto se for numero exato talvez? mas vamos seguir a regra geral)
+                if (searchParam.length > 0 && searchParam.length < 2) {
+                    whereClause += ` AND 1=0`; // Força resultado vazio para busca curta
+                } else if (searchParam.length >= 2) {
+                    // Pre-convert to lowercase to avoid LOWER($param) ambiguity in Postgres
+                    const searchPattern = `%${searchParam.toLowerCase()}%`;
+                    whereClause += ` AND (
+                        LOWER(COALESCE(os.numero, '')) LIKE $${paramIndex}::text 
+                        OR LOWER(COALESCE(c.name, '')) LIKE $${paramIndex}::text 
+                        OR LOWER(COALESCE(os.descricao, '')) LIKE $${paramIndex}::text
+                    )`;
+                    params.push(searchPattern);
+                    paramIndex++;
+                }
             }
 
             if (filters.status && filters.status.length > 0) {
@@ -92,9 +104,20 @@ export class OrdensService {
                 ORDER BY os.created_at DESC
             `;
 
+            this.logger.log(`Executing Query: ${query}`);
+            this.logger.log(`Query Params: ${JSON.stringify(params)}`);
+
+            const parsePhotos = (photos: any) => {
+                try {
+                    return typeof photos === 'string' ? JSON.parse(photos) : (photos || []);
+                } catch (e) {
+                    return [];
+                }
+            };
+
             const ordens = (await this.prisma.$queryRawUnsafe(query, ...params) as any[]).map(os => ({
                 ...os,
-                equipamento_fotos: os.equipamento_fotos ? (typeof os.equipamento_fotos === 'string' ? JSON.parse(os.equipamento_fotos) : os.equipamento_fotos) : [],
+                equipamento_fotos: parsePhotos(os.equipamento_fotos),
                 cliente: {
                     name: os.cliente_nome,
                     phone_primary: os.cliente_telefone,
@@ -209,7 +232,7 @@ export class OrdensService {
 
             const status = createDto.status !== undefined ? createDto.status : 0; // Default: ORCAMENTO
             const orcamentoAprovado = status === 1; // Se status for ABERTA, orçamento já foi aprovado
-            
+
             // Prepare parameters with logging (simplified)
             const params = [
                 tenantId,                                                                                    // $1
@@ -221,7 +244,7 @@ export class OrdensService {
                 status,                                                                                      // $7
                 createDto.origem_solicitacao,                                                               // $8
                 createDto.valor_servico || 0,                                                               // $9
-                createDto.usuario_responsavel_id === 'UNASSIGNED' || createDto.usuario_responsavel_id === 'NONE' || !createDto.usuario_responsavel_id ? null : createDto.usuario_responsavel_id, // $10
+                createDto.usuario_responsavel_id === 'UNASSIGNED' || createDto.usuario_responsavel_id === 'NONE' || !createDto.usuario_responsavel_id ? userId : createDto.usuario_responsavel_id, // $10 - Fallback to creator if not assigned
                 createDto.observacoes_internas || null,                                                     // $11
                 createDto.observacoes_cliente || null,                                                      // $12
                 createDto.equipamento_tipo || null,                                                         // $13
@@ -544,7 +567,7 @@ export class OrdensService {
             }
 
             const isActiveValue = result[0].is_active;
-            
+
             // Handle different data types for is_active field
             let isActive = false;
             if (typeof isActiveValue === 'boolean') {
@@ -666,7 +689,7 @@ export class OrdensService {
     async getTiposServico(tenantId: string) {
         try {
             this.logger.log(`Buscando tipos de serviço. Tenant: ${tenantId}`);
-            
+
             const result = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT id, nome, is_default FROM mod_ordem_servico_tipos_servico 
                  WHERE tenant_id = $1 
@@ -685,7 +708,7 @@ export class OrdensService {
     async getTiposEquipamento(tenantId: string) {
         try {
             this.logger.log(`Buscando tipos de equipamento. Tenant: ${tenantId}`);
-            
+
             const result = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT id, nome FROM mod_ordem_servico_tipos_equipamento 
                  WHERE tenant_id = $1 
@@ -704,7 +727,7 @@ export class OrdensService {
     async getTechnicians(tenantId: string) {
         try {
             this.logger.log(`Buscando técnicos. Tenant: ${tenantId}`);
-            
+
             const result = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT u.id, u.name, u.email 
                  FROM users u

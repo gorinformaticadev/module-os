@@ -27,7 +27,8 @@ export class OrdensController {
             return await this.ordensService.findAll(req.user.tenantId, filters);
         } catch (error) {
             this.logger.error(`Erro ao buscar ordens de serviço:`, error);
-            throw error;
+            // DEBUG: Expose error message to frontend
+            throw new HttpException(error.message || 'Erro interno ao buscar ordens', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
