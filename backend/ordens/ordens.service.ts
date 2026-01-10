@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
 import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../shared/dto/ordem-servico.dto';
 
@@ -24,71 +24,73 @@ export class OrdensService {
         try {
             this.logger.log(`Buscando ordens de serviço. Tenant: ${tenantId}`);
 
-            let whereClause = `WHERE os.tenant_id = $1`;
             const params: any[] = [tenantId];
-            let paramIndex = 2;
+            let whereConditions: string[] = [`os.tenant_id = $1`];
+            
+            // Helper to add param and return its index
+            const addParam = (value: any) => {
+                params.push(value);
+                return params.length;
+            };
 
             // Aplicar filtros
             if (filters.search) {
                 const searchParam = filters.search.trim();
-                // Bloquear buscas muito curtas para performance (exceto se for numero exato talvez? mas vamos seguir a regra geral)
+                
                 if (searchParam.length > 0 && searchParam.length < 2) {
-                    whereClause += ` AND 1=0`; // Força resultado vazio para busca curta
+                    whereConditions.push('1=0'); // Força resultado vazio para busca curta
                 } else if (searchParam.length >= 2) {
-                    // Pre-convert to lowercase to avoid LOWER($param) ambiguity in Postgres
                     const searchPattern = `%${searchParam.toLowerCase()}%`;
-                    whereClause += ` AND (
-                        LOWER(COALESCE(os.numero, '')) LIKE $${paramIndex}::text 
-                        OR LOWER(COALESCE(c.name, '')) LIKE $${paramIndex}::text 
-                        OR LOWER(COALESCE(os.descricao, '')) LIKE $${paramIndex}::text
-                    )`;
-                    params.push(searchPattern);
-                    paramIndex++;
+                    const pIdx = addParam(searchPattern);
+                    
+                    // Robust search with text casting
+                    whereConditions.push(`(
+                        LOWER(COALESCE(os.numero::text, '')) LIKE $${pIdx}::text 
+                        OR LOWER(COALESCE(c.name::text, '')) LIKE $${pIdx}::text 
+                        OR LOWER(COALESCE(os.descricao::text, '')) LIKE $${pIdx}::text
+                        OR LOWER(COALESCE(u.name::text, '')) LIKE $${pIdx}::text
+                    )`);
                 }
             }
 
             if (filters.status && filters.status.length > 0) {
-                whereClause += ` AND os.status = ANY($${paramIndex})`;
-                params.push(filters.status);
-                paramIndex++;
+                const pIdx = addParam(filters.status);
+                whereConditions.push(`os.status = ANY($${pIdx})`);
             }
 
             if (filters.cliente_id) {
-                whereClause += ` AND os.cliente_id = $${paramIndex}`;
-                params.push(filters.cliente_id);
-                paramIndex++;
+                const pIdx = addParam(filters.cliente_id);
+                whereConditions.push(`os.cliente_id = $${pIdx}`);
             }
 
             if (filters.usuario_responsavel_id) {
-                whereClause += ` AND os.usuario_responsavel_id = $${paramIndex}`;
-                params.push(filters.usuario_responsavel_id);
-                paramIndex++;
+                const pIdx = addParam(filters.usuario_responsavel_id);
+                whereConditions.push(`os.usuario_responsavel_id = $${pIdx}`);
             }
 
             if (filters.data_inicio) {
-                whereClause += ` AND os.data_abertura >= $${paramIndex}`;
-                params.push(filters.data_inicio);
-                paramIndex++;
+                const pIdx = addParam(filters.data_inicio);
+                whereConditions.push(`os.data_abertura >= $${pIdx}`);
             }
 
             if (filters.data_fim) {
-                whereClause += ` AND os.data_abertura <= $${paramIndex}`;
-                params.push(filters.data_fim);
-                paramIndex++;
+                const pIdx = addParam(filters.data_fim);
+                whereConditions.push(`os.data_abertura <= $${pIdx}`);
             }
 
             if (filters.origem_solicitacao) {
-                whereClause += ` AND os.origem_solicitacao = $${paramIndex}`;
-                params.push(filters.origem_solicitacao);
-                paramIndex++;
+                const pIdx = addParam(filters.origem_solicitacao);
+                whereConditions.push(`os.origem_solicitacao = $${pIdx}`);
             }
 
             if (filters.tipo_servico) {
-                whereClause += ` AND os.tipo_servico = $${paramIndex}`;
-                params.push(filters.tipo_servico);
-                paramIndex++;
+                const pIdx = addParam(filters.tipo_servico);
+                whereConditions.push(`os.tipo_servico = $${pIdx}`);
             }
 
+            const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+            // Using explicit text cast on join to avoid UUID vs Text issues with 'UNASSIGNED' values
             const query = `
                 SELECT 
                     os.*,
@@ -99,13 +101,13 @@ export class OrdensService {
                     u.email as responsavel_email
                 FROM mod_ordem_servico_ordens os
                 LEFT JOIN mod_ordem_servico_clients c ON os.cliente_id = c.id
-                LEFT JOIN users u ON os.usuario_responsavel_id = u.id
+                LEFT JOIN users u ON os.usuario_responsavel_id = u.id::text
                 ${whereClause}
                 ORDER BY os.created_at DESC
             `;
 
-            this.logger.log(`Executing Query: ${query}`);
-            this.logger.log(`Query Params: ${JSON.stringify(params)}`);
+            this.logger.log('Executing Query:', query);
+            this.logger.log('Query Params:', params);
 
             const parsePhotos = (photos: any) => {
                 try {
@@ -129,10 +131,13 @@ export class OrdensService {
                 }
             }));
 
-            this.logger.log(`✅ ${ordens.length} ordens de serviço encontradas`);
+            this.logger.log(`${ordens.length} ordens de serviço encontradas`);
             return ordens;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar ordens de serviço:`, error);
+            this.logger.error('Erro ao buscar ordens de serviço:', error);
+            if (error instanceof Error) {
+                this.logger.error('Stack:', error.stack);
+            }
             throw error;
         }
     }
@@ -141,7 +146,7 @@ export class OrdensService {
         try {
             this.logger.log(`Buscando ordem de serviço ${id}. Tenant: ${tenantId}`);
 
-            const query = `
+            const result = await this.prisma.$queryRaw`
                 SELECT 
                     os.*,
                     c.name as cliente_nome,
@@ -160,17 +165,15 @@ export class OrdensService {
                 FROM mod_ordem_servico_ordens os
                 LEFT JOIN mod_ordem_servico_clients c ON os.cliente_id = c.id
                 LEFT JOIN users u ON os.usuario_responsavel_id = u.id
-                WHERE os.id = $1 AND os.tenant_id = $2
-            `;
-
-            const result = await this.prisma.$queryRawUnsafe(query, id, tenantId) as any[];
+                WHERE os.id = ${id} AND os.tenant_id = ${tenantId}
+            ` as any[];
 
             const ordem = result[0];
             if (ordem && ordem.equipamento_fotos) {
                 try {
                     ordem.equipamento_fotos = typeof ordem.equipamento_fotos === 'string' ? JSON.parse(ordem.equipamento_fotos) : ordem.equipamento_fotos;
                 } catch (e) {
-                    this.logger.error(`Erro ao parsear fotos da OS ${id}:`, e);
+                    this.logger.error('Erro ao parsear fotos da OS:', e);
                     ordem.equipamento_fotos = [];
                 }
             } else if (ordem) {
@@ -197,10 +200,10 @@ export class OrdensService {
                 };
             }
 
-            this.logger.log(`✅ Ordem de serviço ${id} encontrada`);
+            this.logger.log(`Ordem de serviço ${id} encontrada`);
             return ordem;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar ordem de serviço ${id}:`, error);
+            this.logger.error('Erro ao buscar ordem de serviço:', error);
             throw error;
         }
     }
@@ -208,14 +211,17 @@ export class OrdensService {
     async create(tenantId: string, userId: string, createDto: CreateOrdemServicoDTO) {
         try {
             this.logger.log(`Criando nova ordem de serviço. Tenant: ${tenantId}`);
-            this.logger.log(`CreateDTO recebido:`, JSON.stringify(createDto, null, 2));
+            this.logger.log('CreateDTO recebido:', JSON.stringify(createDto, null, 2));
 
             // Gerar número sequencial da OS
             const numeroOS = await this.gerarNumeroOS(tenantId);
             this.logger.log(`Número da OS gerado: ${numeroOS}`);
 
+            const status = createDto.status !== undefined ? createDto.status : 0; // Default: ORCAMENTO
+            const orcamentoAprovado = status === 1; // Se status for ABERTA, orçamento já foi aprovado
+
             // Use a more basic INSERT query to avoid column issues
-            const query = `
+            const result = await this.prisma.$queryRaw`
                 INSERT INTO mod_ordem_servico_ordens (
                     tenant_id, numero, cliente_id, tipo_servico, prioridade, descricao, 
                     status, origem_solicitacao, valor_servico,
@@ -225,45 +231,18 @@ export class OrdensService {
                     formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha,
                     data_abertura, orcamento_aprovado
                 ) VALUES (
-                    $1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), $24
+                    ${tenantId}, ${numeroOS}, ${createDto.cliente_id}::uuid, ${createDto.tipo_servico}, ${createDto.prioridade || 'MEDIA'}, ${createDto.descricao}, 
+                    ${status}, ${createDto.origem_solicitacao}, ${createDto.valor_servico || 0}, ${createDto.usuario_responsavel_id === 'UNASSIGNED' || createDto.usuario_responsavel_id === 'NONE' || !createDto.usuario_responsavel_id ? userId : createDto.usuario_responsavel_id}::uuid, 
+                    ${createDto.observacoes_internas || null}, ${createDto.observacoes_cliente || null},
+                    ${createDto.equipamento_tipo || null}, ${createDto.equipamento_marca || null}, ${createDto.equipamento_modelo || null}, ${createDto.equipamento_serie || null},
+                    ${createDto.equipamento_acessorios || null}, ${createDto.equipamento_estado || null}, ${createDto.equipamento_fotos ? JSON.stringify(createDto.equipamento_fotos) : null},
+                    ${createDto.formatacao_so || null}, ${createDto.formatacao_backup || false}, ${createDto.formatacao_backup_descricao || null}, ${createDto.formatacao_senha || null},
+                    NOW(), ${orcamentoAprovado}
                 )
                 RETURNING *
-            `;
+            ` as any[];
 
-            const status = createDto.status !== undefined ? createDto.status : 0; // Default: ORCAMENTO
-            const orcamentoAprovado = status === 1; // Se status for ABERTA, orçamento já foi aprovado
-
-            // Prepare parameters with logging (simplified)
-            const params = [
-                tenantId,                                                                                    // $1
-                numeroOS,                                                                                    // $2
-                createDto.cliente_id,                                                                        // $3
-                createDto.tipo_servico,                                                                      // $4
-                createDto.prioridade || 'MEDIA',                                                            // $5
-                createDto.descricao,                                                                         // $6
-                status,                                                                                      // $7
-                createDto.origem_solicitacao,                                                               // $8
-                createDto.valor_servico || 0,                                                               // $9
-                createDto.usuario_responsavel_id === 'UNASSIGNED' || createDto.usuario_responsavel_id === 'NONE' || !createDto.usuario_responsavel_id ? userId : createDto.usuario_responsavel_id, // $10 - Fallback to creator if not assigned
-                createDto.observacoes_internas || null,                                                     // $11
-                createDto.observacoes_cliente || null,                                                      // $12
-                createDto.equipamento_tipo || null,                                                         // $13
-                createDto.equipamento_marca || null,                                                        // $14
-                createDto.equipamento_modelo || null,                                                       // $15
-                createDto.equipamento_serie || null,                                                        // $16
-                createDto.equipamento_acessorios || null,                                                   // $17
-                createDto.equipamento_estado || null,                                                       // $18
-                createDto.equipamento_fotos ? JSON.stringify(createDto.equipamento_fotos) : null,          // $19
-                createDto.formatacao_so || null,                                                            // $20
-                createDto.formatacao_backup || false,                                                       // $21
-                createDto.formatacao_backup_descricao || null,                                              // $22
-                createDto.formatacao_senha || null,                                                         // $23
-                orcamentoAprovado                                                                           // $24
-            ];
-
-            this.logger.log(`Parâmetros da query:`, params);
-
-            const result = await this.prisma.$queryRawUnsafe(query, ...params) as any[];
+            this.logger.log('Parâmetros da query processados');
 
             const novaOrdem = result[0];
             if (novaOrdem.equipamento_fotos) {
@@ -288,15 +267,15 @@ export class OrdensService {
                     `OS #${numeroOS} criada`
                 );
             } catch (historicoError) {
-                this.logger.warn(`⚠️ Erro ao registrar histórico (não crítico):`, historicoError);
+                this.logger.warn('Erro ao registrar histórico (não crítico):', historicoError);
                 // Continue execution even if history logging fails
             }
 
-            this.logger.log(`✅ Ordem de serviço criada: ${novaOrdem.id}`);
+            this.logger.log(`Ordem de serviço criada: ${novaOrdem.id}`);
             return novaOrdem;
         } catch (error) {
-            this.logger.error(`❌ Erro ao criar ordem de serviço:`, error);
-            this.logger.error(`❌ Stack trace:`, error.stack);
+            this.logger.error('Erro ao criar ordem de serviço:', error);
+            this.logger.error('Stack trace:', error.stack);
             throw error;
         }
     }
@@ -336,7 +315,7 @@ export class OrdensService {
                 }
             }
 
-            updateFields.push(`updated_at = NOW()`);
+            updateFields.push('updated_at = NOW()');
 
             if (updateFields.length === 1) { // Só tem o updated_at
                 return ordemAtual;
@@ -346,7 +325,7 @@ export class OrdensService {
             const query = `
                 UPDATE mod_ordem_servico_ordens 
                 SET ${updateFields.join(', ')}
-                WHERE id = ${paramIndex}::uuid AND tenant_id = ${paramIndex + 1}
+                WHERE id = $${paramIndex}::uuid AND tenant_id = $${paramIndex + 1}
                 RETURNING *
             `;
 
@@ -365,19 +344,19 @@ export class OrdensService {
             // Registrar alterações no histórico
             await this.registrarAlteracoesHistorico(tenantId, id, userId, ordemAtual, updateDto);
 
-            this.logger.log(`✅ Ordem de serviço ${id} atualizada`);
+            this.logger.log(`Ordem de serviço ${id} atualizada`);
             return ordemAtualizada;
         } catch (error) {
-            this.logger.error(`❌ Erro ao atualizar ordem de serviço ${id}:`, error);
+            this.logger.error('Erro ao atualizar ordem de serviço:', error);
             throw error;
         }
     }
 
     async updateStatus(tenantId: string, userId: string, id: string, novoStatus: number, motivoCancelamento?: string, observacoes?: string) {
         try {
-            this.logger.log(`Atualizando status da ordem ${id} para ${novoStatus}. Tenant: ${tenantId}`);
+            this.logger.log(`Atualizando status da ordem ${id} para ${this.getStatusLabel(novoStatus)}. Tenant: ${tenantId}`);
 
-            const updateFields = ['status = $1', 'updated_at = NOW()'];
+            const updateFields = [`status = $1`, 'updated_at = NOW()'];
             const params: any[] = [novoStatus];
             let paramIndex = 2;
 
@@ -388,14 +367,14 @@ export class OrdensService {
             }
 
             if (novoStatus === 6) { // FINALIZADA
-                updateFields.push(`data_conclusao = NOW()`);
+                updateFields.push('data_conclusao = NOW()');
             }
 
             params.push(id, tenantId);
             const query = `
                 UPDATE mod_ordem_servico_ordens 
                 SET ${updateFields.join(', ')}
-                WHERE id = ${paramIndex}::uuid AND tenant_id = ${paramIndex + 1}
+                WHERE id = $${paramIndex}::uuid AND tenant_id = $${paramIndex + 1}
                 RETURNING *
             `;
 
@@ -411,7 +390,7 @@ export class OrdensService {
                 descricao = 'Ordem de serviço finalizada';
             } else if (novoStatus === 7) {
                 acao = 'CANCELAMENTO';
-                descricao = `Ordem de serviço cancelada. Motivo: ${motivoCancelamento}`;
+                descricao = `Ordem de serviço cancelada. Motivo: ${observacoes || 'Não informado'}`;
             }
 
             await this.registrarHistorico(
@@ -424,10 +403,10 @@ export class OrdensService {
                 observacoes
             );
 
-            this.logger.log(`✅ Status da ordem ${id} atualizado para ${novoStatus}`);
+            this.logger.log(`Status da ordem ${id} atualizado para ${this.getStatusLabel(novoStatus)}`);
             return ordemAtualizada;
         } catch (error) {
-            this.logger.error(`❌ Erro ao atualizar status da ordem ${id}:`, error);
+            this.logger.error('Erro ao atualizar status da ordem:', error);
             throw error;
         }
     }
@@ -437,22 +416,19 @@ export class OrdensService {
             this.logger.log(`Excluindo ordem de serviço ${id}. Tenant: ${tenantId}`);
 
             // Primeiro excluir histórico
-            await this.prisma.$executeRawUnsafe(
-                `DELETE FROM mod_ordem_servico_historico WHERE ordem_servico_id = $1::uuid`,
-                id
-            );
+            await this.prisma.$queryRaw`
+                DELETE FROM mod_ordem_servico_historico WHERE ordem_servico_id = ${id}::uuid
+            `;
 
             // Depois excluir a ordem
-            const result = await this.prisma.$executeRawUnsafe(
-                `DELETE FROM mod_ordem_servico_ordens WHERE id = $1::uuid AND tenant_id = $2`,
-                id,
-                tenantId
-            );
+            const result = await this.prisma.$queryRaw`
+                DELETE FROM mod_ordem_servico_ordens WHERE id = ${id}::uuid AND tenant_id = ${tenantId}
+            `;
 
-            this.logger.log(`✅ Ordem de serviço ${id} excluída`);
+            this.logger.log(`Ordem de serviço ${id} excluída`);
             return { success: true };
         } catch (error) {
-            this.logger.error(`❌ Erro ao excluir ordem de serviço ${id}:`, error);
+            this.logger.error('Erro ao excluir ordem de serviço:', error);
             throw error;
         }
     }
@@ -461,14 +437,12 @@ export class OrdensService {
         try {
             this.logger.log(`Aprovando orçamento ${id}. Tenant: ${tenantId}`);
 
-            const query = `
+            const result = await this.prisma.$queryRaw`
                 UPDATE mod_ordem_servico_ordens 
                 SET status = 1, orcamento_aprovado = true, updated_at = NOW()
-                WHERE id = $1::uuid AND tenant_id = $2 AND status = 0
+                WHERE id = ${id}::uuid AND tenant_id = ${tenantId} AND status = 0
                 RETURNING *
-            `;
-
-            const result = await this.prisma.$queryRawUnsafe(query, id, tenantId) as any[];
+            ` as any[];
 
             if (result.length === 0) {
                 throw new Error('Orçamento não encontrado ou já aprovado');
@@ -485,10 +459,10 @@ export class OrdensService {
                 null
             );
 
-            this.logger.log(`✅ Orçamento ${id} aprovado`);
+            this.logger.log(`Orçamento ${id} aprovado`);
             return result[0];
         } catch (error) {
-            this.logger.error(`❌ Erro ao aprovar orçamento ${id}:`, error);
+            this.logger.error('Erro ao aprovar orçamento:', error);
             throw error;
         }
     }
@@ -497,23 +471,21 @@ export class OrdensService {
         try {
             this.logger.log(`Buscando histórico da ordem ${ordemId}. Tenant: ${tenantId}`);
 
-            const query = `
+            const historico = await this.prisma.$queryRaw`
                 SELECT 
                     h.*,
                     u.name as usuario_nome,
                     u.email as usuario_email
                 FROM mod_ordem_servico_historico h
                 LEFT JOIN users u ON h.usuario_id::uuid = u.id
-                WHERE h.ordem_servico_id = $1
+                WHERE h.ordem_servico_id = ${ordemId}
                 ORDER BY h.created_at DESC
-            `;
+            ` as any[];
 
-            const historico = await this.prisma.$queryRawUnsafe(query, ordemId) as any[];
-
-            this.logger.log(`✅ ${historico.length} registros de histórico encontrados`);
+            this.logger.log(`${historico.length} registros de histórico encontrados`);
             return historico;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar histórico da ordem ${ordemId}:`, error);
+            this.logger.error('Erro ao buscar histórico da ordem:', error);
             throw error;
         }
     }
@@ -522,37 +494,33 @@ export class OrdensService {
         try {
             this.logger.log(`Buscando dados do dashboard. Tenant: ${tenantId}`);
 
-            const query = `
+            const dados = await this.prisma.$queryRaw`
                 SELECT 
                     status,
                     COUNT(*)::int as quantidade,
                     COALESCE(SUM(valor_servico), 0)::float as valor_total
                 FROM mod_ordem_servico_ordens 
-                WHERE tenant_id = $1
+                WHERE tenant_id = ${tenantId}
                 GROUP BY status
                 ORDER BY status
-            `;
+            ` as any[];
 
-            const dados = await this.prisma.$queryRawUnsafe(query, tenantId) as any[];
-
-            this.logger.log(`✅ Dados do dashboard obtidos`);
+            this.logger.log('Dados do dashboard obtidos');
             return dados;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar dados do dashboard:`, error);
+            this.logger.error('Erro ao buscar dados do dashboard:', error);
             throw error;
         }
     }
 
     async isClienteAtivo(tenantId: string, clienteId: string): Promise<boolean> {
         try {
-            const result = await this.prisma.$queryRawUnsafe(
-                `SELECT is_active FROM mod_ordem_servico_clients WHERE id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
-                clienteId,
-                tenantId
-            ) as any[];
+            const result = await this.prisma.$queryRaw`
+                SELECT is_active FROM mod_ordem_servico_clients WHERE id = ${clienteId}::uuid AND tenant_id = ${tenantId} AND deleted_at IS NULL
+            ` as any[];
 
             // Debug logging to understand what's being returned
-            this.logger.log(`🔍 Cliente validation debug:`, {
+            this.logger.log('Cliente validation debug:', {
                 clienteId,
                 tenantId,
                 resultLength: result.length,
@@ -562,7 +530,7 @@ export class OrdensService {
             });
 
             if (result.length === 0) {
-                this.logger.warn(`⚠️ Cliente não encontrado: ${clienteId}`);
+                this.logger.warn('Cliente não encontrado:', clienteId);
                 return false;
             }
 
@@ -581,10 +549,10 @@ export class OrdensService {
                 isActive = false;
             }
 
-            this.logger.log(`✅ Cliente ${clienteId} ativo: ${isActive}`);
+            this.logger.log('Cliente ativo:', isActive);
             return isActive;
         } catch (error) {
-            this.logger.error(`❌ Erro ao verificar se cliente está ativo:`, error);
+            this.logger.error('Erro ao verificar se cliente está ativo:', error);
             return false;
         }
     }
@@ -596,12 +564,11 @@ export class OrdensService {
 
     // Métodos auxiliares privados
     private async gerarNumeroOS(tenantId: string): Promise<string> {
-        const result = await this.prisma.$queryRawUnsafe(
-            `SELECT COALESCE(MAX(CAST(SUBSTRING(numero FROM '^[0-9]+') AS INTEGER)), 0) + 1 as proximo_numero
+        const result = await this.prisma.$queryRaw`
+            SELECT COALESCE(MAX(CAST(SUBSTRING(numero FROM '^[0-9]+') AS INTEGER)), 0) + 1 as proximo_numero
              FROM mod_ordem_servico_ordens 
-             WHERE tenant_id = $1 AND numero ~ '^[0-9]+'`,
-            tenantId
-        ) as any[];
+             WHERE tenant_id = ${tenantId} AND numero ~ '^[0-9]+'
+        ` as any[];
 
         const proximoNumero = result[0]?.proximo_numero || 1;
         return proximoNumero.toString().padStart(6, '0');
@@ -617,20 +584,13 @@ export class OrdensService {
         observacoes: string | null
     ) {
         try {
-            await this.prisma.$executeRawUnsafe(
-                `INSERT INTO mod_ordem_servico_historico 
+            await this.prisma.$queryRaw`
+                INSERT INTO mod_ordem_servico_historico 
                  (tenant_id, ordem_servico_id, usuario_id, acao, valor_anterior, valor_novo, observacoes)
-                 VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7)`,
-                tenantId,
-                ordemId,
-                usuarioId,
-                acao,
-                valorAnterior,
-                valorNovo,
-                observacoes
-            );
+                 VALUES (${tenantId}, ${ordemId}::uuid, ${usuarioId}::uuid, ${acao}, ${valorAnterior}, ${valorNovo}, ${observacoes})
+            `;
         } catch (error) {
-            this.logger.error(`❌ Erro ao registrar histórico:`, error);
+            this.logger.error('Erro ao registrar histórico:', error);
         }
     }
 
@@ -648,7 +608,7 @@ export class OrdensService {
         }
 
         if (updateDto.descricao && updateDto.descricao !== ordemAtual.descricao) {
-            alteracoes.push(`Descrição alterada`);
+            alteracoes.push('Descrição alterada');
         }
 
         if (updateDto.valor_servico !== undefined && updateDto.valor_servico !== ordemAtual.valor_servico) {
@@ -656,7 +616,7 @@ export class OrdensService {
         }
 
         if (updateDto.usuario_responsavel_id && updateDto.usuario_responsavel_id !== ordemAtual.usuario_responsavel_id) {
-            alteracoes.push(`Responsável alterado`);
+            alteracoes.push('Responsável alterado');
         }
 
         if (alteracoes.length > 0) {
@@ -688,59 +648,56 @@ export class OrdensService {
 
     async getTiposServico(tenantId: string) {
         try {
-            this.logger.log(`Buscando tipos de serviço. Tenant: ${tenantId}`);
+            this.logger.log('Buscando tipos de serviço. Tenant:', tenantId);
 
-            const result = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT id, nome, is_default FROM mod_ordem_servico_tipos_servico 
-                 WHERE tenant_id = $1 
-                 ORDER BY is_default DESC, nome ASC`,
-                tenantId
-            );
+            const result = await this.prisma.$queryRaw<any[]>`
+                SELECT id, nome, is_default FROM mod_ordem_servico_tipos_servico 
+                 WHERE tenant_id = ${tenantId}
+                 ORDER BY is_default DESC, nome ASC
+            `;
 
-            this.logger.log(`✅ ${result.length} tipos de serviço encontrados`);
+            this.logger.log(`${result.length} tipos de serviço encontrados`);
             return result;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar tipos de serviço:`, error);
+            this.logger.error('Erro ao buscar tipos de serviço:', error);
             throw error;
         }
     }
 
     async getTiposEquipamento(tenantId: string) {
         try {
-            this.logger.log(`Buscando tipos de equipamento. Tenant: ${tenantId}`);
+            this.logger.log('Buscando tipos de equipamento. Tenant:', tenantId);
 
-            const result = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT id, nome FROM mod_ordem_servico_tipos_equipamento 
-                 WHERE tenant_id = $1 
-                 ORDER BY nome ASC`,
-                tenantId
-            );
+            const result = await this.prisma.$queryRaw<any[]>`
+                SELECT id, nome FROM mod_ordem_servico_tipos_equipamento 
+                 WHERE tenant_id = ${tenantId}
+                 ORDER BY nome ASC
+            `;
 
-            this.logger.log(`✅ ${result.length} tipos de equipamento encontrados`);
+            this.logger.log(`${result.length} tipos de equipamento encontrados`);
             return result;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar tipos de equipamento:`, error);
+            this.logger.error('Erro ao buscar tipos de equipamento:', error);
             throw error;
         }
     }
 
     async getTechnicians(tenantId: string) {
         try {
-            this.logger.log(`Buscando técnicos. Tenant: ${tenantId}`);
+            this.logger.log('Buscando técnicos. Tenant:', tenantId);
 
-            const result = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT u.id, u.name, u.email 
+            const result = await this.prisma.$queryRaw<any[]>`
+                SELECT u.id, u.name, u.email 
                  FROM users u
                  INNER JOIN mod_ordem_servico_user_roles osr ON u.id = osr.user_id AND u."tenantId" = osr.tenant_id
-                 WHERE u."tenantId" = $1 AND u."isLocked" = false AND osr.is_technician = true
-                 ORDER BY u.name ASC`,
-                tenantId
-            );
+                 WHERE u."tenantId" = ${tenantId} AND u."isLocked" = false AND osr.is_technician = true
+                 ORDER BY u.name ASC
+            `;
 
-            this.logger.log(`✅ ${result.length} técnicos encontrados`);
+            this.logger.log(`${result.length} técnicos encontrados`);
             return result;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar técnicos:`, error);
+            this.logger.error('Erro ao buscar técnicos:', error);
             throw error;
         }
     }
