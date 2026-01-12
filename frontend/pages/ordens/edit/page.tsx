@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     Save,
     ArrowLeft,
@@ -302,19 +303,19 @@ export default function EditOrdemPage() {
         return () => clearTimeout(timer);
     }, [itemTemp.descricao]);
 
-    useEffect(() => {
-        if (debouncedSearch.length >= 2 && !itemTemp.produto_id) {
-            setOpenCombobox(true);
-        } else {
-            setOpenCombobox(false);
-        }
-    }, [debouncedSearch, itemTemp.produto_id]);
-
     // Filtra produtos baseado no input atual
     const filteredProducts = debouncedSearch.length >= 2 ? produtos.filter(p =>
         (p.name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         (p.description || '').toLowerCase().includes(debouncedSearch.toLowerCase())
     ) : [];
+
+    useEffect(() => {
+        if (debouncedSearch.length >= 2 && !itemTemp.produto_id && filteredProducts.length > 0) {
+            setOpenCombobox(true);
+        } else {
+            setOpenCombobox(false);
+        }
+    }, [debouncedSearch, itemTemp.produto_id, filteredProducts.length]);
 
     const [openCombobox, setOpenCombobox] = useState(false);
 
@@ -849,6 +850,21 @@ export default function EditOrdemPage() {
                                                 className="w-full"
                                                 autoComplete="off"
                                             />
+                                            {debouncedSearch.length >= 2 && filteredProducts.length === 0 && !itemTemp.produto_id && (
+                                                <div className="absolute right-3 top-2.5 flex items-center gap-2">
+                                                    <span className="text-xs text-blue-500 font-medium hidden sm:inline-block">Item personalizado</span>
+                                                    <TooltipProvider>
+                                                        <Tooltip delayDuration={0}>
+                                                            <TooltipTrigger asChild>
+                                                                <Info className="h-5 w-5 text-blue-500 cursor-help" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>Item personalizado (não cadastrado)</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </div>
+                                            )}
                                         </div>
                                     </PopoverAnchor>
                                     <PopoverContent className="p-0 w-[400px]" align="start">
@@ -868,8 +884,9 @@ export default function EditOrdemPage() {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="p-2 text-sm text-muted-foreground text-center">
-                                                    Nenhum produto encontrado.
+                                                <div className="p-3 text-sm text-muted-foreground bg-blue-50/50 flex items-center gap-2">
+                                                    <Info className="h-4 w-4 text-blue-500" />
+                                                    <span>Item personalizado (não cadastrado)</span>
                                                 </div>
                                             )}
                                         </div>
