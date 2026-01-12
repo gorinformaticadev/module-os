@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from '@/components/ui/popover';
 import {
     Save,
     ArrowLeft,
@@ -18,7 +19,9 @@ import {
     DollarSign,
     AlertCircle,
     CheckCircle2,
-    Info
+    Info,
+    Plus,
+    Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -49,6 +52,23 @@ interface OrdemServico {
     laudo_tecnico?: string;
     motivo_cancelamento?: string;
     cliente?: Cliente;
+    itens?: ItemOrdem[];
+}
+
+interface Produto {
+    id: string;
+    name: string;
+    description: string;
+    price: number | string;
+    code?: string;
+}
+
+interface ItemOrdem {
+    produto_id?: string;
+    descricao: string;
+    valor_unitario: number;
+    quantidade: number;
+    valor_total: number;
 }
 
 interface Cliente {
@@ -130,6 +150,14 @@ export default function EditOrdemPage() {
     const [technicians, setTechnicians] = useState<Technician[]>([]);
     const [tiposServico, setTiposServico] = useState<{ id: string; nome: string; is_default: boolean }[]>([]);
 
+    // Estados para Produtos
+    const [produtos, setProdutos] = useState<Produto[]>([]);
+    const [itemTemp, setItemTemp] = useState<Partial<ItemOrdem>>({
+        descricao: '',
+        quantidade: 1,
+        valor_unitario: 0
+    });
+
     // Estados do formulário
     const [formData, setFormData] = useState({
         tipo_servico: '',
@@ -148,7 +176,8 @@ export default function EditOrdemPage() {
         observacoes_internas: '',
         observacoes_cliente: '',
         laudo_tecnico: '',
-        motivo_cancelamento: ''
+        motivo_cancelamento: '',
+        itens: [] as ItemOrdem[]
     });
 
     useEffect(() => {
@@ -165,7 +194,120 @@ export default function EditOrdemPage() {
         loadOrdem();
         fetchTechnicians();
         fetchTiposServico();
+        fetchProdutos();
     }, [ordemId]);
+
+    const fetchProdutos = async () => {
+        try {
+            const response = await api.get('/api/ordem_servico/produtos');
+            setProdutos(response.data);
+        } catch (error) {
+            console.error('Erro ao buscar produtos:', error);
+            toast({
+                title: 'Erro',
+                description: 'Não foi possível carregar a lista de produtos.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    const handleAddItem = () => {
+        if (!itemTemp.descricao || !itemTemp.quantidade || !itemTemp.valor_unitario) {
+            toast({
+                title: "Atenção",
+                description: "Preencha a descrição, quantidade e valor unitário.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        const qtd = Number(itemTemp.quantidade);
+        const valorUnit = Number(itemTemp.valor_unitario);
+        const total = qtd * valorUnit;
+
+        const newItem: ItemOrdem = {
+            produto_id: itemTemp.produto_id,
+            descricao: itemTemp.descricao,
+            quantidade: qtd,
+            valor_unitario: valorUnit,
+            valor_total: total
+        };
+
+        const currentItens = formData.itens || [];
+        const newItens = [...currentItens, newItem];
+
+        updateFormDataWithItens(newItens);
+
+        setItemTemp({
+            descricao: '',
+            quantidade: 1,
+            valor_unitario: 0,
+            produto_id: undefined
+        });
+    };
+
+    const handleRemoveItem = (index: number) => {
+        const currentItens = formData.itens || [];
+        const newItens = currentItens.filter((_, i) => i !== index);
+        updateFormDataWithItens(newItens);
+    };
+
+    const updateFormDataWithItens = (itens: ItemOrdem[]) => {
+        const totalItens = itens.reduce((acc, item) => acc + item.valor_total, 0);
+
+        setFormData(prev => ({
+            ...prev,
+            itens: itens,
+            valor_servico: totalItens.toFixed(2)
+        }));
+    };
+
+
+
+    const handleDescriptionChange = (desc: string) => {
+        // Se mudou a descrição, limpa o ID do produto para indicar que é customizado
+        // a menos que o usuário tenha selecionado da lista (handled separately)
+        setItemTemp(prev => ({
+            ...prev,
+            descricao: desc,
+            produto_id: undefined // Limpa vínculo se digitar
+        }));
+    };
+
+    const handleProductClick = (produto: Produto) => {
+        setItemTemp({
+            produto_id: produto.id,
+            descricao: produto.name, // Use name as the main description
+            valor_unitario: Number(produto.price),
+            quantidade: 1
+        });
+        setOpenCombobox(false);
+    };
+
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(itemTemp.descricao || '');
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [itemTemp.descricao]);
+
+    useEffect(() => {
+        if (debouncedSearch.length >= 2) {
+            setOpenCombobox(true);
+        } else {
+            setOpenCombobox(false);
+        }
+    }, [debouncedSearch]);
+
+    // Filtra produtos baseado no input atual
+    const filteredProducts = debouncedSearch.length >= 2 ? produtos.filter(p =>
+        (p.name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        (p.description || '').toLowerCase().includes(debouncedSearch.toLowerCase())
+    ) : [];
+
+    const [openCombobox, setOpenCombobox] = useState(false);
 
     const loadOrdem = async () => {
         try {
@@ -193,7 +335,8 @@ export default function EditOrdemPage() {
                 observacoes_internas: ordemData.observacoes_internas || '',
                 observacoes_cliente: ordemData.observacoes_cliente || '',
                 laudo_tecnico: ordemData.laudo_tecnico || '',
-                motivo_cancelamento: ordemData.motivo_cancelamento || ''
+                motivo_cancelamento: ordemData.motivo_cancelamento || '',
+                itens: ordemData.itens || []
             });
 
         } catch (error: any) {
@@ -266,7 +409,8 @@ export default function EditOrdemPage() {
                 equipamento_marca: formData.equipamento_marca || undefined,
                 equipamento_modelo: formData.equipamento_modelo || undefined,
                 equipamento_serie: formData.equipamento_serie || undefined,
-                laudo_tecnico: formData.laudo_tecnico || undefined
+                laudo_tecnico: formData.laudo_tecnico || undefined,
+                itens: formData.itens
             };
 
             // Remove undefined values
@@ -588,11 +732,155 @@ export default function EditOrdemPage() {
                     </CardContent>
                 </Card>
 
-                {/* Section 4: EQUIPAMENTO (Moved UP) */}
+                {/* Section 3: PRODUTOS E SERVIÇOS */}
                 <Card className="shadow-sm border-2">
                     <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
+                            <CardTitle className="text-lg">Produtos e Serviços</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-6">
+
+                        {/* Adicionar Item */}
+                        {/* Adicionar Item - Layout Unificado */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-muted/30 p-4 rounded-lg border border-dashed">
+
+                            {/* Descrição com Autocomplete */}
+                            <div className="md:col-span-6 space-y-2 relative">
+                                <Label>Descrição do Item / Produto</Label>
+                                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                                    <PopoverAnchor asChild>
+                                        <div className="relative">
+                                            <Input
+                                                value={itemTemp.descricao}
+                                                onChange={e => {
+                                                    handleDescriptionChange(e.target.value);
+                                                }}
+                                                placeholder="Digite para buscar ou descrever o item..."
+                                                className="w-full"
+                                                autoComplete="off"
+                                            />
+                                        </div>
+                                    </PopoverAnchor>
+                                    <PopoverContent className="p-0 w-[400px]" align="start">
+                                        <div className="max-h-[200px] overflow-y-auto p-1 bg-popover border rounded-md shadow-md">
+                                            {filteredProducts.length > 0 ? (
+                                                filteredProducts.map(p => (
+                                                    <div
+                                                        key={p.id}
+                                                        className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground text-sm rounded-sm flex justify-between"
+                                                        onClick={() => handleProductClick(p)}
+                                                    >
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">{p.name}</span>
+                                                            {p.description && <span className="text-xs text-muted-foreground">{p.description}</span>}
+                                                        </div>
+                                                        <span className="text-muted-foreground font-mono ml-2">R$ {Number(p.price).toFixed(2)}</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                                    Nenhum produto encontrado.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+                            <div className="md:col-span-3 space-y-2">
+                                <Label>Valor Unit.</Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2.5 text-muted-foreground">R$</span>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        className="pl-9"
+                                        value={itemTemp.valor_unitario}
+                                        onChange={e => setItemTemp({ ...itemTemp, valor_unitario: Number(e.target.value) })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2 space-y-2">
+                                <Label>Qtd</Label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    value={itemTemp.quantidade}
+                                    onChange={e => setItemTemp({ ...itemTemp, quantidade: Number(e.target.value) })}
+                                />
+                            </div>
+
+                            <div className="md:col-span-1">
+                                <Button onClick={handleAddItem} className="w-full" title="Adicionar">
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Lista de Itens */}
+                        <div className="border rounded-md overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-muted text-muted-foreground font-medium">
+                                    <tr>
+                                        <th className="p-3">Descrição</th>
+                                        <th className="p-3 w-24 text-center">Qtd</th>
+                                        <th className="p-3 w-32 text-right">Valor Unit.</th>
+                                        <th className="p-3 w-32 text-right">Total</th>
+                                        <th className="p-3 w-16 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {formData.itens && formData.itens.length > 0 ? (
+                                        formData.itens.map((item, index) => (
+                                            <tr key={index} className="hover:bg-muted/10">
+                                                <td className="p-3">{item.descricao}</td>
+                                                <td className="p-3 text-center">{item.quantidade}</td>
+                                                <td className="p-3 text-right">R$ {Number(item.valor_unitario).toFixed(2)}</td>
+                                                <td className="p-3 text-right font-medium">R$ {Number(item.valor_total).toFixed(2)}</td>
+                                                <td className="p-3 text-center">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 text-destructive hover:text-destructive/90"
+                                                        onClick={() => handleRemoveItem(index)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                                                Nenhum item adicionado.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                                <tfoot className="bg-muted/50 font-bold border-t">
+                                    <tr>
+                                        <td colSpan={3} className="p-3 text-right">Total Geral:</td>
+                                        <td className="p-3 text-right text-primary text-base">
+                                            R$ {formData.itens ? formData.itens.reduce((acc, i) => acc + i.valor_total, 0).toFixed(2) : '0.00'}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                    </CardContent>
+                </Card>
+
+                {/* Section 4: EQUIPAMENTO (Moved UP) */}
+                <Card className="shadow-sm border-2">
+                    <CardHeader className="bg-muted/20 pb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
                             <CardTitle className="text-lg">Equipamento</CardTitle>
                         </div>
                     </CardHeader>

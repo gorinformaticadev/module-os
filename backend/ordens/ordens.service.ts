@@ -376,7 +376,8 @@ export class OrdensService {
                     c.is_active as cliente_ativo,
                     c.image_url as cliente_image_url,
                     u.name as responsavel_nome,
-                    u.email as responsavel_email
+                    u.email as responsavel_email,
+                    os.itens
                 FROM mod_ordem_servico_ordens os
                 LEFT JOIN mod_ordem_servico_clients c ON os.cliente_id = c.id
                 LEFT JOIN users u ON os.usuario_responsavel_id = u.id
@@ -395,6 +396,17 @@ export class OrdensService {
                 }
             } else if (ordem) {
                 ordem.equipamento_fotos = [];
+            }
+
+            if (ordem && ordem.itens) {
+                try {
+                    ordem.itens = typeof ordem.itens === 'string' ? JSON.parse(ordem.itens) : ordem.itens;
+                } catch (e) {
+                    this.logger.error(`Erro ao parsear itens da OS ${id}:`, e);
+                    ordem.itens = [];
+                }
+            } else if (ordem) {
+                ordem.itens = [];
             }
 
             // Estruturar dados do cliente e responsável
@@ -444,9 +456,9 @@ export class OrdensService {
                     equipamento_tipo, equipamento_marca, equipamento_modelo, equipamento_serie,
                     equipamento_acessorios, equipamento_estado, equipamento_fotos,
                     formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha,
-                    data_abertura, orcamento_aprovado
+                    data_abertura, orcamento_aprovado, itens
                 ) VALUES (
-                    $1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), $24
+                    $1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), $24, $25
                 )
                 RETURNING *
             `;
@@ -479,7 +491,8 @@ export class OrdensService {
                 createDto.formatacao_backup || false,                                                       // $21
                 createDto.formatacao_backup_descricao || null,                                              // $22
                 createDto.formatacao_senha || null,                                                         // $23
-                orcamentoAprovado                                                                           // $24
+                orcamentoAprovado,                                                                          // $24
+                createDto.itens ? JSON.stringify(createDto.itens) : null                                    // $25
             ];
 
             this.logger.log(`Parâmetros da query:`, params);
@@ -542,7 +555,7 @@ export class OrdensService {
                 'usuario_responsavel_id', 'equipamento_tipo', 'equipamento_marca',
                 'equipamento_modelo', 'equipamento_serie', 'equipamento_acessorios',
                 'equipamento_estado', 'formatacao_so', 'formatacao_backup',
-                'formatacao_backup_descricao', 'formatacao_senha', 'equipamento_fotos'
+                'formatacao_backup_descricao', 'formatacao_senha', 'equipamento_fotos', 'itens'
             ];
 
             for (const field of fieldsToUpdate) {
@@ -550,6 +563,7 @@ export class OrdensService {
                     let value = updateDto[field];
                     if (field === 'usuario_responsavel_id' && (value === 'UNASSIGNED' || value === 'NONE' || !value)) value = null;
                     if (field === 'equipamento_fotos' && value !== null) value = JSON.stringify(value);
+                    if (field === 'itens' && value !== null) value = JSON.stringify(value);
 
                     updateFields.push(`${field} = $${paramIndex}`);
                     params.push(value);
@@ -581,6 +595,16 @@ export class OrdensService {
                 }
             } else {
                 ordemAtualizada.equipamento_fotos = [];
+            }
+
+            if (ordemAtualizada.itens) {
+                try {
+                    ordemAtualizada.itens = typeof ordemAtualizada.itens === 'string' ? JSON.parse(ordemAtualizada.itens) : ordemAtualizada.itens;
+                } catch (e) {
+                    ordemAtualizada.itens = [];
+                }
+            } else {
+                ordemAtualizada.itens = [];
             }
 
             // Registrar alterações no histórico

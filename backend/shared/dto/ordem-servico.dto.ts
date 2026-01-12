@@ -17,6 +17,14 @@ export enum StatusOS {
     CANCELADA = 7
 }
 
+export class ItemOrdem {
+    produto_id?: string;
+    descricao: string;
+    valor_unitario: number;
+    quantidade: number;
+    valor_total: number;
+}
+
 export class CreateOrdemServicoDTO {
     @IsString()
     cliente_id: string;
@@ -109,6 +117,10 @@ export class CreateOrdemServicoDTO {
     @IsArray()
     @IsString({ each: true })
     equipamento_fotos?: string[];
+
+    @IsOptional()
+    @IsArray()
+    itens?: ItemOrdem[];
 }
 
 export class UpdateOrdemServicoDTO {
@@ -204,6 +216,10 @@ export class UpdateOrdemServicoDTO {
     @IsArray()
     @IsString({ each: true })
     equipamento_fotos?: string[];
+
+    @IsOptional()
+    @IsArray()
+    itens?: ItemOrdem[];
 }
 
 // ============================================
@@ -306,6 +322,7 @@ export class OrdemServicoResponseDTO {
     updated_at: string;
     cliente: ClienteResponseDTO;
     responsavel: ResponsavelResponseDTO;
+    itens?: ItemOrdem[];
 }
 
 export class OrdemServicoListResponseDTO {
