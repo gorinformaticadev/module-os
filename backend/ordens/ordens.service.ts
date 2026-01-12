@@ -374,6 +374,7 @@ export class OrdensService {
                     c.address_state as cliente_endereco_estado,
                     c.address_zip as cliente_endereco_cep,
                     c.is_active as cliente_ativo,
+                    c.image_url as cliente_image_url,
                     u.name as responsavel_nome,
                     u.email as responsavel_email
                 FROM mod_ordem_servico_ordens os
@@ -402,6 +403,7 @@ export class OrdensService {
                     name: ordem.cliente_nome,
                     phone_primary: ordem.cliente_telefone,
                     is_active: ordem.cliente_ativo,
+                    image_url: ordem.cliente_image_url,
                     // Incluir dados de endereço se necessário
                     address_street: ordem.cliente_endereco_rua,
                     address_number: ordem.cliente_endereco_numero,

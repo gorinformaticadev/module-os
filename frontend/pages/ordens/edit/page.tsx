@@ -62,6 +62,7 @@ interface Cliente {
     address_city?: string;
     address_state?: string;
     is_active: boolean;
+    image_url?: string;
 }
 
 enum StatusOS {
@@ -381,32 +382,20 @@ export default function EditOrdemPage() {
                                     {/* Avatar e Status */}
                                     <div className="flex items-center gap-4 shrink-0">
                                         <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center border border-muted-foreground/20 shadow-inner overflow-hidden">
-                                            <User className="h-8 w-8 text-muted-foreground" />
-                                        </div>
-                                        <div className="md:hidden">
-                                            <h3 className="font-bold text-xl leading-tight text-foreground truncate">
-                                                {ordem.cliente.name}
-                                            </h3>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Badge variant="secondary" className="text-[10px] h-5">
-                                                    Cliente Fixo
-                                                </Badge>
-                                                {ordem.cliente.is_active ? (
-                                                    <Badge variant="outline" className="text-[10px] h-5 border-emerald-500/50 text-emerald-600 bg-emerald-50/50">
-                                                        Ativo
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="destructive" className="text-[10px] h-5">
-                                                        Inativo
-                                                    </Badge>
-                                                )}
-                                            </div>
+                                            {ordem.cliente.image_url ? (
+                                                <img
+                                                    src={ordem.cliente.image_url}
+                                                    alt={ordem.cliente.name}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <User className="h-8 w-8 text-muted-foreground" />
+                                            )}
                                         </div>
                                     </div>
-
                                     {/* Dados Principais */}
                                     <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        <div className="hidden md:block">
+                                        <div>
                                             <h3 className="font-bold text-xl leading-tight text-foreground truncate">
                                                 {ordem.cliente.name}
                                             </h3>
