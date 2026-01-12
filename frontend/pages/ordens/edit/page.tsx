@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     Save,
     ArrowLeft,
@@ -299,7 +298,7 @@ export default function EditOrdemPage() {
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(itemTemp.descricao || '');
-        }, 2300);
+        }, 0);
         return () => clearTimeout(timer);
     }, [itemTemp.descricao]);
 
@@ -851,23 +850,14 @@ export default function EditOrdemPage() {
                                                 autoComplete="off"
                                             />
                                             {debouncedSearch.length >= 2 && filteredProducts.length === 0 && !itemTemp.produto_id && (
-                                                <div className="absolute right-3 top-2.5 flex items-center gap-2">
+                                                <div className="absolute right-3 top-2.5 flex items-center gap-2" title="Item personalizado (não cadastrado)">
                                                     <span className="text-xs text-blue-500 font-medium hidden sm:inline-block">Item personalizado</span>
-                                                    <TooltipProvider>
-                                                        <Tooltip delayDuration={0}>
-                                                            <TooltipTrigger asChild>
-                                                                <Info className="h-5 w-5 text-blue-500 cursor-help" />
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <p>Item personalizado (não cadastrado)</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
+                                                    <Info className="h-5 w-5 text-blue-500 cursor-help" />
                                                 </div>
                                             )}
                                         </div>
                                     </PopoverAnchor>
-                                    <PopoverContent className="p-0 w-[400px]" align="start">
+                                    <PopoverContent className="p-0 w-[400px]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                                         <div className="max-h-[200px] overflow-y-auto p-1 bg-popover border rounded-md shadow-md">
                                             {filteredProducts.length > 0 ? (
                                                 filteredProducts.map(p => (
