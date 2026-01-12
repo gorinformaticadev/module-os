@@ -23,7 +23,6 @@ export class OrdensService {
     async findAll(tenantId: string, filters: OrdemServicoFilters) {
         try {
             this.logger.log(`Buscando ordens de serviço. Tenant: ${tenantId}`);
-            this.logger.log(`Filtros recebidos: ${JSON.stringify(filters)}`);
 
             // Validar cliente_id se fornecido
             if (filters.cliente_id) {
@@ -39,13 +38,9 @@ export class OrdensService {
             const limit = Math.min(filters.limit || 20, 100); // Máximo 100 por página
             const offset = (page - 1) * limit;
 
-            this.logger.log(`📊 Paginação: page=${page}, limit=${limit}, offset=${offset}`);
-
             let whereClause = `WHERE os.tenant_id = $1`;
             const params: any[] = [tenantId];
             let paramIndex = 2;
-
-            this.logger.log(`🔍 Iniciando construção de filtros...`);
 
             // Aplicar filtros
             if (filters.search) {
@@ -187,8 +182,8 @@ export class OrdensService {
                     
                     // Processar dados do cliente de forma mais segura
                     const cliente = {
-                        name: os.cliente_nome || null,
-                        phone_primary: os.cliente_telefone || null,
+                        name: os.cliente_nome ? String(os.cliente_nome) : null,
+                        phone_primary: os.cliente_telefone ? String(os.cliente_telefone) : null,
                         is_active: os.cliente_ativo !== null ? Boolean(os.cliente_ativo) : null
                     };
                     
@@ -198,31 +193,67 @@ export class OrdensService {
                         email: null
                     };
                     
-                    // Criar objeto da ordem processada com conversão de tipos
+                    // Criar objeto da ordem processada com conversão de tipos MAIS RIGOROSA
                     const processedOrder = {
-                        ...os,
+                        // IDs como strings
+                        id: String(os.id),
+                        tenant_id: String(os.tenant_id),
+                        cliente_id: os.cliente_id ? String(os.cliente_id) : null,
+                        usuario_responsavel_id: os.usuario_responsavel_id ? String(os.usuario_responsavel_id) : null,
+                        
+                        // Strings garantidas
+                        numero: os.numero ? String(os.numero) : null,
+                        descricao: os.descricao ? String(os.descricao) : null,
+                        tipo_servico: os.tipo_servico ? String(os.tipo_servico) : null,
+                        prioridade: os.prioridade ? String(os.prioridade) : null,
+                        origem_solicitacao: os.origem_solicitacao ? String(os.origem_solicitacao) : null,
+                        observacoes_internas: os.observacoes_internas ? String(os.observacoes_internas) : null,
+                        observacoes_cliente: os.observacoes_cliente ? String(os.observacoes_cliente) : null,
+                        forma_pagamento: os.forma_pagamento ? String(os.forma_pagamento) : null,
+                        motivo_cancelamento: os.motivo_cancelamento ? String(os.motivo_cancelamento) : null,
+                        
+                        // Campos de equipamento
+                        equipamento_tipo: os.equipamento_tipo ? String(os.equipamento_tipo) : null,
+                        equipamento_marca: os.equipamento_marca ? String(os.equipamento_marca) : null,
+                        equipamento_modelo: os.equipamento_modelo ? String(os.equipamento_modelo) : null,
+                        equipamento_serie: os.equipamento_serie ? String(os.equipamento_serie) : null,
+                        equipamento_acessorios: os.equipamento_acessorios ? String(os.equipamento_acessorios) : null,
+                        equipamento_estado: os.equipamento_estado ? String(os.equipamento_estado) : null,
                         equipamento_fotos,
-                        cliente,
-                        responsavel,
-                        // Garantir que campos numéricos sejam números
-                        valor_servico: os.valor_servico ? parseFloat(os.valor_servico.toString()) : 0,
-                        status: os.status ? parseInt(os.status.toString()) : 0,
-                        // Garantir que campos booleanos sejam booleanos
+                        
+                        // Campos de formatação
+                        formatacao_so: os.formatacao_so ? String(os.formatacao_so) : null,
+                        formatacao_backup_descricao: os.formatacao_backup_descricao ? String(os.formatacao_backup_descricao) : null,
+                        formatacao_senha: os.formatacao_senha ? String(os.formatacao_senha) : null,
+                        
+                        // Números garantidos como números
+                        valor_servico: os.valor_servico ? Number(parseFloat(String(os.valor_servico))) : 0,
+                        status: os.status ? Number(parseInt(String(os.status))) : 0,
+                        
+                        // Booleanos garantidos
                         orcamento_aprovado: Boolean(os.orcamento_aprovado),
                         formatacao_backup: Boolean(os.formatacao_backup),
-                        // Converter datas para strings ISO
+                        
+                        // Datas como strings ISO ou null
                         data_abertura: os.data_abertura ? new Date(os.data_abertura).toISOString() : null,
                         data_previsao: os.data_previsao ? new Date(os.data_previsao).toISOString() : null,
                         data_conclusao: os.data_conclusao ? new Date(os.data_conclusao).toISOString() : null,
                         created_at: os.created_at ? new Date(os.created_at).toISOString() : null,
                         updated_at: os.updated_at ? new Date(os.updated_at).toISOString() : null,
-                        // Garantir que strings sejam strings ou null
-                        numero: os.numero ? os.numero.toString() : null,
-                        descricao: os.descricao ? os.descricao.toString() : null,
-                        tipo_servico: os.tipo_servico ? os.tipo_servico.toString() : null,
-                        prioridade: os.prioridade ? os.prioridade.toString() : null,
-                        origem_solicitacao: os.origem_solicitacao ? os.origem_solicitacao.toString() : null
+                        
+                        // Objetos relacionados
+                        cliente,
+                        responsavel
                     };
+                    
+                    // Teste de serialização individual
+                    try {
+                        JSON.stringify(processedOrder);
+                    } catch (serError) {
+                        this.logger.error(`❌ Erro de serialização na ordem ${os.id}:`, serError);
+                        this.logger.error(`❌ Dados problemáticos:`, processedOrder);
+                        throw new Error(`Ordem ${os.id} não é serializável: ${serError.message}`);
+                    }
                     
                     this.logger.log(`✅ Ordem ${index + 1} processada com sucesso - Número: ${processedOrder.numero}`);
                     return processedOrder;

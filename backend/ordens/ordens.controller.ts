@@ -17,51 +17,26 @@ export class OrdensController {
         console.log('✅✅✅ ORDENS CONTROLLER INSTANCIADO (STANDALONE)!!! ✅✅✅');
     }
 
-    @Get('test')
-    async test() {
-        this.logger.log(`🧪 [Controller] Endpoint de teste chamado`);
-        return { 
-            message: 'Teste OK', 
-            timestamp: new Date().toISOString(),
-            data: [{ id: 1, name: 'Teste' }]
-        };
-    }
-
     @Get()
     async findAll(
         @Req() req: ExpressRequest & { user: any },
         @Query() filters: OrdemServicoFilters
     ) {
         try {
-            this.logger.log(`🎯 [Controller] Iniciando busca de ordens de serviço. Tenant: ${req.user?.tenantId}`);
-            this.logger.log(`🎯 [Controller] Filtros recebidos: ${JSON.stringify(filters)}`);
+            this.logger.log(`🎯 [Controller] INÍCIO - Buscando ordens. Tenant: ${req.user?.tenantId}`);
             
-            this.logger.log(`🎯 [Controller] Chamando service...`);
             const result = await this.ordensService.findAll(req.user.tenantId, filters);
             
-            this.logger.log(`🎯 [Controller] Service retornou resultado: ${JSON.stringify({
-                dataLength: result?.data?.length || 0,
-                total: result?.total || 0,
-                page: result?.page || 0,
-                totalPages: result?.totalPages || 0
-            })}`);
+            this.logger.log(`🎯 [Controller] Service retornou ${result.data.length} ordens`);
+            this.logger.log(`🎯 [Controller] ANTES DE RETORNAR - Resultado OK`);
             
-            this.logger.log(`🎯 [Controller] Retornando resposta para o frontend...`);
             return result;
         } catch (error) {
-            this.logger.error(`❌ [Controller] Erro capturado:`, error);
-            this.logger.error(`❌ [Controller] Tipo do erro: ${typeof error}`);
-            this.logger.error(`❌ [Controller] Mensagem: ${error.message}`);
-            this.logger.error(`❌ [Controller] Stack: ${error.stack}`);
-            
-            // Tratamento específico de erros
-            if (error.message === 'ID de cliente inválido') {
-                throw new BadRequestException('ID de cliente inválido. Verifique o formato do UUID.');
-            }
-            
-            // Re-throw o erro original para debug
-            this.logger.error(`❌ [Controller] Re-throwing error para análise`);
+            this.logger.error(`❌ [Controller] ERRO CAPTURADO:`, error);
+            this.logger.error(`❌ [Controller] Stack:`, error.stack);
             throw error;
+        } finally {
+            this.logger.log(`🎯 [Controller] FINALLY - Finalizando método`);
         }
     }
 
