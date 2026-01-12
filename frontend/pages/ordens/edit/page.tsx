@@ -217,7 +217,7 @@ export default function EditOrdemPage() {
     };
 
     const handleAddItem = () => {
-        if (!itemTemp.descricao || !itemTemp.quantidade || !itemTemp.valor_unitario) {
+        if (!itemTemp.descricao || !itemTemp.quantidade || itemTemp.valor_unitario === undefined || itemTemp.valor_unitario === null) {
             toast({
                 title: "Atenção",
                 description: "Preencha a descrição, quantidade e valor unitário.",
