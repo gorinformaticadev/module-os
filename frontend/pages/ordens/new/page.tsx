@@ -65,6 +65,7 @@ interface Client {
 interface Technician {
     id: string;
     name: string;
+    email?: string;
 }
 
 export default function NewOrdemRefactoredPage() {
@@ -275,7 +276,7 @@ export default function NewOrdemRefactoredPage() {
         if (!files) return;
 
         if (formData.equipamento_fotos.length + files.length > 5) {
-            toast({ title: 'Limite atingido', description: 'Você pode enviar no máximo 5 fotos.', variant: 'warning' });
+            toast({ title: 'Limite atingido', description: 'Você pode enviar no máximo 5 fotos.', variant: 'destructive' });
             return;
         }
 
@@ -316,11 +317,11 @@ export default function NewOrdemRefactoredPage() {
 
     const handleSave = async () => {
         if (!selectedClient) {
-            toast({ title: 'Campo obrigatório', description: 'Identifique um cliente antes de salvar.', variant: 'warning' });
+            toast({ title: 'Campo obrigatório', description: 'Identifique um cliente antes de salvar.', variant: 'destructive' });
             return;
         }
         if (!formData.descricao) {
-            toast({ title: 'Campo obrigatório', description: 'A descrição do problema é obrigatória.', variant: 'warning' });
+            toast({ title: 'Campo obrigatório', description: 'A descrição do problema é obrigatória.', variant: 'destructive' });
             return;
         }
 
@@ -366,13 +367,13 @@ export default function NewOrdemRefactoredPage() {
                 : [];
 
             if (validPhotos.length > 0) {
-                payload.equipamento_fotos = validPhotos;
+                (payload as any).equipamento_fotos = validPhotos;
             }
 
             // Remove undefined values to keep payload clean
             Object.keys(payload).forEach(key => {
-                if (payload[key] === undefined) {
-                    delete payload[key];
+                if ((payload as any)[key] === undefined) {
+                    delete (payload as any)[key];
                 }
             });
 
@@ -380,9 +381,9 @@ export default function NewOrdemRefactoredPage() {
             console.log('🔍 Payload being sent:', JSON.stringify(payload, null, 2));
             console.log('📸 Photos handling:', {
                 originalPhotos: formData.equipamento_fotos,
-                validPhotos: payload.equipamento_fotos || 'not included',
-                hasPhotos: !!payload.equipamento_fotos,
-                photosCount: payload.equipamento_fotos?.length || 0
+                validPhotos: (payload as any).equipamento_fotos || 'not included',
+                hasPhotos: !!(payload as any).equipamento_fotos,
+                photosCount: (payload as any).equipamento_fotos?.length || 0
             });
             console.log('👤 Selected client debug:', {
                 clientId: selectedClient.id,

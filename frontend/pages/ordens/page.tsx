@@ -167,8 +167,8 @@ export default function OrdensPage() {
       Object.entries(filters).forEach(([key, value]) => {
         if (Array.isArray(value)) {
           value.forEach(v => queryParams.append(key, v.toString()));
-        } else {
-          queryParams.append(key, value.toString());
+        } else if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value));
         }
       });
 
@@ -225,7 +225,7 @@ export default function OrdensPage() {
   };
 
   const handleEdit = (ordem: OrdemServico) => {
-    window.location.href = `/modules/ordem_servico/ordens/${ordem.id}/edit`;
+    window.location.href = `/modules/ordem_servico/pages/ordens/edit?id=${ordem.id}`;
   };
 
   const handleDelete = async (ordem: OrdemServico) => {

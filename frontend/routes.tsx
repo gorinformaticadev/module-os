@@ -4,7 +4,7 @@ import ordem_servicoConfiguracoesPage from './pages/configuracoes';
 import ordem_servicoClientesPage from './pages/clientes';
 import ordem_servicoProdutosPage from './pages/produtos';
 import ordem_servicoOrdensPage from './pages/ordens';
-import ordem_servicoNovaOrdemPage from './pages/ordens/new';
+import ordem_servicoNovaOrdemPage from './pages/ordens/new/page';
 
 const MODULE_ROOT = '/ordem_servico';
 

@@ -1,0 +1,761 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import {
+    Save,
+    ArrowLeft,
+    User,
+    Phone,
+    MapPin,
+    DollarSign,
+    AlertCircle,
+    CheckCircle2,
+    Info
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import api from '@/lib/api';
+
+// Tipos locais
+interface OrdemServico {
+    id: string;
+    numero: string;
+    cliente_id: string;
+    usuario_responsavel_id: string;
+    tipo_servico: string;
+    prioridade: 'BAIXA' | 'MEDIA' | 'ALTA';
+    descricao: string;
+    observacoes_internas?: string;
+    observacoes_cliente?: string;
+    valor_servico: number;
+    forma_pagamento?: string;
+    status: StatusOS;
+    data_abertura: string;
+    data_previsao?: string;
+    origem_solicitacao: OrigemSolicitacao;
+    equipamento_tipo?: string;
+    equipamento_marca?: string;
+    equipamento_modelo?: string;
+    equipamento_serie?: string;
+    equipamento_acessorios?: string;
+    equipamento_estado?: string;
+    laudo_tecnico?: string;
+    motivo_cancelamento?: string;
+    cliente?: Cliente;
+}
+
+interface Cliente {
+    id: string;
+    name: string;
+    document?: string;
+    phone_primary: string;
+    phone_secondary?: string;
+    address_street?: string;
+    address_number?: string;
+    address_city?: string;
+    address_state?: string;
+    is_active: boolean;
+}
+
+enum StatusOS {
+    ORCAMENTO = 0,
+    ABERTA = 1,
+    EM_ANALISE = 2,
+    AGUARDANDO_CLIENTE = 3,
+    AGUARDANDO_PECAS = 4,
+    EM_EXECUCAO = 5,
+    FINALIZADA = 6,
+    CANCELADA = 7
+}
+
+enum OrigemSolicitacao {
+    WHATSAPP = 'WHATSAPP',
+    PRESENCIAL = 'PRESENCIAL',
+    SISTEMA = 'SISTEMA'
+}
+
+const STATUS_LABELS: Record<StatusOS, string> = {
+    [StatusOS.ORCAMENTO]: 'Orçamento',
+    [StatusOS.ABERTA]: 'Aberta',
+    [StatusOS.EM_ANALISE]: 'Em Análise',
+    [StatusOS.AGUARDANDO_CLIENTE]: 'Aguardando Cliente',
+    [StatusOS.AGUARDANDO_PECAS]: 'Aguardando Peças',
+    [StatusOS.EM_EXECUCAO]: 'Em Execução',
+    [StatusOS.FINALIZADA]: 'Finalizada',
+    [StatusOS.CANCELADA]: 'Cancelada'
+};
+
+const ORIGEM_LABELS: Record<OrigemSolicitacao, string> = {
+    [OrigemSolicitacao.WHATSAPP]: 'WhatsApp',
+    [OrigemSolicitacao.PRESENCIAL]: 'Presencial',
+    [OrigemSolicitacao.SISTEMA]: 'Sistema'
+};
+
+const TRANSICOES_PERMITIDAS: Record<StatusOS, StatusOS[]> = {
+    [StatusOS.ORCAMENTO]: [StatusOS.ABERTA, StatusOS.CANCELADA],
+    [StatusOS.ABERTA]: [StatusOS.EM_ANALISE, StatusOS.CANCELADA],
+    [StatusOS.EM_ANALISE]: [StatusOS.EM_EXECUCAO, StatusOS.AGUARDANDO_CLIENTE, StatusOS.AGUARDANDO_PECAS, StatusOS.CANCELADA],
+    [StatusOS.AGUARDANDO_CLIENTE]: [StatusOS.EM_ANALISE, StatusOS.EM_EXECUCAO, StatusOS.AGUARDANDO_PECAS, StatusOS.CANCELADA],
+    [StatusOS.AGUARDANDO_PECAS]: [StatusOS.EM_EXECUCAO, StatusOS.AGUARDANDO_CLIENTE, StatusOS.CANCELADA],
+    [StatusOS.EM_EXECUCAO]: [StatusOS.FINALIZADA, StatusOS.AGUARDANDO_CLIENTE, StatusOS.AGUARDANDO_PECAS, StatusOS.CANCELADA],
+    [StatusOS.FINALIZADA]: [],
+    [StatusOS.CANCELADA]: []
+};
+
+interface Technician {
+    id: string;
+    name: string;
+    email?: string;
+}
+
+export default function EditOrdemPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(false);
+    const [loadingOrdem, setLoadingOrdem] = useState(true);
+
+    const ordemId = searchParams.get('id');
+
+    // Estados principais
+    const [ordem, setOrdem] = useState<OrdemServico | null>(null);
+    const [technicians, setTechnicians] = useState<Technician[]>([]);
+    const [tiposServico, setTiposServico] = useState<{ id: string; nome: string; is_default: boolean }[]>([]);
+
+    // Estados do formulário
+    const [formData, setFormData] = useState({
+        tipo_servico: '',
+        prioridade: 'MEDIA' as 'BAIXA' | 'MEDIA' | 'ALTA',
+        descricao: '',
+        status: StatusOS.ABERTA,
+        usuario_responsavel_id: '',
+        origem_solicitacao: 'PRESENCIAL' as OrigemSolicitacao,
+        equipamento_tipo: '',
+        equipamento_marca: '',
+        equipamento_modelo: '',
+        equipamento_serie: '',
+        valor_servico: '',
+        forma_pagamento: '',
+        data_previsao: '',
+        observacoes_internas: '',
+        observacoes_cliente: '',
+        laudo_tecnico: '',
+        motivo_cancelamento: ''
+    });
+
+    useEffect(() => {
+        if (!ordemId) {
+            toast({
+                title: "Erro",
+                description: "ID da ordem não fornecido",
+                variant: "destructive"
+            });
+            router.push('/modules/ordem_servico/pages/ordens');
+            return;
+        }
+
+        loadOrdem();
+        fetchTechnicians();
+        fetchTiposServico();
+    }, [ordemId]);
+
+    const loadOrdem = async () => {
+        try {
+            setLoadingOrdem(true);
+            const response = await api.get(`/api/ordem_servico/ordens/${ordemId}`);
+            const ordemData = response.data;
+            
+            setOrdem(ordemData);
+            
+            // Preencher formulário com dados da ordem
+            setFormData({
+                tipo_servico: ordemData.tipo_servico || '',
+                prioridade: ordemData.prioridade || 'MEDIA',
+                descricao: ordemData.descricao || '',
+                status: ordemData.status || StatusOS.ABERTA,
+                usuario_responsavel_id: ordemData.usuario_responsavel_id || '',
+                origem_solicitacao: ordemData.origem_solicitacao || 'PRESENCIAL',
+                equipamento_tipo: ordemData.equipamento_tipo || '',
+                equipamento_marca: ordemData.equipamento_marca || '',
+                equipamento_modelo: ordemData.equipamento_modelo || '',
+                equipamento_serie: ordemData.equipamento_serie || '',
+                valor_servico: ordemData.valor_servico ? ordemData.valor_servico.toString() : '',
+                forma_pagamento: ordemData.forma_pagamento || '',
+                data_previsao: ordemData.data_previsao ? ordemData.data_previsao.split('T')[0] : '',
+                observacoes_internas: ordemData.observacoes_internas || '',
+                observacoes_cliente: ordemData.observacoes_cliente || '',
+                laudo_tecnico: ordemData.laudo_tecnico || '',
+                motivo_cancelamento: ordemData.motivo_cancelamento || ''
+            });
+
+        } catch (error: any) {
+            console.error('Erro ao carregar ordem:', error);
+            
+            // Se for erro 401 (não autorizado), redirecionar para login
+            if (error.response?.status === 401) {
+                toast({
+                    title: "Sessão Expirada",
+                    description: "Você precisa fazer login para acessar esta página",
+                    variant: "destructive"
+                });
+                router.push('/login');
+                return;
+            }
+            
+            toast({
+                title: "Erro",
+                description: "Erro ao carregar dados da ordem de serviço",
+                variant: "destructive"
+            });
+            router.push('/modules/ordem_servico/pages/ordens');
+        } finally {
+            setLoadingOrdem(false);
+        }
+    };
+
+    const fetchTechnicians = async () => {
+        try {
+            const response = await api.get('/api/ordem_servico/ordens/technicians');
+            setTechnicians(response.data);
+        } catch (error) {
+            console.error('Erro ao buscar técnicos:', error);
+        }
+    };
+
+    const fetchTiposServico = async () => {
+        try {
+            const response = await api.get('/api/ordem_servico/ordens/tipos-servico');
+            setTiposServico(response.data);
+        } catch (error) {
+            console.error('Erro ao buscar tipos de serviço:', error);
+        }
+    };
+
+    const getStatusesPermitidos = () => {
+        if (!ordem) return [];
+        return TRANSICOES_PERMITIDAS[ordem.status] || [];
+    };
+
+    const handleSave = async () => {
+        if (!ordem) return;
+
+        try {
+            setLoading(true);
+
+            const payload = {
+                tipo_servico: formData.tipo_servico,
+                prioridade: formData.prioridade,
+                descricao: formData.descricao,
+                observacoes_internas: formData.observacoes_internas || undefined,
+                observacoes_cliente: formData.observacoes_cliente || undefined,
+                valor_servico: formData.valor_servico ? parseFloat(formData.valor_servico.replace(',', '.')) : undefined,
+                forma_pagamento: formData.forma_pagamento || undefined,
+                data_previsao: formData.data_previsao || undefined,
+                usuario_responsavel_id: formData.usuario_responsavel_id || undefined,
+                status: formData.status,
+                motivo_cancelamento: formData.motivo_cancelamento || undefined,
+                equipamento_tipo: formData.equipamento_tipo || undefined,
+                equipamento_marca: formData.equipamento_marca || undefined,
+                equipamento_modelo: formData.equipamento_modelo || undefined,
+                equipamento_serie: formData.equipamento_serie || undefined,
+                laudo_tecnico: formData.laudo_tecnico || undefined
+            };
+
+            // Remove undefined values
+            Object.keys(payload).forEach(key => {
+                if ((payload as any)[key] === undefined) {
+                    delete (payload as any)[key];
+                }
+            });
+
+            await api.put(`/api/ordem_servico/ordens/${ordemId}`, payload);
+
+            toast({
+                title: 'Sucesso!',
+                description: `Ordem de Serviço #${ordem.numero} atualizada com sucesso.`,
+                variant: 'default'
+            });
+
+            router.push('/modules/ordem_servico/pages/ordens');
+        } catch (error: any) {
+            console.error('Erro ao salvar OS:', error);
+            const msg = error.response?.data?.message || 'Erro ao processar sua solicitação.';
+            toast({ 
+                title: 'Erro ao Salvar', 
+                description: msg, 
+                variant: 'destructive' 
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loadingOrdem) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Carregando ordem de serviço...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!ordem) {
+        return (
+            <div className="p-6">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold mb-4 text-destructive">Ordem não encontrada</h2>
+                    <Button onClick={() => router.push('/modules/ordem_servico/pages/ordens')}>
+                        Voltar para Lista
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-4 md:p-8 w-full mx-auto space-y-6">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => router.push('/modules/ordem_servico/pages/ordens')} 
+                        title="Voltar"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Editar OS #{ordem.numero}
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Altere os dados da ordem de serviço
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <Button 
+                        variant="outline" 
+                        onClick={() => router.push('/modules/ordem_servico/pages/ordens')} 
+                        disabled={loading}
+                    >
+                        Cancelar
+                    </Button>
+                    <Button 
+                        onClick={handleSave} 
+                        disabled={loading} 
+                        className="gap-2 bg-primary hover:bg-primary/90"
+                    >
+                        {loading ? 'Salvando...' : <><Save className="h-4 w-4" /> Salvar Alterações</>}
+                    </Button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+                {/* Section 1: CLIENTE (FIXO) */}
+                <Card className="lg:col-span-1 shadow-sm border-2">
+                    <CardHeader className="bg-muted/20 pb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                            <CardTitle className="text-lg">Cliente</CardTitle>
+                        </div>
+                        <CardDescription>Informações do cliente (não editável)</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        {ordem.cliente && (
+                            <div className="bg-card rounded-lg border-2 border-muted p-5 space-y-4 relative shadow-sm overflow-hidden bg-gradient-to-br from-muted/20 to-transparent">
+                                <div className="flex gap-4 items-start">
+                                    <div className="h-20 w-20 rounded-xl bg-muted flex items-center justify-center border border-muted-foreground/20 shadow-inner shrink-0 overflow-hidden">
+                                        <User className="h-10 w-10 text-muted-foreground" />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Badge variant="secondary" className="text-[10px] h-5">
+                                                Cliente Fixo
+                                            </Badge>
+                                            {ordem.cliente.is_active ? (
+                                                <Badge variant="outline" className="text-[10px] h-5 border-emerald-500/50 text-emerald-600 bg-emerald-50/50">
+                                                    Ativo
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="destructive" className="text-[10px] h-5">
+                                                    Inativo
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <h3 className="font-bold text-xl leading-tight text-foreground truncate">
+                                            {ordem.cliente.name}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground font-medium">
+                                            {ordem.cliente.document || 'Sem documento'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3 pt-3 border-t border-muted">
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span className="text-sm font-semibold">{ordem.cliente.phone_primary}</span>
+                                        {ordem.cliente.phone_secondary && (
+                                            <span className="text-xs text-muted-foreground italic border-l pl-2">
+                                                {ordem.cliente.phone_secondary}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {(ordem.cliente.address_street || ordem.cliente.address_city) && (
+                                        <div className="flex items-start gap-2">
+                                            <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                                            <div className="text-sm">
+                                                <p className="font-medium text-foreground/80">
+                                                    {ordem.cliente.address_street}
+                                                    {ordem.cliente.address_number ? `, ${ordem.cliente.address_number}` : ''}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {[
+                                                        ordem.cliente.address_city, 
+                                                        ordem.cliente.address_state
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' - ')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Main Form Area */}
+                <div className="lg:col-span-2 xl:col-span-3 space-y-6">
+
+                    {/* Section 2: DADOS DA ORDEM DE SERVIÇO */}
+                    <Card className="shadow-sm border-2">
+                        <CardHeader className="bg-muted/20 pb-4">
+                            <div className="flex items-center gap-2">
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
+                                <CardTitle className="text-lg">Dados da Ordem de Serviço</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+                            <div className="space-y-2">
+                                <Label>Tipo de Serviço *</Label>
+                                <Select
+                                    value={formData.tipo_servico}
+                                    onValueChange={(v: string) => setFormData({ ...formData, tipo_servico: v })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione o tipo de serviço" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {tiposServico.map((tipo) => (
+                                            <SelectItem key={tipo.id} value={tipo.nome}>
+                                                {tipo.nome}
+                                                {tipo.is_default && <span className="text-xs text-muted-foreground ml-2">(Padrão)</span>}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Status *</Label>
+                                <Select
+                                    value={formData.status.toString()}
+                                    onValueChange={(v) => setFormData({ ...formData, status: parseInt(v) })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {/* Status atual sempre disponível */}
+                                        <SelectItem value={ordem.status.toString()}>
+                                            {STATUS_LABELS[ordem.status]} (Atual)
+                                        </SelectItem>
+                                        {/* Transições permitidas */}
+                                        {getStatusesPermitidos().map((status) => (
+                                            <SelectItem key={status} value={status.toString()}>
+                                                {STATUS_LABELS[status]}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Prioridade</Label>
+                                <Select 
+                                    value={formData.prioridade} 
+                                    onValueChange={(v: any) => setFormData({ ...formData, prioridade: v })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="BAIXA">Baixa</SelectItem>
+                                        <SelectItem value="MEDIA">Média</SelectItem>
+                                        <SelectItem value="ALTA">Alta</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Técnico Responsável</Label>
+                                <Select
+                                    value={formData.usuario_responsavel_id || 'NONE'}
+                                    onValueChange={(v) => setFormData({ ...formData, usuario_responsavel_id: v === 'NONE' ? '' : v })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione um técnico" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="NONE">Nenhum técnico selecionado</SelectItem>
+                                        {technicians.map(t => (
+                                            <SelectItem key={t.id} value={t.id}>
+                                                {t.name}
+                                                {t.email && <span className="text-xs text-muted-foreground ml-2">({t.email})</span>}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Data de Previsão</Label>
+                                <Input
+                                    type="date"
+                                    value={formData.data_previsao}
+                                    onChange={(e) => setFormData({ ...formData, data_previsao: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="col-span-full space-y-2">
+                                <Label>Descrição do Problema / Serviço Solicitado *</Label>
+                                <Textarea
+                                    placeholder="Detalhe o que o cliente relatou ou o que deve ser feito..."
+                                    className="min-h-[120px]"
+                                    value={formData.descricao}
+                                    onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                                />
+                            </div>
+
+                            {/* Motivo de Cancelamento (se status for cancelada) */}
+                            {formData.status === StatusOS.CANCELADA && (
+                                <div className="col-span-full space-y-2">
+                                    <Label>Motivo do Cancelamento *</Label>
+                                    <Textarea
+                                        placeholder="Descreva o motivo do cancelamento..."
+                                        value={formData.motivo_cancelamento}
+                                        onChange={(e) => setFormData({ ...formData, motivo_cancelamento: e.target.value })}
+                                    />
+                                </div>
+                            )}
+
+                        </CardContent>
+                    </Card>
+
+                    {/* Section 3: LAUDO TÉCNICO */}
+                    <Card className="shadow-sm border-2">
+                        <CardHeader className="bg-muted/20 pb-4">
+                            <div className="flex items-center gap-2">
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
+                                <CardTitle className="text-lg">Laudo Técnico</CardTitle>
+                            </div>
+                            <CardDescription>Diagnóstico e observações técnicas</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <div className="space-y-2">
+                                <Label>Laudo Técnico Detalhado</Label>
+                                <Textarea
+                                    placeholder="Descreva o diagnóstico técnico, problemas encontrados, soluções aplicadas..."
+                                    className="min-h-[150px]"
+                                    value={formData.laudo_tecnico}
+                                    onChange={(e) => setFormData({ ...formData, laudo_tecnico: e.target.value })}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Section 4: EQUIPAMENTO */}
+                    <Card className="shadow-sm border-2">
+                        <CardHeader className="bg-muted/20 pb-4">
+                            <div className="flex items-center gap-2">
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
+                                <CardTitle className="text-lg">Equipamento</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-6 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Tipo de Equipamento</Label>
+                                    <Input 
+                                        placeholder="Notebook, Smartphone..." 
+                                        value={formData.equipamento_tipo} 
+                                        onChange={(e) => setFormData({ ...formData, equipamento_tipo: e.target.value })} 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Marca</Label>
+                                    <Input 
+                                        placeholder="Dell, HP, Samsung..." 
+                                        value={formData.equipamento_marca} 
+                                        onChange={(e) => setFormData({ ...formData, equipamento_marca: e.target.value })} 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Modelo</Label>
+                                    <Input 
+                                        placeholder="Vostro 3500, Galaxy S21..." 
+                                        value={formData.equipamento_modelo} 
+                                        onChange={(e) => setFormData({ ...formData, equipamento_modelo: e.target.value })} 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Número de Série</Label>
+                                    <Input 
+                                        placeholder="S/N ou IMEI..." 
+                                        value={formData.equipamento_serie} 
+                                        onChange={(e) => setFormData({ ...formData, equipamento_serie: e.target.value })} 
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Section 5: VALORES E OBSERVAÇÕES */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* VALORES */}
+                        <Card className="shadow-sm border-2">
+                            <CardHeader className="bg-slate-50/50 pb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">5</span>
+                                    <CardTitle className="text-lg">Valores</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="pt-6 space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Valor do Serviço (R$)</Label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="0,00"
+                                            className="pl-9"
+                                            value={formData.valor_servico}
+                                            onChange={(e) => setFormData({ ...formData, valor_servico: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Forma de Pagamento</Label>
+                                    <Select
+                                        value={formData.forma_pagamento}
+                                        onValueChange={(v) => setFormData({ ...formData, forma_pagamento: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
+                                            <SelectItem value="PIX">PIX</SelectItem>
+                                            <SelectItem value="CARTAO_DEBITO">Cartão de Débito</SelectItem>
+                                            <SelectItem value="CARTAO_CREDITO">Cartão de Crédito</SelectItem>
+                                            <SelectItem value="TRANSFERENCIA">Transferência</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* OBSERVAÇÕES */}
+                        <Card className="shadow-sm border-2">
+                            <CardHeader className="bg-slate-50/50 pb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">6</span>
+                                    <CardTitle className="text-lg">Observações</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="pt-6 space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        Observações Internas <Badge variant="secondary" className="text-[9px] h-4">Privado</Badge>
+                                    </Label>
+                                    <Textarea
+                                        placeholder="Senhas, detalhes técnicos para equipe..."
+                                        value={formData.observacoes_internas}
+                                        onChange={(e) => setFormData({ ...formData, observacoes_internas: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        Observações para o Cliente <Badge variant="outline" className="text-[9px] h-4">Visível</Badge>
+                                    </Label>
+                                    <Textarea
+                                        placeholder="Notas que aparecerão na impressão ou consulta online..."
+                                        value={formData.observacoes_cliente}
+                                        onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Section 7: AÇÕES */}
+                    <div className="flex flex-col md:flex-row gap-4 pt-4 pb-12">
+                        <Button
+                            className="flex-1 gap-2 h-12 text-lg active:scale-95 transition-transform"
+                            size="lg"
+                            onClick={handleSave}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>Salvando...</>
+                            ) : (
+                                <><Save className="h-5 w-5" /> Salvar Alterações</>
+                            )}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-12 text-lg"
+                            size="lg"
+                            onClick={() => router.push('/modules/ordem_servico/pages/ordens')}
+                            disabled={loading}
+                        >
+                            Cancelar
+                        </Button>
+                    </div>
+
+                </div>
+            </div>
+
+            {/* Business Rules Summary Footer */}
+            <div className="bg-muted/30 p-6 rounded-xl border border-dashed text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                    <p><strong>Edição:</strong> Apenas campos editáveis podem ser alterados. O cliente permanece fixo.</p>
+                </div>
+                <div className="flex gap-3">
+                    <Info className="h-5 w-5 text-blue-500 shrink-0" />
+                    <p><strong>Status:</strong> Apenas transições válidas são permitidas conforme regras de negócio.</p>
+                </div>
+                <div className="flex gap-3">
+                    <AlertCircle className="h-5 w-5 text-orange-500 shrink-0" />
+                    <p><strong>Histórico:</strong> Todas as alterações são registradas no histórico da ordem.</p>
+                </div>
+            </div>
+        </div>
+    );
+}

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { X } from 'lucide-react';
 import ClientModal from '../../components/ClientModal';
 import ClientEditModal from '../../components/ClientEditModal';
+import { Cliente } from '../../types/ordem-servico.types';
 
 interface Client {
     id: string;
@@ -124,7 +125,7 @@ export default function OrdemServicoClientesPage() {
         toast({ title: 'Cliente cadastrado com sucesso!' });
     };
 
-    const handleClientUpdated = (client: Client) => {
+    const handleClientUpdated = (client: Cliente) => {
         fetchClients(); // Recarregar lista
         toast({ title: 'Cliente atualizado com sucesso!' });
     };

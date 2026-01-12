@@ -1,6 +1,6 @@
 import React from 'react';
 import { FrontendModuleDefinition } from '@/lib/module-types';
-import { moduloOsWidget } from './components/moduloOsWidget';
+import { MeuModuloWidget } from './components/MeuModuloWidget';
 export { default as moduloOsConfiguracoesPage } from './pages/configuracoes';
 
 export const moduloOsModule: FrontendModuleDefinition = {
@@ -12,7 +12,7 @@ export const moduloOsModule: FrontendModuleDefinition = {
             id: 'moduloOs-status',
             type: 'summary_card',
             title: 'Status Ordem de Serviços',
-            component: moduloOsWidget,
+            component: MeuModuloWidget,
             gridSize: { w: 1, h: 1 },
             order: 1,
             icon: 'Box'

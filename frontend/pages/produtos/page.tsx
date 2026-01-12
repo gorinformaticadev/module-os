@@ -334,7 +334,10 @@ export default function OrdemServicoProdutosPage() {
                                                         onError={(e) => {
                                                             console.error('Image load error:', p.image_url);
                                                             e.currentTarget.style.display = 'none';
-                                                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                                                            if (nextElement) {
+                                                                nextElement.style.display = 'flex';
+                                                            }
                                                         }}
                                                         onLoad={() => console.log('Image loaded successfully:', p.image_url)}
                                                     />
