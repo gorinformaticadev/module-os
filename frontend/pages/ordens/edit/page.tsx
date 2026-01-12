@@ -21,7 +21,9 @@ import {
     CheckCircle2,
     Info,
     Plus,
-    Trash2
+    Trash2,
+    X,
+    Image as ImageIcon
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -61,6 +63,7 @@ interface Produto {
     description: string;
     price: number | string;
     code?: string;
+    image_url?: string;
 }
 
 interface ItemOrdem {
@@ -69,6 +72,7 @@ interface ItemOrdem {
     valor_unitario: number;
     quantidade: number;
     valor_total: number;
+    image_url?: string;
 }
 
 interface Cliente {
@@ -157,6 +161,7 @@ export default function EditOrdemPage() {
         quantidade: 1,
         valor_unitario: 0
     });
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     // Estados do formulário
     const [formData, setFormData] = useState({
@@ -230,7 +235,8 @@ export default function EditOrdemPage() {
             descricao: itemTemp.descricao,
             quantidade: qtd,
             valor_unitario: valorUnit,
-            valor_total: total
+            valor_total: total,
+            image_url: itemTemp.image_url
         };
 
         const currentItens = formData.itens || [];
@@ -244,6 +250,8 @@ export default function EditOrdemPage() {
             valor_unitario: 0,
             produto_id: undefined
         });
+        setDebouncedSearch('');
+        setOpenCombobox(false);
     };
 
     const handleRemoveItem = (index: number) => {
@@ -277,9 +285,10 @@ export default function EditOrdemPage() {
     const handleProductClick = (produto: Produto) => {
         setItemTemp({
             produto_id: produto.id,
-            descricao: produto.name, // Use name as the main description
+            descricao: produto.name, // Usar o NOME do produto
             valor_unitario: Number(produto.price),
-            quantidade: 1
+            quantidade: 1,
+            image_url: produto.image_url
         });
         setOpenCombobox(false);
     };
@@ -289,17 +298,17 @@ export default function EditOrdemPage() {
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(itemTemp.descricao || '');
-        }, 300);
+        }, 2300);
         return () => clearTimeout(timer);
     }, [itemTemp.descricao]);
 
     useEffect(() => {
-        if (debouncedSearch.length >= 2) {
+        if (debouncedSearch.length >= 2 && !itemTemp.produto_id) {
             setOpenCombobox(true);
         } else {
             setOpenCombobox(false);
         }
-    }, [debouncedSearch]);
+    }, [debouncedSearch, itemTemp.produto_id]);
 
     // Filtra produtos baseado no input atual
     const filteredProducts = debouncedSearch.length >= 2 ? produtos.filter(p =>
@@ -732,11 +741,81 @@ export default function EditOrdemPage() {
                     </CardContent>
                 </Card>
 
-                {/* Section 3: PRODUTOS E SERVIÇOS */}
+
+
+                {/* Section 4: EQUIPAMENTO (Moved UP) */}
                 <Card className="shadow-sm border-2">
                     <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
+                            <CardTitle className="text-lg">Equipamento</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                                <Label>Tipo de Equipamento</Label>
+                                <Input
+                                    placeholder="Notebook, Smartphone..."
+                                    value={formData.equipamento_tipo}
+                                    onChange={(e) => setFormData({ ...formData, equipamento_tipo: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Marca</Label>
+                                <Input
+                                    placeholder="Dell, HP, Samsung..."
+                                    value={formData.equipamento_marca}
+                                    onChange={(e) => setFormData({ ...formData, equipamento_marca: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Modelo</Label>
+                                <Input
+                                    placeholder="Vostro 3500, Galaxy S21..."
+                                    value={formData.equipamento_modelo}
+                                    onChange={(e) => setFormData({ ...formData, equipamento_modelo: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Número de Série</Label>
+                                <Input
+                                    placeholder="S/N ou IMEI..."
+                                    value={formData.equipamento_serie}
+                                    onChange={(e) => setFormData({ ...formData, equipamento_serie: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Section 3: LAUDO TÉCNICO (Moved DOWN) */}
+                <Card className="shadow-sm border-2">
+                    <CardHeader className="bg-muted/20 pb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
+                            <CardTitle className="text-lg">Laudo Técnico</CardTitle>
+                        </div>
+                        <CardDescription>Diagnóstico e observações técnicas</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <div className="space-y-2">
+                            <Label>Laudo Técnico Detalhado</Label>
+                            <Textarea
+                                placeholder="Descreva o diagnóstico técnico, problemas encontrados, soluções aplicadas..."
+                                className="min-h-[150px]"
+                                value={formData.laudo_tecnico}
+                                onChange={(e) => setFormData({ ...formData, laudo_tecnico: e.target.value })}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Section 5: PRODUTOS E SERVIÇOS */}
+                <Card className="shadow-sm border-2">
+                    <CardHeader className="bg-muted/20 pb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">5</span>
                             <CardTitle className="text-lg">Produtos e Serviços</CardTitle>
                         </div>
                     </CardHeader>
@@ -756,6 +835,15 @@ export default function EditOrdemPage() {
                                                 value={itemTemp.descricao}
                                                 onChange={e => {
                                                     handleDescriptionChange(e.target.value);
+                                                }}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        setDebouncedSearch(itemTemp.descricao || '');
+                                                        if ((itemTemp.descricao || '').length >= 2) {
+                                                            setOpenCombobox(true);
+                                                        }
+                                                    }
                                                 }}
                                                 placeholder="Digite para buscar ou descrever o item..."
                                                 className="w-full"
@@ -826,6 +914,7 @@ export default function EditOrdemPage() {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-muted text-muted-foreground font-medium">
                                     <tr>
+                                        <th className="p-3 w-16 text-center">Foto</th>
                                         <th className="p-3">Descrição</th>
                                         <th className="p-3 w-24 text-center">Qtd</th>
                                         <th className="p-3 w-32 text-right">Valor Unit.</th>
@@ -837,6 +926,20 @@ export default function EditOrdemPage() {
                                     {formData.itens && formData.itens.length > 0 ? (
                                         formData.itens.map((item, index) => (
                                             <tr key={index} className="hover:bg-muted/10">
+                                                <td className="p-3 text-center">
+                                                    {item.image_url ? (
+                                                        <img
+                                                            src={item.image_url}
+                                                            alt="Miniatura"
+                                                            className="h-10 w-10 object-cover rounded-md cursor-pointer border hover:scale-105 transition-transform mx-auto"
+                                                            onClick={() => setPreviewImage(item.image_url || null)}
+                                                        />
+                                                    ) : (
+                                                        <div className="h-10 w-10 bg-muted rounded-md flex items-center justify-center text-muted-foreground mx-auto">
+                                                            <ImageIcon className="h-5 w-5" />
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td className="p-3">{item.descricao}</td>
                                                 <td className="p-3 text-center">{item.quantidade}</td>
                                                 <td className="p-3 text-right">R$ {Number(item.valor_unitario).toFixed(2)}</td>
@@ -863,7 +966,7 @@ export default function EditOrdemPage() {
                                 </tbody>
                                 <tfoot className="bg-muted/50 font-bold border-t">
                                     <tr>
-                                        <td colSpan={3} className="p-3 text-right">Total Geral:</td>
+                                        <td colSpan={4} className="p-3 text-right">Total Geral:</td>
                                         <td className="p-3 text-right text-primary text-base">
                                             R$ {formData.itens ? formData.itens.reduce((acc, i) => acc + i.valor_total, 0).toFixed(2) : '0.00'}
                                         </td>
@@ -876,81 +979,13 @@ export default function EditOrdemPage() {
                     </CardContent>
                 </Card>
 
-                {/* Section 4: EQUIPAMENTO (Moved UP) */}
-                <Card className="shadow-sm border-2">
-                    <CardHeader className="bg-muted/20 pb-4">
-                        <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
-                            <CardTitle className="text-lg">Equipamento</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pt-6 space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="space-y-2">
-                                <Label>Tipo de Equipamento</Label>
-                                <Input
-                                    placeholder="Notebook, Smartphone..."
-                                    value={formData.equipamento_tipo}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_tipo: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Marca</Label>
-                                <Input
-                                    placeholder="Dell, HP, Samsung..."
-                                    value={formData.equipamento_marca}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_marca: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Modelo</Label>
-                                <Input
-                                    placeholder="Vostro 3500, Galaxy S21..."
-                                    value={formData.equipamento_modelo}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_modelo: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Número de Série</Label>
-                                <Input
-                                    placeholder="S/N ou IMEI..."
-                                    value={formData.equipamento_serie}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_serie: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Section 3: LAUDO TÉCNICO (Moved DOWN) */}
-                <Card className="shadow-sm border-2">
-                    <CardHeader className="bg-muted/20 pb-4">
-                        <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
-                            <CardTitle className="text-lg">Laudo Técnico</CardTitle>
-                        </div>
-                        <CardDescription>Diagnóstico e observações técnicas</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                        <div className="space-y-2">
-                            <Label>Laudo Técnico Detalhado</Label>
-                            <Textarea
-                                placeholder="Descreva o diagnóstico técnico, problemas encontrados, soluções aplicadas..."
-                                className="min-h-[150px]"
-                                value={formData.laudo_tecnico}
-                                onChange={(e) => setFormData({ ...formData, laudo_tecnico: e.target.value })}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
                 {/* Section 5: VALORES E OBSERVAÇÕES */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* VALORES */}
                     <Card className="shadow-sm border-2">
                         <CardHeader className="bg-slate-50/50 pb-4">
                             <div className="flex items-center gap-2">
-                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">5</span>
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">6</span>
                                 <CardTitle className="text-lg">Valores</CardTitle>
                             </div>
                         </CardHeader>
@@ -992,7 +1027,7 @@ export default function EditOrdemPage() {
                     <Card className="shadow-sm border-2">
                         <CardHeader className="bg-slate-50/50 pb-4">
                             <div className="flex items-center gap-2">
-                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">6</span>
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">7</span>
                                 <CardTitle className="text-lg">Observações</CardTitle>
                             </div>
                         </CardHeader>
@@ -1063,6 +1098,21 @@ export default function EditOrdemPage() {
                     <p><strong>Histórico:</strong> Todas as alterações são registradas no histórico da ordem.</p>
                 </div>
             </div>
+
+            {/* Image Preview Modal */}
+            {previewImage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
+                    <div className="relative max-w-4xl max-h-[90vh] p-2 animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                        <button
+                            className="absolute -top-4 -right-4 bg-white text-black rounded-full p-1 shadow-lg hover:bg-gray-200 transition-colors"
+                            onClick={() => setPreviewImage(null)}
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+                        <img src={previewImage} alt="Full Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
