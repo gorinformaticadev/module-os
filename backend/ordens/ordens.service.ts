@@ -27,7 +27,7 @@ export class OrdensService {
             // ============================================
             // VALIDAÇÃO MANUAL SEGURA (SEM ValidationPipe)
             // ============================================
-            
+
             // Validar e sanitizar cliente_id se fornecido
             if (filters.cliente_id) {
                 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,7 +57,7 @@ export class OrdensService {
                 validatedStatus = filters.status
                     .map(s => parseInt(String(s), 10))
                     .filter(s => !isNaN(s) && s >= 0 && s <= 7); // StatusOS válidos: 0-7
-                
+
                 if (validatedStatus.length === 0) {
                     validatedStatus = undefined; // Ignorar se nenhum status válido
                 }
@@ -66,14 +66,14 @@ export class OrdensService {
             // Validar datas se fornecidas
             let validatedDataInicio: string | undefined;
             let validatedDataFim: string | undefined;
-            
+
             if (filters.data_inicio) {
                 const dataInicio = new Date(filters.data_inicio);
                 if (!isNaN(dataInicio.getTime())) {
                     validatedDataInicio = dataInicio.toISOString();
                 }
             }
-            
+
             if (filters.data_fim) {
                 const dataFim = new Date(filters.data_fim);
                 if (!isNaN(dataFim.getTime())) {
@@ -88,7 +88,7 @@ export class OrdensService {
                     .trim()
                     .replace(/[<>'"]/g, '') // Remove caracteres potencialmente perigosos
                     .substring(0, 100); // Limita tamanho
-                
+
                 if (sanitizedSearch.length === 0) {
                     sanitizedSearch = undefined;
                 }
@@ -102,7 +102,7 @@ export class OrdensService {
             if (filters.search) {
                 const searchParam = filters.search.trim();
                 this.logger.log(`🔍 Filtro de busca: "${searchParam}" (length: ${searchParam.length})`);
-                
+
                 // Bloquear buscas muito curtas para performance
                 if (searchParam.length > 0 && searchParam.length < 2) {
                     this.logger.warn(`⚠️ Busca muito curta bloqueada: "${searchParam}"`);
@@ -220,7 +220,7 @@ export class OrdensService {
             const ordens = rawResult.map((os, index) => {
                 try {
                     this.logger.log(`🔄 Processando ordem ${index + 1}/${rawResult.length} - ID: ${os.id}`);
-                    
+
                     // Processar fotos de forma mais segura
                     let equipamento_fotos = [];
                     try {
@@ -235,20 +235,20 @@ export class OrdensService {
                         this.logger.warn(`⚠️ Erro ao processar fotos da ordem ${os.id}: ${photoError.message}`);
                         equipamento_fotos = [];
                     }
-                    
+
                     // Processar dados do cliente de forma mais segura
                     const cliente = {
                         name: os.cliente_nome ? String(os.cliente_nome) : null,
                         phone_primary: os.cliente_telefone ? String(os.cliente_telefone) : null,
                         is_active: os.cliente_ativo !== null ? Boolean(os.cliente_ativo) : null
                     };
-                    
+
                     // Processar dados do responsável de forma mais segura
                     const responsavel = {
                         name: null,
                         email: null
                     };
-                    
+
                     // Criar objeto da ordem processada com conversão de tipos MAIS RIGOROSA
                     const processedOrder = {
                         // IDs como strings
@@ -256,7 +256,7 @@ export class OrdensService {
                         tenant_id: String(os.tenant_id),
                         cliente_id: os.cliente_id ? String(os.cliente_id) : null,
                         usuario_responsavel_id: os.usuario_responsavel_id ? String(os.usuario_responsavel_id) : null,
-                        
+
                         // Strings garantidas
                         numero: os.numero ? String(os.numero) : null,
                         descricao: os.descricao ? String(os.descricao) : null,
@@ -267,7 +267,7 @@ export class OrdensService {
                         observacoes_cliente: os.observacoes_cliente ? String(os.observacoes_cliente) : null,
                         forma_pagamento: os.forma_pagamento ? String(os.forma_pagamento) : null,
                         motivo_cancelamento: os.motivo_cancelamento ? String(os.motivo_cancelamento) : null,
-                        
+
                         // Campos de equipamento
                         equipamento_tipo: os.equipamento_tipo ? String(os.equipamento_tipo) : null,
                         equipamento_marca: os.equipamento_marca ? String(os.equipamento_marca) : null,
@@ -276,32 +276,32 @@ export class OrdensService {
                         equipamento_acessorios: os.equipamento_acessorios ? String(os.equipamento_acessorios) : null,
                         equipamento_estado: os.equipamento_estado ? String(os.equipamento_estado) : null,
                         equipamento_fotos,
-                        
+
                         // Campos de formatação
                         formatacao_so: os.formatacao_so ? String(os.formatacao_so) : null,
                         formatacao_backup_descricao: os.formatacao_backup_descricao ? String(os.formatacao_backup_descricao) : null,
                         formatacao_senha: os.formatacao_senha ? String(os.formatacao_senha) : null,
-                        
+
                         // Números garantidos como números
                         valor_servico: os.valor_servico ? Number(parseFloat(String(os.valor_servico))) : 0,
                         status: os.status ? Number(parseInt(String(os.status))) : 0,
-                        
+
                         // Booleanos garantidos
                         orcamento_aprovado: Boolean(os.orcamento_aprovado),
                         formatacao_backup: Boolean(os.formatacao_backup),
-                        
+
                         // Datas como strings ISO ou null
                         data_abertura: os.data_abertura ? new Date(os.data_abertura).toISOString() : null,
                         data_previsao: os.data_previsao ? new Date(os.data_previsao).toISOString() : null,
                         data_conclusao: os.data_conclusao ? new Date(os.data_conclusao).toISOString() : null,
                         created_at: os.created_at ? new Date(os.created_at).toISOString() : null,
                         updated_at: os.updated_at ? new Date(os.updated_at).toISOString() : null,
-                        
+
                         // Objetos relacionados
                         cliente,
                         responsavel
                     };
-                    
+
                     // Teste de serialização individual
                     try {
                         JSON.stringify(processedOrder);
@@ -310,7 +310,7 @@ export class OrdensService {
                         this.logger.error(`❌ Dados problemáticos:`, processedOrder);
                         throw new Error(`Ordem ${os.id} não é serializável: ${serError.message}`);
                     }
-                    
+
                     this.logger.log(`✅ Ordem ${index + 1} processada com sucesso - Número: ${processedOrder.numero}`);
                     return processedOrder;
                 } catch (error) {
@@ -322,7 +322,7 @@ export class OrdensService {
             });
 
             this.logger.log(`✅ ${ordens.length} ordens de serviço encontradas (Total: ${total}, Página: ${page}/${totalPages})`);
-            
+
             const result = {
                 data: ordens,
                 total,
@@ -330,15 +330,15 @@ export class OrdensService {
                 totalPages,
                 limit
             };
-            
-            this.logger.log(`📤 Retornando resultado: ${JSON.stringify({ 
-                dataLength: result.data.length, 
-                total: result.total, 
-                page: result.page, 
+
+            this.logger.log(`📤 Retornando resultado: ${JSON.stringify({
+                dataLength: result.data.length,
+                total: result.total,
+                page: result.page,
                 totalPages: result.totalPages,
-                limit: result.limit 
+                limit: result.limit
             })}`);
-            
+
             // Verificar se o resultado é serializável
             try {
                 JSON.stringify(result);
@@ -347,7 +347,7 @@ export class OrdensService {
                 this.logger.error(`❌ Erro de serialização JSON: ${serializationError.message}`);
                 throw new Error(`Erro de serialização: ${serializationError.message}`);
             }
-            
+
             return result;
         } catch (error) {
             this.logger.error(`❌ Erro ao buscar ordens de serviço:`, error);
@@ -379,7 +379,7 @@ export class OrdensService {
                 FROM mod_ordem_servico_ordens os
                 LEFT JOIN mod_ordem_servico_clients c ON os.cliente_id = c.id
                 LEFT JOIN users u ON os.usuario_responsavel_id = u.id
-                WHERE os.id = $1 AND os.tenant_id = $2
+                WHERE os.id = $1::uuid AND os.tenant_id = $2
             `;
 
             const result = await this.prisma.$queryRawUnsafe(query, id, tenantId) as any[];
