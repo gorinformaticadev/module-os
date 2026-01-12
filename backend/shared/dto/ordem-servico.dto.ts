@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString, IsInt, Min } from 'class-validator';
 
 export enum OrigemSolicitacao {
     WHATSAPP = 'WHATSAPP',
@@ -239,6 +239,16 @@ export class OrdemServicoFilters {
     @IsOptional()
     @IsString()
     tipo_servico?: string;
+
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    page?: number;
+
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    limit?: number;
 }
 
 export class UpdateStatusDTO {

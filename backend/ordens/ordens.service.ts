@@ -23,19 +23,40 @@ export class OrdensService {
     async findAll(tenantId: string, filters: OrdemServicoFilters) {
         try {
             this.logger.log(`Buscando ordens de serviço. Tenant: ${tenantId}`);
+            this.logger.log(`Filtros recebidos: ${JSON.stringify(filters)}`);
+
+            // Validar cliente_id se fornecido
+            if (filters.cliente_id) {
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (!uuidRegex.test(filters.cliente_id)) {
+                    this.logger.error(`❌ UUID inválido fornecido: ${filters.cliente_id}`);
+                    throw new Error('ID de cliente inválido');
+                }
+            }
+
+            // Paginação
+            const page = filters.page || 1;
+            const limit = Math.min(filters.limit || 20, 100); // Máximo 100 por página
+            const offset = (page - 1) * limit;
+
+            this.logger.log(`📊 Paginação: page=${page}, limit=${limit}, offset=${offset}`);
 
             let whereClause = `WHERE os.tenant_id = $1`;
             const params: any[] = [tenantId];
             let paramIndex = 2;
 
+            this.logger.log(`🔍 Iniciando construção de filtros...`);
+
             // Aplicar filtros
             if (filters.search) {
                 const searchParam = filters.search.trim();
-                // Bloquear buscas muito curtas para performance (exceto se for numero exato talvez? mas vamos seguir a regra geral)
+                this.logger.log(`🔍 Filtro de busca: "${searchParam}" (length: ${searchParam.length})`);
+                
+                // Bloquear buscas muito curtas para performance
                 if (searchParam.length > 0 && searchParam.length < 2) {
-                    whereClause += ` AND 1=0`; // Força resultado vazio para busca curta
+                    this.logger.warn(`⚠️ Busca muito curta bloqueada: "${searchParam}"`);
+                    return { data: [], total: 0, page, totalPages: 0 };
                 } else if (searchParam.length >= 2) {
-                    // Pre-convert to lowercase to avoid LOWER($param) ambiguity in Postgres
                     const searchPattern = `%${searchParam.toLowerCase()}%`;
                     whereClause += ` AND (
                         LOWER(COALESCE(os.numero, '')) LIKE $${paramIndex}::text 
@@ -44,23 +65,26 @@ export class OrdensService {
                     )`;
                     params.push(searchPattern);
                     paramIndex++;
+                    this.logger.log(`✅ Filtro de busca aplicado: ${searchPattern}`);
                 }
             }
 
             if (filters.status && filters.status.length > 0) {
+                this.logger.log(`📊 Filtro de status: ${JSON.stringify(filters.status)}`);
                 whereClause += ` AND os.status = ANY($${paramIndex})`;
                 params.push(filters.status);
                 paramIndex++;
+                this.logger.log(`✅ Filtro de status aplicado`);
             }
 
             if (filters.cliente_id) {
-                whereClause += ` AND os.cliente_id = $${paramIndex}`;
+                whereClause += ` AND os.cliente_id = $${paramIndex}::uuid`;
                 params.push(filters.cliente_id);
                 paramIndex++;
             }
 
             if (filters.usuario_responsavel_id) {
-                whereClause += ` AND os.usuario_responsavel_id = $${paramIndex}`;
+                whereClause += ` AND os.usuario_responsavel_id = $${paramIndex}::uuid`;
                 params.push(filters.usuario_responsavel_id);
                 paramIndex++;
             }
@@ -89,50 +113,158 @@ export class OrdensService {
                 paramIndex++;
             }
 
+            // Query de contagem para paginação
+            this.logger.log(`🔍 Executando query de contagem...`);
+            const countQuery = `
+                SELECT COUNT(*)::int as total
+                FROM mod_ordem_servico_ordens os
+                LEFT JOIN mod_ordem_servico_clients c ON os.cliente_id = c.id
+                ${whereClause}
+            `;
+
+            this.logger.log(`📊 Count Query: ${countQuery}`);
+            this.logger.log(`📊 Count Params: ${JSON.stringify(params)}`);
+
+            const countResult = await this.prisma.$queryRawUnsafe(countQuery, ...params) as any[];
+            const total = countResult[0]?.total || 0;
+            const totalPages = Math.ceil(total / limit);
+
+            this.logger.log(`✅ Contagem concluída: ${total} registros encontrados`);
+
+            // Query principal com paginação (versão simplificada para debug)
+            this.logger.log(`🔍 Executando query principal...`);
             const query = `
                 SELECT 
                     os.*,
                     c.name as cliente_nome,
                     c.phone_primary as cliente_telefone,
-                    c.is_active as cliente_ativo,
-                    u.name as responsavel_nome,
-                    u.email as responsavel_email
+                    c.is_active as cliente_ativo
                 FROM mod_ordem_servico_ordens os
                 LEFT JOIN mod_ordem_servico_clients c ON os.cliente_id = c.id
-                LEFT JOIN users u ON os.usuario_responsavel_id = u.id
                 ${whereClause}
                 ORDER BY os.created_at DESC
+                LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
             `;
 
-            this.logger.log(`Executing Query: ${query}`);
-            this.logger.log(`Query Params: ${JSON.stringify(params)}`);
+            params.push(limit, offset);
+
+            this.logger.log(`📊 Main Query: ${query}`);
+            this.logger.log(`📊 Main Params: ${JSON.stringify(params)}`);
+
+            this.logger.log(`🔍 Executando query principal no banco...`);
+            const rawResult = await this.prisma.$queryRawUnsafe(query, ...params) as any[];
+            this.logger.log(`✅ Query executada, ${rawResult.length} registros retornados`);
+            this.logger.log(`📊 Primeiro registro (raw): ${JSON.stringify(rawResult[0], null, 2)}`);
 
             const parsePhotos = (photos: any) => {
                 try {
                     return typeof photos === 'string' ? JSON.parse(photos) : (photos || []);
                 } catch (e) {
+                    this.logger.error(`❌ Erro ao parsear fotos: ${e.message}`);
                     return [];
                 }
             };
 
-            const ordens = (await this.prisma.$queryRawUnsafe(query, ...params) as any[]).map(os => ({
-                ...os,
-                equipamento_fotos: parsePhotos(os.equipamento_fotos),
-                cliente: {
-                    name: os.cliente_nome,
-                    phone_primary: os.cliente_telefone,
-                    is_active: os.cliente_ativo
-                },
-                responsavel: {
-                    name: os.responsavel_nome,
-                    email: os.responsavel_email
+            this.logger.log(`🔄 Processando dados das ordens...`);
+            const ordens = rawResult.map((os, index) => {
+                try {
+                    this.logger.log(`🔄 Processando ordem ${index + 1}/${rawResult.length} - ID: ${os.id}`);
+                    
+                    // Processar fotos de forma mais segura
+                    let equipamento_fotos = [];
+                    try {
+                        if (os.equipamento_fotos) {
+                            if (typeof os.equipamento_fotos === 'string') {
+                                equipamento_fotos = JSON.parse(os.equipamento_fotos);
+                            } else if (Array.isArray(os.equipamento_fotos)) {
+                                equipamento_fotos = os.equipamento_fotos;
+                            }
+                        }
+                    } catch (photoError) {
+                        this.logger.warn(`⚠️ Erro ao processar fotos da ordem ${os.id}: ${photoError.message}`);
+                        equipamento_fotos = [];
+                    }
+                    
+                    // Processar dados do cliente de forma mais segura
+                    const cliente = {
+                        name: os.cliente_nome || null,
+                        phone_primary: os.cliente_telefone || null,
+                        is_active: os.cliente_ativo !== null ? Boolean(os.cliente_ativo) : null
+                    };
+                    
+                    // Processar dados do responsável de forma mais segura
+                    const responsavel = {
+                        name: null,
+                        email: null
+                    };
+                    
+                    // Criar objeto da ordem processada com conversão de tipos
+                    const processedOrder = {
+                        ...os,
+                        equipamento_fotos,
+                        cliente,
+                        responsavel,
+                        // Garantir que campos numéricos sejam números
+                        valor_servico: os.valor_servico ? parseFloat(os.valor_servico.toString()) : 0,
+                        status: os.status ? parseInt(os.status.toString()) : 0,
+                        // Garantir que campos booleanos sejam booleanos
+                        orcamento_aprovado: Boolean(os.orcamento_aprovado),
+                        formatacao_backup: Boolean(os.formatacao_backup),
+                        // Converter datas para strings ISO
+                        data_abertura: os.data_abertura ? new Date(os.data_abertura).toISOString() : null,
+                        data_previsao: os.data_previsao ? new Date(os.data_previsao).toISOString() : null,
+                        data_conclusao: os.data_conclusao ? new Date(os.data_conclusao).toISOString() : null,
+                        created_at: os.created_at ? new Date(os.created_at).toISOString() : null,
+                        updated_at: os.updated_at ? new Date(os.updated_at).toISOString() : null,
+                        // Garantir que strings sejam strings ou null
+                        numero: os.numero ? os.numero.toString() : null,
+                        descricao: os.descricao ? os.descricao.toString() : null,
+                        tipo_servico: os.tipo_servico ? os.tipo_servico.toString() : null,
+                        prioridade: os.prioridade ? os.prioridade.toString() : null,
+                        origem_solicitacao: os.origem_solicitacao ? os.origem_solicitacao.toString() : null
+                    };
+                    
+                    this.logger.log(`✅ Ordem ${index + 1} processada com sucesso - Número: ${processedOrder.numero}`);
+                    return processedOrder;
+                } catch (error) {
+                    this.logger.error(`❌ Erro ao processar ordem ${index + 1}: ${error.message}`);
+                    this.logger.error(`❌ Stack trace: ${error.stack}`);
+                    this.logger.error(`❌ Dados da ordem: ${JSON.stringify(os, null, 2)}`);
+                    throw error;
                 }
-            }));
+            });
 
-            this.logger.log(`✅ ${ordens.length} ordens de serviço encontradas`);
-            return ordens;
+            this.logger.log(`✅ ${ordens.length} ordens de serviço encontradas (Total: ${total}, Página: ${page}/${totalPages})`);
+            
+            const result = {
+                data: ordens,
+                total,
+                page,
+                totalPages,
+                limit
+            };
+            
+            this.logger.log(`📤 Retornando resultado: ${JSON.stringify({ 
+                dataLength: result.data.length, 
+                total: result.total, 
+                page: result.page, 
+                totalPages: result.totalPages,
+                limit: result.limit 
+            })}`);
+            
+            // Verificar se o resultado é serializável
+            try {
+                JSON.stringify(result);
+                this.logger.log(`✅ Resultado é serializável em JSON`);
+            } catch (serializationError) {
+                this.logger.error(`❌ Erro de serialização JSON: ${serializationError.message}`);
+                throw new Error(`Erro de serialização: ${serializationError.message}`);
+            }
+            
+            return result;
         } catch (error) {
             this.logger.error(`❌ Erro ao buscar ordens de serviço:`, error);
+            this.logger.error(`❌ Stack trace:`, error.stack);
             throw error;
         }
     }
@@ -346,7 +478,7 @@ export class OrdensService {
             const query = `
                 UPDATE mod_ordem_servico_ordens 
                 SET ${updateFields.join(', ')}
-                WHERE id = ${paramIndex}::uuid AND tenant_id = ${paramIndex + 1}
+                WHERE id = $${paramIndex}::uuid AND tenant_id = $${paramIndex + 1}
                 RETURNING *
             `;
 
@@ -395,7 +527,7 @@ export class OrdensService {
             const query = `
                 UPDATE mod_ordem_servico_ordens 
                 SET ${updateFields.join(', ')}
-                WHERE id = ${paramIndex}::uuid AND tenant_id = ${paramIndex + 1}
+                WHERE id = $${paramIndex}::uuid AND tenant_id = $${paramIndex + 1}
                 RETURNING *
             `;
 

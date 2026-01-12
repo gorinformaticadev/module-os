@@ -173,14 +173,27 @@ export default function OrdensPage() {
       });
 
       const response = await api.get(`/api/ordem_servico/ordens?${queryParams.toString()}`);
-      setOrdens(response.data || []);
-    } catch (error) {
+      
+      // Tratar resposta com ou sem paginação
+      const data = response.data?.data || response.data || [];
+      setOrdens(Array.isArray(data) ? data : []);
+    } catch (error: any) {
       console.error('Erro ao carregar ordens:', error);
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = "Erro ao carregar ordens de serviço";
+      if (error.response?.status === 400) {
+        errorMessage = "Parâmetros de busca inválidos";
+      } else if (error.response?.status === 500) {
+        errorMessage = "Erro no servidor. Por favor, tente novamente";
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao carregar ordens de serviço",
+        description: errorMessage,
         variant: "destructive"
       });
+      setOrdens([]);
     } finally {
       setLoading(false);
     }
