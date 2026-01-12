@@ -263,3 +263,107 @@ export class UpdateStatusDTO {
     @IsString()
     observacoes?: string;
 }
+
+// ============================================
+// DTOs DE RESPOSTA
+// ============================================
+
+export class ClienteResponseDTO {
+    name: string;
+    phone_primary: string;
+    is_active: boolean;
+}
+
+export class ResponsavelResponseDTO {
+    name: string;
+    email: string;
+}
+
+export class OrdemServicoResponseDTO {
+    id: string;
+    tenant_id: string;
+    numero: string;
+    cliente_id: string;
+    usuario_responsavel_id: string;
+    tipo_servico: string;
+    descricao: string;
+    observacoes_internas: string;
+    observacoes_cliente: string;
+    valor_servico: number;
+    forma_pagamento: string;
+    status: number;
+    prioridade: string;
+    data_abertura: string;
+    data_previsao: string;
+    data_conclusao: string;
+    origem_solicitacao: string;
+    orcamento_aprovado: boolean;
+    motivo_cancelamento: string;
+    equipamento_tipo: string;
+    equipamento_marca: string;
+    equipamento_modelo: string;
+    equipamento_serie: string;
+    equipamento_acessorios: string;
+    equipamento_estado: string;
+    equipamento_fotos: string[];
+    formatacao_so: string;
+    formatacao_backup: boolean;
+    formatacao_backup_descricao: string;
+    formatacao_senha: string;
+    created_at: string;
+    updated_at: string;
+    cliente: ClienteResponseDTO;
+    responsavel: ResponsavelResponseDTO;
+}
+
+export class OrdemServicoListResponseDTO {
+    data: OrdemServicoResponseDTO[];
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+}
+
+export class DashboardDataResponseDTO {
+    status: number;
+    quantidade: number;
+    valor_total: number;
+}
+
+export class TipoServicoResponseDTO {
+    id: string;
+    nome: string;
+    is_default: boolean;
+}
+
+export class TipoEquipamentoResponseDTO {
+    id: string;
+    nome: string;
+}
+
+export class TechnicianResponseDTO {
+    id: string;
+    name: string;
+    email: string;
+}
+
+export class HistoricoResponseDTO {
+    id: string;
+    ordem_servico_id: string;
+    usuario_id: string;
+    acao: string;
+    valor_anterior: string;
+    valor_novo: string;
+    observacoes: string;
+    created_at: string;
+    usuario_nome: string;
+    usuario_email: string;
+}
+
+export class UploadResponseDTO {
+    url: string;
+}
+
+export class DeleteResponseDTO {
+    success: boolean;
+}

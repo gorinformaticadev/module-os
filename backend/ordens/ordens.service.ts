@@ -50,7 +50,7 @@ export class OrdensService {
                 // Bloquear buscas muito curtas para performance
                 if (searchParam.length > 0 && searchParam.length < 2) {
                     this.logger.warn(`⚠️ Busca muito curta bloqueada: "${searchParam}"`);
-                    return { data: [], total: 0, page, totalPages: 0 };
+                    return { data: [], total: 0, page, totalPages: 0, limit };
                 } else if (searchParam.length >= 2) {
                     const searchPattern = `%${searchParam.toLowerCase()}%`;
                     whereClause += ` AND (

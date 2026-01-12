@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req, Logger, BadRequestException, NotFoundException, ForbiddenException, UseInterceptors, UploadedFile, Res, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req, Logger, BadRequestException, NotFoundException, ForbiddenException, UseInterceptors, UploadedFile, Res, HttpException, HttpStatus, UsePipes, ValidationPipe } from '@nestjs/common';
 import { Request as ExpressRequest, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
@@ -6,7 +6,21 @@ import * as path from 'path';
 import { Public } from '@core/common/decorators/public.decorator';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { OrdensService } from './ordens.service';
-import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../shared/dto/ordem-servico.dto';
+import { 
+    CreateOrdemServicoDTO, 
+    UpdateOrdemServicoDTO, 
+    OrdemServicoFilters, 
+    UpdateStatusDTO,
+    OrdemServicoListResponseDTO,
+    OrdemServicoResponseDTO,
+    DashboardDataResponseDTO,
+    TipoServicoResponseDTO,
+    TipoEquipamentoResponseDTO,
+    TechnicianResponseDTO,
+    HistoricoResponseDTO,
+    UploadResponseDTO,
+    DeleteResponseDTO
+} from '../shared/dto/ordem-servico.dto';
 
 @Controller('api/ordem_servico/ordens')
 @UseGuards(JwtAuthGuard)
@@ -21,7 +35,7 @@ export class OrdensController {
     async findAll(
         @Req() req: ExpressRequest & { user: any },
         @Query() filters: OrdemServicoFilters
-    ) {
+    ): Promise<OrdemServicoListResponseDTO> {
         try {
             this.logger.log(`🎯 [Controller] INÍCIO - Buscando ordens. Tenant: ${req.user?.tenantId}`);
             
@@ -41,7 +55,7 @@ export class OrdensController {
     }
 
     @Get('dashboard')
-    async getDashboardData(@Req() req: ExpressRequest & { user: any }) {
+    async getDashboardData(@Req() req: ExpressRequest & { user: any }): Promise<DashboardDataResponseDTO[]> {
         try {
             this.logger.log(`Buscando dados do dashboard. Tenant: ${req.user?.tenantId}`);
             return await this.ordensService.getDashboardData(req.user.tenantId);
@@ -52,7 +66,7 @@ export class OrdensController {
     }
 
     @Get('tipos-servico')
-    async getTiposServico(@Req() req: ExpressRequest & { user: any }) {
+    async getTiposServico(@Req() req: ExpressRequest & { user: any }): Promise<TipoServicoResponseDTO[]> {
         try {
             this.logger.log(`Buscando tipos de serviço. Tenant: ${req.user?.tenantId}`);
             return await this.ordensService.getTiposServico(req.user.tenantId);
@@ -63,7 +77,7 @@ export class OrdensController {
     }
 
     @Get('tipos-equipamento')
-    async getTiposEquipamento(@Req() req: ExpressRequest & { user: any }) {
+    async getTiposEquipamento(@Req() req: ExpressRequest & { user: any }): Promise<TipoEquipamentoResponseDTO[]> {
         try {
             this.logger.log(`Buscando tipos de equipamento. Tenant: ${req.user?.tenantId}`);
             return await this.ordensService.getTiposEquipamento(req.user.tenantId);
@@ -74,7 +88,7 @@ export class OrdensController {
     }
 
     @Get('technicians')
-    async getTechnicians(@Req() req: ExpressRequest & { user: any }) {
+    async getTechnicians(@Req() req: ExpressRequest & { user: any }): Promise<TechnicianResponseDTO[]> {
         try {
             this.logger.log(`Buscando técnicos. Tenant: ${req.user?.tenantId}`);
             return await this.ordensService.getTechnicians(req.user.tenantId);
@@ -88,7 +102,7 @@ export class OrdensController {
     async findOne(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string
-    ) {
+    ): Promise<OrdemServicoResponseDTO> {
         try {
             this.logger.log(`Buscando ordem de serviço ${id}. Tenant: ${req.user?.tenantId}`);
             const ordem = await this.ordensService.findOne(req.user.tenantId, id);
@@ -108,7 +122,7 @@ export class OrdensController {
     async getHistorico(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string
-    ) {
+    ): Promise<HistoricoResponseDTO[]> {
         try {
             this.logger.log(`Buscando histórico da ordem ${id}. Tenant: ${req.user?.tenantId}`);
             return await this.ordensService.getHistorico(req.user.tenantId, id);
@@ -119,10 +133,11 @@ export class OrdensController {
     }
 
     @Post()
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
     async create(
         @Req() req: ExpressRequest & { user: any },
         @Body() createDto: CreateOrdemServicoDTO
-    ) {
+    ): Promise<OrdemServicoResponseDTO> {
         try {
             this.logger.log(`Criando nova ordem de serviço. Tenant: ${req.user?.tenantId}`);
 
@@ -140,11 +155,12 @@ export class OrdensController {
     }
 
     @Put(':id')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
     async update(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string,
         @Body() updateDto: UpdateOrdemServicoDTO
-    ) {
+    ): Promise<OrdemServicoResponseDTO> {
         try {
             this.logger.log(`Atualizando ordem de serviço ${id}. Tenant: ${req.user?.tenantId}`);
 
@@ -167,11 +183,12 @@ export class OrdensController {
     }
 
     @Put(':id/status')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
     async updateStatus(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string,
-        @Body() body: { status: number; motivo_cancelamento?: string; observacoes?: string }
-    ) {
+        @Body() body: UpdateStatusDTO
+    ): Promise<OrdemServicoResponseDTO> {
         try {
             this.logger.log(`Atualizando status da ordem ${id} para ${body.status}. Tenant: ${req.user?.tenantId}`);
 
@@ -220,7 +237,7 @@ export class OrdensController {
     async remove(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string
-    ) {
+    ): Promise<DeleteResponseDTO> {
         try {
             this.logger.log(`Excluindo ordem de serviço ${id}. Tenant: ${req.user?.tenantId}`);
 
@@ -246,7 +263,7 @@ export class OrdensController {
     async aprovarOrcamento(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string
-    ) {
+    ): Promise<OrdemServicoResponseDTO> {
         try {
             this.logger.log(`Aprovando orçamento ${id}. Tenant: ${req.user?.tenantId}`);
 
@@ -268,7 +285,7 @@ export class OrdensController {
 
     @Post('upload')
     @UseInterceptors(FileInterceptor('file'))
-    async uploadFile(@UploadedFile() file: any, @Req() req: ExpressRequest & { user: any }) {
+    async uploadFile(@UploadedFile() file: any, @Req() req: ExpressRequest & { user: any }): Promise<UploadResponseDTO> {
         try {
             if (!file) {
                 throw new BadRequestException('Nenhum arquivo enviado');
