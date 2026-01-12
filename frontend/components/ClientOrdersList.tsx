@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Eye } from 'lucide-react';
 import api from '@/lib/api';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../types/ordem-servico.types';
 
@@ -72,71 +72,74 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
         fetchOrders();
     }, [clientId]);
 
-    const formatCurrency = (value: number) =>
-        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-
     const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR');
 
-    const getStatusBadge = (status: StatusOS) => {
-        const colorClass = STATUS_COLORS[status];
-        return <Badge className={`${colorClass} text-white`}>{STATUS_LABELS[status]}</Badge>;
+    const handleViewOrder = (orderId: string, orderNumber: string) => {
+        // TODO: Implementar visualização da ordem
+        console.log(`Visualizar ordem ${orderNumber} (ID: ${orderId})`);
+        // Aqui será implementada a navegação ou modal para visualizar a ordem
     };
 
     return (
-        <Card className="shadow-sm border-2">
-            <CardHeader className="bg-muted/20 pb-4">
-                <CardTitle className="text-lg">Ordens do Cliente</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-                {loading ? (
-                    <div className="flex justify-center py-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                    </div>
-                ) : error ? (
-                    <div className="flex flex-col items-center justify-center py-6 space-y-4">
-                        <AlertCircle className="h-12 w-12 text-destructive" />
-                        <p className="text-sm text-destructive text-center">{error}</p>
-                        <Button 
-                            onClick={fetchOrders} 
-                            variant="outline" 
-                            size="sm"
-                            className="gap-2"
-                        >
-                            <RefreshCw className="h-4 w-4" />
-                            Tentar Novamente
-                        </Button>
-                    </div>
-                ) : orders.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhuma ordem encontrada para este cliente.</p>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nº</TableHead>
-                                <TableHead>Tipo de Serviço</TableHead>
-                                <TableHead>Data Abertura</TableHead>
-                                <TableHead>Valor</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Origem</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {orders.map((ord) => (
-                                <TableRow key={ord.id}>
-                                    <TableCell className="font-mono font-medium">#{ord.numero}</TableCell>
-                                    <TableCell>{ord.tipo_servico}</TableCell>
-                                    <TableCell>{formatDate(ord.data_abertura)}</TableCell>
-                                    <TableCell>{formatCurrency(ord.valor_servico)}</TableCell>
-                                    <TableCell>{getStatusBadge(ord.status)}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{ORIGEM_LABELS[ord.origem_solicitacao]}</Badge>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+        <div className="mt-3 p-3 bg-muted/30 rounded-md border border-muted-foreground/20">
+            <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-foreground">
+                    Ordens Anteriores ({orders.length})
+                </h4>
+                {loading && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
                 )}
-            </CardContent>
-        </Card>
+            </div>
+
+            {error ? (
+                <div className="flex flex-col items-center justify-center py-4 space-y-2">
+                    <AlertCircle className="h-8 w-8 text-destructive" />
+                    <p className="text-xs text-destructive text-center">{error}</p>
+                    <Button 
+                        onClick={fetchOrders} 
+                        variant="outline" 
+                        size="sm"
+                        className="gap-1 h-7 text-xs"
+                    >
+                        <RefreshCw className="h-3 w-3" />
+                        Tentar Novamente
+                    </Button>
+                </div>
+            ) : orders.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                    Nenhuma ordem anterior encontrada.
+                </p>
+            ) : (
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {orders.map((order) => (
+                        <div 
+                            key={order.id}
+                            className="flex items-center justify-between p-2 bg-background/50 rounded border border-muted-foreground/10 hover:bg-background/80 transition-colors"
+                        >
+                            <div className="flex flex-col min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs font-semibold text-primary">
+                                        #{order.numero}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {formatDate(order.data_abertura)}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                                onClick={() => handleViewOrder(order.id, order.numero)}
+                                title={`Visualizar ordem #${order.numero}`}
+                            >
+                                <Eye className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 }
