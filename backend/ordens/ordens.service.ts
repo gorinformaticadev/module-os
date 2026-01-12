@@ -24,7 +24,11 @@ export class OrdensService {
         try {
             this.logger.log(`Buscando ordens de serviço. Tenant: ${tenantId}`);
 
-            // Validar cliente_id se fornecido
+            // ============================================
+            // VALIDAÇÃO MANUAL SEGURA (SEM ValidationPipe)
+            // ============================================
+            
+            // Validar e sanitizar cliente_id se fornecido
             if (filters.cliente_id) {
                 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                 if (!uuidRegex.test(filters.cliente_id)) {
@@ -33,10 +37,62 @@ export class OrdensService {
                 }
             }
 
-            // Paginação
-            const page = filters.page || 1;
-            const limit = Math.min(filters.limit || 20, 100); // Máximo 100 por página
+            // Validar e sanitizar usuario_responsavel_id se fornecido
+            if (filters.usuario_responsavel_id) {
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (!uuidRegex.test(filters.usuario_responsavel_id)) {
+                    this.logger.error(`❌ UUID de responsável inválido: ${filters.usuario_responsavel_id}`);
+                    throw new Error('ID de responsável inválido');
+                }
+            }
+
+            // Validar e converter paginação com valores seguros
+            const page = Math.max(1, parseInt(String(filters.page || 1), 10) || 1);
+            const limit = Math.min(100, Math.max(1, parseInt(String(filters.limit || 20), 10) || 20));
             const offset = (page - 1) * limit;
+
+            // Validar status array se fornecido
+            let validatedStatus: number[] | undefined;
+            if (filters.status && Array.isArray(filters.status)) {
+                validatedStatus = filters.status
+                    .map(s => parseInt(String(s), 10))
+                    .filter(s => !isNaN(s) && s >= 0 && s <= 7); // StatusOS válidos: 0-7
+                
+                if (validatedStatus.length === 0) {
+                    validatedStatus = undefined; // Ignorar se nenhum status válido
+                }
+            }
+
+            // Validar datas se fornecidas
+            let validatedDataInicio: string | undefined;
+            let validatedDataFim: string | undefined;
+            
+            if (filters.data_inicio) {
+                const dataInicio = new Date(filters.data_inicio);
+                if (!isNaN(dataInicio.getTime())) {
+                    validatedDataInicio = dataInicio.toISOString();
+                }
+            }
+            
+            if (filters.data_fim) {
+                const dataFim = new Date(filters.data_fim);
+                if (!isNaN(dataFim.getTime())) {
+                    validatedDataFim = dataFim.toISOString();
+                }
+            }
+
+            // Sanitizar search string (remover caracteres perigosos para SQL)
+            let sanitizedSearch: string | undefined;
+            if (filters.search && typeof filters.search === 'string') {
+                sanitizedSearch = filters.search
+                    .trim()
+                    .replace(/[<>'"]/g, '') // Remove caracteres potencialmente perigosos
+                    .substring(0, 100); // Limita tamanho
+                
+                if (sanitizedSearch.length === 0) {
+                    sanitizedSearch = undefined;
+                }
+            }
 
             let whereClause = `WHERE os.tenant_id = $1`;
             const params: any[] = [tenantId];

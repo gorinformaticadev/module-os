@@ -206,49 +206,41 @@ export class UpdateOrdemServicoDTO {
     equipamento_fotos?: string[];
 }
 
+// ============================================
+// DTOs DE QUERY - APENAS PARA TIPAGEM
+// ============================================
+// IMPORTANTE: Estes DTOs NÃO devem ser usados com ValidationPipe
+// Servem apenas para tipagem, documentação e contratos de API
+
 export class OrdemServicoFilters {
-    @IsOptional()
-    @IsString()
+    // Busca textual livre - sem validação (pode ser qualquer string)
     search?: string;
 
-    @IsOptional()
-    @IsArray()
-    @IsEnum(StatusOS, { each: true })
+    // Array de status - tipagem apenas, sem validação automática
     status?: StatusOS[];
 
-    @IsOptional()
-    @IsString()
+    // IDs - tipagem como string, validação manual no service se necessário
     cliente_id?: string;
-
-    @IsOptional()
-    @IsString()
     usuario_responsavel_id?: string;
 
-    @IsOptional()
-    @IsDateString()
+    // Datas - tipagem como string, parsing manual no service
     data_inicio?: string;
-
-    @IsOptional()
-    @IsDateString()
     data_fim?: string;
 
-    @IsOptional()
-    @IsEnum(OrigemSolicitacao)
+    // Enums - tipagem apenas, sem validação automática
     origem_solicitacao?: OrigemSolicitacao;
-
-    @IsOptional()
-    @IsString()
     tipo_servico?: string;
 
-    @IsOptional()
-    @IsInt()
-    @Min(1)
+    // Paginação - tipagem como number, conversão manual no service
     page?: number;
-
-    @IsOptional()
-    @IsInt()
-    @Min(1)
     limit?: number;
+}
+
+// DTO para parâmetros de path (tipagem apenas)
+export class OrdemServicoParamsDTO {
+    id?: string;
+    tenantId?: string;
+    filename?: string;
 }
 
 export class UpdateStatusDTO {
