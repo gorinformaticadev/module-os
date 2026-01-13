@@ -189,6 +189,7 @@ export default function NewOrdemRefactoredPage() {
         // 🔒 Evita busca curta
         if (safeSearch.length > 0 && safeSearch.length < 2) {
             setClients([]);
+            setOpenCombobox(false);
             return;
         }
 
@@ -198,16 +199,25 @@ export default function NewOrdemRefactoredPage() {
                 setSearchingClients(true);
                 const response = await api.get(`/api/ordem_servico/clientes?search=${safeSearch}`);
                 setClients(response.data);
+
+                // ✅ CORREÇÃO: Abrir lista se houver resultados
+                if (response.data.length > 0) {
+                    setOpenCombobox(true);
+                } else {
+                    setOpenCombobox(false);
+                }
             } catch (error) {
                 console.error('Erro ao buscar clientes:', error);
                 toast({ title: 'Erro', description: 'Erro ao buscar clientes', variant: 'destructive' });
                 setClients([]);
+                setOpenCombobox(false);
             } finally {
                 setSearchingClients(false);
             }
         } else {
             // 📋 Campo vazio = sem lista
             setClients([]);
+            setOpenCombobox(false);
         }
     };
 
@@ -507,7 +517,7 @@ export default function NewOrdemRefactoredPage() {
                                             value={searchTerm}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                                             onFocus={() => searchTerm.trim().length >= 2 && setOpenCombobox(true)}
-                                            onBlur={() => setTimeout(() => setOpenCombobox(false), 100)} // Delay to allow click on items
+                                            onBlur={() => setTimeout(() => setOpenCombobox(false), 200)} // Delay to allow click on items
                                             onKeyDown={e => {
                                                 if (e.key === 'ArrowDown') {
                                                     e.preventDefault();
@@ -538,6 +548,7 @@ export default function NewOrdemRefactoredPage() {
                                             <div
                                                 key={c.id}
                                                 className={`p-3 flex flex-col transition-colors ${index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted/50 cursor-pointer"}`}
+                                                onMouseDown={(e) => e.preventDefault()}
                                                 onClick={() => handleClientSelection(c)}
                                             >
                                                 <span className="font-medium text-sm">{c.name}</span>
