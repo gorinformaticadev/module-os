@@ -558,14 +558,46 @@ export class OrdensService {
                 'formatacao_backup_descricao', 'formatacao_senha', 'equipamento_fotos', 'itens'
             ];
 
+            // Handle Status Update if present
+            if (updateDto.status !== undefined && updateDto.status !== ordemAtual.status) {
+                const transicaoValida = await this.validarTransicaoStatus(ordemAtual.status, updateDto.status);
+                if (!transicaoValida) {
+                    throw new Error(`Transição de status inválida: ${this.getStatusLabel(ordemAtual.status)} → ${this.getStatusLabel(updateDto.status)}`);
+                }
+
+                // If finalizing, validate requirements
+                if (updateDto.status === 6) { // FINALIZADA
+                    if (ordemAtual.status !== 5) { // EM_EXECUCAO
+                        throw new Error('Só é possível finalizar ordens em execução');
+                    }
+                    if ((!updateDto.valor_servico && !ordemAtual.valor_servico) || (updateDto.valor_servico || ordemAtual.valor_servico) <= 0) {
+                        throw new Error('Valor do serviço deve estar definido para finalizar');
+                    }
+                    updateFields.push(`data_conclusao = NOW()`);
+                }
+
+                fieldsToUpdate.push('status');
+            }
+
             for (const field of fieldsToUpdate) {
                 if (updateDto[field] !== undefined) {
                     let value = updateDto[field];
-                    if (field === 'usuario_responsavel_id' && (value === 'UNASSIGNED' || value === 'NONE' || !value)) value = null;
-                    if (field === 'equipamento_fotos' && value !== null) value = JSON.stringify(value);
-                    if (field === 'itens' && value !== null) value = JSON.stringify(value);
 
-                    updateFields.push(`${field} = $${paramIndex}`);
+                    // Preserve existing special handling for usuario_responsavel_id
+                    if (field === 'usuario_responsavel_id' && (value === 'UNASSIGNED' || value === 'NONE' || !value)) {
+                        value = null;
+                        updateFields.push(`${field} = $${paramIndex}`);
+                    }
+                    // Handle arrays (e.g., equipamento_fotos, itens) as JSON
+                    else if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+                        value = JSON.stringify(value);
+                        updateFields.push(`${field} = $${paramIndex}::jsonb`); // Explicitly cast to jsonb
+                    } else if (field === 'data_previsao') {
+                        updateFields.push(`${field} = $${paramIndex}::timestamp`);
+                    } else {
+                        updateFields.push(`${field} = $${paramIndex}`);
+                    }
+
                     params.push(value);
                     paramIndex++;
                 }
@@ -902,6 +934,10 @@ export class OrdensService {
 
         if (updateDto.usuario_responsavel_id && updateDto.usuario_responsavel_id !== ordemAtual.usuario_responsavel_id) {
             alteracoes.push(`Responsável alterado`);
+        }
+
+        if (updateDto.status !== undefined && updateDto.status !== ordemAtual.status) {
+            alteracoes.push(`Status: ${this.getStatusLabel(ordemAtual.status)} → ${this.getStatusLabel(updateDto.status)}`);
         }
 
         if (alteracoes.length > 0) {

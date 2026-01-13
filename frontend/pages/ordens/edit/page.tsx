@@ -300,26 +300,86 @@ export default function EditOrdemPage() {
         setOpenCombobox(false);
     };
 
+    const [compressing, setCompressing] = useState(false);
+
+    const compressImage = (file: File): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                    }, 'image/jpeg', 0.6);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    };
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-        const file = e.target.files[0];
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        if ((formData.equipamento_fotos?.length || 0) + files.length > 5) {
+            toast({ title: 'Limite atingido', description: 'Você pode enviar no máximo 5 fotos.', variant: 'destructive' });
+            return;
+        }
+
+        setCompressing(true);
         setUploading(true);
+        const newPhotos = [...(formData.equipamento_fotos || [])];
+
         try {
-            const formDataUpload = new FormData();
-            formDataUpload.append('file', file);
-            const response = await api.post('/api/ordem_servico/ordens/upload', formDataUpload);
-            // Response is { url: string }
-            const newUrl = response.data.url;
-            const currentPhotos = formData.equipamento_fotos || [];
-            setFormData({ ...formData, equipamento_fotos: [...currentPhotos, newUrl] });
-            toast({ title: 'Sucesso', description: 'Foto enviada com sucesso!' });
+            for (let i = 0; i < files.length; i++) {
+                const blob = await compressImage(files[i]);
+                const formDataUpload = new FormData();
+                formDataUpload.append('file', blob, files[i].name || `foto-${i}.jpg`);
+
+                const { data } = await api.post('/api/ordem_servico/ordens/upload', formDataUpload, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                newPhotos.push(data.url);
+            }
+
+            setFormData({ ...formData, equipamento_fotos: newPhotos });
+            toast({ title: 'Sucesso', description: 'Fotos enviadas com sucesso!' });
         } catch (error) {
-            console.error(error);
-            toast({ title: 'Erro', description: 'Erro ao enviar foto.', variant: 'destructive' });
+            console.error('Erro no upload de foto:', error);
+            toast({ title: 'Erro', description: 'Falha ao enviar uma ou mais fotos.', variant: 'destructive' });
         } finally {
+            setCompressing(false);
             setUploading(false);
             // Reset input
-            e.target.value = '';
+            if (e.target) e.target.value = '';
         }
     };
 
@@ -381,7 +441,8 @@ export default function EditOrdemPage() {
                 observacoes_cliente: ordemData.observacoes_cliente || '',
                 laudo_tecnico: ordemData.laudo_tecnico || '',
                 motivo_cancelamento: ordemData.motivo_cancelamento || '',
-                itens: ordemData.itens || []
+                itens: ordemData.itens || [],
+                equipamento_fotos: ordemData.equipamento_fotos || []
             });
 
         } catch (error: any) {
@@ -444,9 +505,9 @@ export default function EditOrdemPage() {
                 descricao: formData.descricao,
                 observacoes_internas: formData.observacoes_internas || undefined,
                 observacoes_cliente: formData.observacoes_cliente || undefined,
-                valor_servico: formData.valor_servico ? parseFloat(formData.valor_servico.replace(',', '.')) : undefined,
+                valor_servico: formData.valor_servico ? parseFloat(formData.valor_servico.replace(',', '.')) : 0,
                 forma_pagamento: formData.forma_pagamento || undefined,
-                data_previsao: formData.data_previsao || undefined,
+                data_previsao: formData.data_previsao ? formData.data_previsao : undefined,
                 usuario_responsavel_id: formData.usuario_responsavel_id || undefined,
                 status: formData.status,
                 motivo_cancelamento: formData.motivo_cancelamento || undefined,
@@ -474,7 +535,9 @@ export default function EditOrdemPage() {
                 variant: 'default'
             });
 
-            router.push('/modules/ordem_servico/pages/ordens');
+            // router.push('/modules/ordem_servico/pages/ordens');
+            // Refresh data instead of redirecting
+            await loadOrdem();
         } catch (error: any) {
             console.error('Erro ao salvar OS:', error);
             const msg = error.response?.data?.message || 'Erro ao processar sua solicitação.';
@@ -742,6 +805,15 @@ export default function EditOrdemPage() {
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Data de Entrada</Label>
+                            <Input
+                                value={ordem.data_abertura ? new Date(ordem.data_abertura).toLocaleDateString('pt-BR') : '-'}
+                                disabled
+                                className="bg-muted opacity-80"
+                            />
                         </div>
 
                         <div className="space-y-2">
