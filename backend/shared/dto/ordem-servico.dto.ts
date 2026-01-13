@@ -170,6 +170,10 @@ export class UpdateOrdemServicoDTO {
     @IsString()
     motivo_cancelamento?: string;
 
+    @IsOptional()
+    @IsString()
+    laudo_tecnico?: string;
+
     // Equipamento
     @IsOptional()
     @IsString()

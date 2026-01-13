@@ -555,7 +555,8 @@ export class OrdensService {
                 'usuario_responsavel_id', 'equipamento_tipo', 'equipamento_marca',
                 'equipamento_modelo', 'equipamento_serie', 'equipamento_acessorios',
                 'equipamento_estado', 'formatacao_so', 'formatacao_backup',
-                'formatacao_backup_descricao', 'formatacao_senha', 'equipamento_fotos', 'itens'
+                'formatacao_backup_descricao', 'formatacao_senha', 'equipamento_fotos', 'itens',
+                'laudo_tecnico'
             ];
 
             // Handle Status Update if present

@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
+import { RichTextEditor } from '../../../components/ui/rich-text-editor';
 
 // Tipos locais
 interface OrdemServico {
@@ -827,11 +828,10 @@ export default function EditOrdemPage() {
 
                         <div className="col-span-full space-y-2">
                             <Label>Descrição do Problema / Serviço Solicitado *</Label>
-                            <Textarea
-                                placeholder="Detalhe o que o cliente relatou ou o que deve ser feito..."
-                                className="min-h-[120px]"
-                                value={formData.descricao}
-                                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                            <RichTextEditor
+                                value={formData.descricao || ''}
+                                onChange={(content) => setFormData(prev => ({ ...prev, descricao: content }))}
+                                disabled={loading}
                             />
                         </div>
 
@@ -960,11 +960,10 @@ export default function EditOrdemPage() {
                     <CardContent className="pt-6">
                         <div className="space-y-2">
                             <Label>Laudo Técnico Detalhado</Label>
-                            <Textarea
-                                placeholder="Descreva o diagnóstico técnico, problemas encontrados, soluções aplicadas..."
-                                className="min-h-[150px]"
-                                value={formData.laudo_tecnico}
-                                onChange={(e) => setFormData({ ...formData, laudo_tecnico: e.target.value })}
+                            <RichTextEditor
+                                value={formData.laudo_tecnico || ''}
+                                onChange={(content) => setFormData(prev => ({ ...prev, laudo_tecnico: content }))}
+                                disabled={loading}
                             />
                         </div>
                     </CardContent>
