@@ -172,6 +172,9 @@ export default function EditOrdemPage() {
     const descriptionInputRef = React.useRef<HTMLInputElement>(null);
     const valueInputRef = React.useRef<HTMLInputElement>(null);
     const quantityInputRef = React.useRef<HTMLInputElement>(null);
+
+    // State for keyboard navigation selection
+    const [selectedIndex, setSelectedIndex] = useState(0);
     const [uploading, setUploading] = useState(false);
     const [openCombobox, setOpenCombobox] = useState(false);
     // Estados do formulário
@@ -422,6 +425,7 @@ export default function EditOrdemPage() {
         } else {
             setOpenCombobox(false);
         }
+        setSelectedIndex(0); // Reset selected index whenever search or products change
     }, [debouncedSearch, itemTemp.produto_id, filteredProducts.length]);
 
 
@@ -1005,11 +1009,17 @@ export default function EditOrdemPage() {
                                                     handleDescriptionChange(e.target.value);
                                                 }}
                                                 onKeyDown={e => {
-                                                    if (e.key === 'Enter') {
+                                                    if (e.key === 'ArrowDown') {
                                                         e.preventDefault();
-                                                        // If filtered products has exact match or just one, select it
-                                                        if (filteredProducts.length === 1) {
-                                                            handleProductClick(filteredProducts[0]);
+                                                        setSelectedIndex(prev => (prev + 1) % filteredProducts.length);
+                                                    } else if (e.key === 'ArrowUp') {
+                                                        e.preventDefault();
+                                                        setSelectedIndex(prev => (prev - 1 + filteredProducts.length) % filteredProducts.length);
+                                                    } else if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        // If filtered products has items and an index is selected
+                                                        if (filteredProducts.length > 0 && selectedIndex >= 0 && selectedIndex < filteredProducts.length) {
+                                                            handleProductClick(filteredProducts[selectedIndex]);
                                                             return;
                                                         }
 
@@ -1036,10 +1046,10 @@ export default function EditOrdemPage() {
                                     <PopoverContent className="p-0 w-[400px]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                                         <div className="max-h-[200px] overflow-y-auto p-1 bg-popover border rounded-md shadow-md">
                                             {filteredProducts.length > 0 ? (
-                                                filteredProducts.map(p => (
+                                                filteredProducts.map((p, index) => (
                                                     <div
                                                         key={p.id}
-                                                        className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground text-sm rounded-sm flex justify-between"
+                                                        className={`px-3 py-2 cursor-pointer text-sm rounded-sm flex justify-between ${index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent hover:text-accent-foreground"}`}
                                                         onClick={() => handleProductClick(p)}
                                                     >
                                                         <div className="flex flex-col">

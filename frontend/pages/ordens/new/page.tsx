@@ -132,6 +132,9 @@ export default function NewOrdemRefactoredPage() {
     const valueInputRef = React.useRef<HTMLInputElement>(null);
     const quantityInputRef = React.useRef<HTMLInputElement>(null);
 
+    // State for keyboard navigation selection
+    const [selectedIndex, setSelectedIndex] = useState(0);
+
     useEffect(() => {
         fetchTechnicians();
         fetchTiposServico();
@@ -175,10 +178,16 @@ export default function NewOrdemRefactoredPage() {
         }
     };
 
+    const handleClientSelection = (client: Cliente) => {
+        setSelectedClient(client);
+        setSearchTerm(client.name); // Set search term to selected client's name
+        setOpenCombobox(false); // Close combobox after selection
+        setIsObservationsExpanded(false); // Reset expansion state
+    };
+
     const handleClientCreated = (newClient: Cliente) => {
         // Seleciona automaticamente o cliente recém-criado
-        setSelectedClient(newClient);
-        setIsObservationsExpanded(false); // Reset expansion state
+        handleClientSelection(newClient);
         toast({
             title: 'Cliente selecionado!',
             description: `${newClient.name} foi selecionado automaticamente.`,
@@ -464,6 +473,23 @@ export default function NewOrdemRefactoredPage() {
                                             className="pl-9"
                                             value={searchTerm}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                                            onFocus={() => searchTerm.trim().length >= 2 && setOpenCombobox(true)}
+                                            onBlur={() => setTimeout(() => setOpenCombobox(false), 100)} // Delay to allow click on items
+                                            onKeyDown={e => {
+                                                if (e.key === 'ArrowDown') {
+                                                    e.preventDefault();
+                                                    setSelectedIndex(prev => (prev + 1) % clients.length);
+                                                } else if (e.key === 'ArrowUp') {
+                                                    e.preventDefault();
+                                                    setSelectedIndex(prev => (prev - 1 + clients.length) % clients.length);
+                                                } else if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    if (clients.length > 0 && selectedIndex >= 0 && selectedIndex < clients.length) {
+                                                        handleClientSelection(clients[selectedIndex]);
+                                                    }
+                                                }
+                                            }}
+                                            ref={clientSearchInputRef}
                                         />
                                         {searchingClients && (
                                             <div className="absolute right-2.5 top-2.5">
@@ -473,13 +499,13 @@ export default function NewOrdemRefactoredPage() {
                                     </div>
                                 </div>
 
-                                {clients.length > 0 && (
+                                {openCombobox && clients.length > 0 && (
                                     <div className="border rounded-md divide-y max-h-[300px] overflow-y-auto">
-                                        {clients.map(c => (
+                                        {clients.map((c, index) => (
                                             <div
                                                 key={c.id}
-                                                className="p-3 hover:bg-muted/50 cursor-pointer flex flex-col transition-colors"
-                                                onClick={() => setSelectedClient(c)}
+                                                className={`p-3 flex flex-col transition-colors ${index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted/50 cursor-pointer"}`}
+                                                onClick={() => handleClientSelection(c)}
                                             >
                                                 <span className="font-medium text-sm">{c.name}</span>
                                                 <span className="text-xs text-muted-foreground">{c.document || 'Sem documento'} • {c.phone_primary}</span>
@@ -518,6 +544,7 @@ export default function NewOrdemRefactoredPage() {
                                         onClick={() => {
                                             setSelectedClient(null);
                                             setIsObservationsExpanded(false);
+                                            setSearchTerm(''); // Clear search term when client is deselected
                                         }}
                                         title="Remover seleção"
                                     >
