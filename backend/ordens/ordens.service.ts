@@ -16,8 +16,8 @@ export class OrdensService {
         3: [2, 5, 4, 7], // AGUARDANDO_CLIENTE -> EM_ANALISE, EM_EXECUCAO, AGUARDANDO_PECAS, CANCELADA
         4: [5, 3, 7], // AGUARDANDO_PECAS -> EM_EXECUCAO, AGUARDANDO_CLIENTE, CANCELADA
         5: [6, 3, 4, 7], // EM_EXECUCAO -> FINALIZADA, AGUARDANDO_CLIENTE, AGUARDANDO_PECAS, CANCELADA
-        6: [], // FINALIZADA -> nenhuma
-        7: [] // CANCELADA -> nenhuma
+        6: [5], // FINALIZADA -> EM_EXECUCAO
+        7: [5] // CANCELADA -> EM_EXECUCAO
     };
 
     async findAll(tenantId: string, filters: OrdemServicoFilters) {

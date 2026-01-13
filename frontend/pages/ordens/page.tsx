@@ -7,6 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   Search,
@@ -17,8 +25,10 @@ import {
   Printer,
   MessageCircle,
   Filter,
-  FileText
+  FileText,
+  RotateCcw
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../../types/ordem-servico.types';
 
 // Cliente API customizado para o módulo raiz
@@ -147,11 +157,13 @@ const useToast = () => ({
 
 export default function OrdensPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [ordens, setOrdens] = useState<OrdemServico[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusOS | 'all'>('all');
   const [origemFilter, setOrigemFilter] = useState<OrigemSolicitacao | 'all'>('all');
+  const [reopenOrder, setReopenOrder] = useState<OrdemServico | null>(null);
 
   // Carregar ordens de serviço
   const loadOrdens = async () => {
@@ -173,13 +185,13 @@ export default function OrdensPage() {
       });
 
       const response = await api.get(`/api/ordem_servico/ordens?${queryParams.toString()}`);
-      
+
       // Tratar resposta com ou sem paginação
       const data = response.data?.data || response.data || [];
       setOrdens(Array.isArray(data) ? data : []);
     } catch (error: any) {
       console.error('Erro ao carregar ordens:', error);
-      
+
       // Mensagens de erro mais específicas
       let errorMessage = "Erro ao carregar ordens de serviço";
       if (error.response?.status === 400) {
@@ -187,7 +199,7 @@ export default function OrdensPage() {
       } else if (error.response?.status === 500) {
         errorMessage = "Erro no servidor. Por favor, tente novamente";
       }
-      
+
       toast({
         title: "Erro",
         description: errorMessage,
@@ -265,6 +277,31 @@ export default function OrdensPage() {
       toast({
         title: "Erro",
         description: "Cliente não possui telefone cadastrado",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleReabrir = (ordem: OrdemServico) => {
+    setReopenOrder(ordem);
+  };
+
+  const confirmReopen = async () => {
+    if (!reopenOrder) return;
+
+    try {
+      await api.put(`/api/ordem_servico/ordens/${reopenOrder.id}/status`, { status: StatusOS.EM_EXECUCAO });
+      toast({
+        title: "Sucesso",
+        description: "Ordem reaberta com sucesso"
+      });
+      loadOrdens();
+      setReopenOrder(null);
+    } catch (error) {
+      console.error('Erro ao reabrir ordem:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao reabrir ordem de serviço",
         variant: "destructive"
       });
     }
@@ -476,6 +513,19 @@ export default function OrdensPage() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
+
+                          {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
+                            (ordem.status === StatusOS.FINALIZADA || ordem.status === StatusOS.CANCELADA) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleReabrir(ordem)}
+                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                title="Reabrir OS"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                            )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -486,6 +536,26 @@ export default function OrdensPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!reopenOrder} onOpenChange={(open) => !open && setReopenOrder(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reabrir Ordem de Serviço</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja reabrir a OS <span className="font-bold">#{reopenOrder?.numero}</span>?
+              Isso alterará o status para "Em Execução".
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReopenOrder(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmReopen} className="bg-orange-600 hover:bg-orange-700 text-white">
+              Confirmar Reabertura
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

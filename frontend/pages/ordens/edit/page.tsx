@@ -298,6 +298,26 @@ export default function EditOrdemPage() {
         }));
     };
 
+    const handleUpdateItemQuantity = (index: number, newQuantity: number) => {
+        const newItens = [...(formData.itens || [])];
+        if (newQuantity < 1) return; // Prevent invalid quantity
+
+        newItens[index] = {
+            ...newItens[index],
+            quantidade: newQuantity,
+            valor_total: newQuantity * newItens[index].valor_unitario
+        };
+
+        // Recalculate total service value
+        const totalItens = newItens.reduce((acc, item) => acc + item.valor_total, 0);
+
+        setFormData(prev => ({
+            ...prev,
+            itens: newItens,
+            valor_servico: totalItens.toFixed(2)
+        }));
+    };
+
     const handleProductClick = (produto: Produto) => {
         setItemTemp({
             produto_id: produto.id,
@@ -1148,7 +1168,15 @@ export default function EditOrdemPage() {
                                                     )}
                                                 </td>
                                                 <td className="p-3">{item.descricao}</td>
-                                                <td className="p-3 text-center">{item.quantidade}</td>
+                                                <td className="p-3 text-center">
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        className="h-8 w-20 text-center mx-auto"
+                                                        value={item.quantidade}
+                                                        onChange={(e) => handleUpdateItemQuantity(index, parseInt(e.target.value) || 0)}
+                                                    />
+                                                </td>
                                                 <td className="p-3 text-right">R$ {Number(item.valor_unitario).toFixed(2)}</td>
                                                 <td className="p-3 text-right font-medium">R$ {Number(item.valor_total).toFixed(2)}</td>
                                                 <td className="p-3 text-center">
