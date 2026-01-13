@@ -449,7 +449,7 @@ export default function OrdemServicoConfiguracoesPage() {
   const fetchSchedules = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/modules/ordem_servico/config/notifications');
+      const response = await api.get('/api/ordem_servico/config/notifications');
       setSchedules(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Erro ao carregar agendamentos:', error);
@@ -466,7 +466,7 @@ export default function OrdemServicoConfiguracoesPage() {
   const fetchAiConfig = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/modules/ordem_servico/config/ai');
+      const response = await api.get('/api/ordem_servico/config/ai');
       if (response.data) {
         setAiConfig(prev => ({ ...prev, ...response.data }));
       }
@@ -480,7 +480,7 @@ export default function OrdemServicoConfiguracoesPage() {
   const saveAiConfig = async () => {
     try {
       setSaving(true);
-      await api.post('/modules/ordem_servico/config/ai', aiConfig);
+      await api.post('/api/ordem_servico/config/ai', aiConfig);
       toast({
         title: 'Sucesso',
         description: 'Configurações de IA salvas com sucesso!',
@@ -503,7 +503,7 @@ export default function OrdemServicoConfiguracoesPage() {
       setTestingAi(true);
       setTestResponse(null);
 
-      const response = await api.post('/modules/ordem_servico/config/ai/test', aiConfig);
+      const response = await api.post('/api/ordem_servico/config/ai/test', aiConfig);
 
       if (response.data.success) {
         setTestResponse(response.data.response);
@@ -537,7 +537,7 @@ export default function OrdemServicoConfiguracoesPage() {
       setLoading(true);
       console.log('🔍 Iniciando fetchUsers...');
 
-      const response = await api.get('/modules/ordem_servico/config/users');
+      const response = await api.get('/api/ordem_servico/config/users');
       console.log('📦 Resposta da API users:', response);
 
       if (Array.isArray(response.data)) {
@@ -567,7 +567,7 @@ export default function OrdemServicoConfiguracoesPage() {
 
   const handleToggleTechnician = async (userId: string, currentStatus: boolean, systemRole: string) => {
     try {
-      await api.put(`/modules/ordem_servico/config/users/${userId}/technician`, {
+      await api.put(`/api/ordem_servico/config/users/${userId}/technician`, {
         is_technician: !currentStatus
       });
 
@@ -595,7 +595,7 @@ export default function OrdemServicoConfiguracoesPage() {
 
     try {
       setSaving(true);
-      await api.post('/modules/ordem_servico/config/notifications', config);
+      await api.post('/api/ordem_servico/config/notifications', config);
       toast({
         title: 'Sucesso',
         description: 'Novo agendamento criado.',

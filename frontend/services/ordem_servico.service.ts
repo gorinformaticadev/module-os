@@ -10,10 +10,10 @@ export const ordem_servicoService = {
     },
 
     getNotificationConfigs: async () => {
-        return api.get('/modules/ordem_servico/config/notifications');
+        return api.get('/api/ordem_servico/config/notifications');
     },
 
     createNotificationConfig: async (data: any) => {
-        return api.post('/modules/ordem_servico/config/notifications', data);
+        return api.post('/api/ordem_servico/config/notifications', data);
     }
 };

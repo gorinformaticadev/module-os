@@ -6,7 +6,7 @@ import { PrismaService } from '@core/prisma/prisma.service';
 import { OrdemServicoCronService } from './ordem-servico-cron.service';
 import { Request as ExpressRequest } from 'express';
 
-@Controller('modules/ordem_servico/config')
+@Controller('api/ordem_servico/config')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN')
 export class OrdemServicoConfigController {
@@ -44,7 +44,7 @@ export class OrdemServicoConfigController {
     }
 
     // ==================== TIPOS DE SERVIÇO ====================
-    
+
     @Get('tipos-servico')
     async getTiposServico(@Req() req: ExpressRequest & { user: any }) {
         const result = await this.prisma.$queryRawUnsafe<any[]>(
@@ -70,8 +70,8 @@ export class OrdemServicoConfigController {
 
     @Put('tipos-servico/:id')
     async updateTipoServico(
-        @Req() req: ExpressRequest & { user: any }, 
-        @Param('id') id: string, 
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
         @Body() body: { nome: string }
     ) {
         const result = await this.prisma.$queryRawUnsafe(
@@ -98,7 +98,7 @@ export class OrdemServicoConfigController {
     }
 
     // ==================== TIPOS DE EQUIPAMENTO ====================
-    
+
     @Get('tipos-equipamento')
     async getTiposEquipamento(@Req() req: ExpressRequest & { user: any }) {
         const result = await this.prisma.$queryRawUnsafe<any[]>(
@@ -124,8 +124,8 @@ export class OrdemServicoConfigController {
 
     @Put('tipos-equipamento/:id')
     async updateTipoEquipamento(
-        @Req() req: ExpressRequest & { user: any }, 
-        @Param('id') id: string, 
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
         @Body() body: { nome: string }
     ) {
         const result = await this.prisma.$queryRawUnsafe(
@@ -152,7 +152,7 @@ export class OrdemServicoConfigController {
     }
 
     // ==================== USUÁRIOS/TÉCNICOS ====================
-    
+
     @Get('users')
     async getUsers(@Req() req: ExpressRequest & { user: any }) {
         try {
@@ -172,7 +172,7 @@ export class OrdemServicoConfigController {
                  ORDER BY u.name ASC`,
                 req.user.tenantId
             );
-            
+
             // Formatar dados para o frontend
             const usersWithOSRoles = result.map(user => ({
                 id: user.id,
@@ -185,11 +185,11 @@ export class OrdemServicoConfigController {
                     technician: user.is_technician
                 }
             }));
-            
+
             return usersWithOSRoles;
         } catch (error) {
             console.error('Erro ao buscar usuários com papéis OS, tentando fallback:', error);
-            
+
             // Fallback: usar apenas a tabela users
             const result = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT id, name, email, role as system_role FROM users 
@@ -197,7 +197,7 @@ export class OrdemServicoConfigController {
                  ORDER BY name ASC`,
                 req.user.tenantId
             );
-            
+
             // Formatar dados para o frontend (sem papéis específicos do módulo)
             const usersWithOSRoles = result.map(user => ({
                 id: user.id,
@@ -210,7 +210,7 @@ export class OrdemServicoConfigController {
                     technician: false // Por padrão, ninguém é técnico até executar a migração
                 }
             }));
-            
+
             return usersWithOSRoles;
         }
     }
@@ -246,7 +246,7 @@ export class OrdemServicoConfigController {
             userId,
             body.is_technician
         );
-        
+
         return { success: true, message: 'Configuração de técnico atualizada' };
     }
 }

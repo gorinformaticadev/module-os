@@ -9,7 +9,7 @@ export const useAI = () => {
 
         try {
             setAnalyzing(true);
-            const response = await api.post('/modules/ordem_servico/ai/analisar-descricao', { descricao });
+            const response = await api.post('/api/ordem_servico/ai/analisar-descricao', { descricao });
             return response.data;
         } catch (error) {
             console.error('Erro ao analisar descrição com IA:', error);
