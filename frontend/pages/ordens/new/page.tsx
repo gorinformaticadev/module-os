@@ -851,7 +851,7 @@ export default function NewOrdemRefactoredPage() {
                             </div>
 
                             {/* Campos Condicionais: FORMATAÇÃO */}
-                            {formData.tipo_servico === 'FORMATACAO' && (
+                            {formData.tipo_servico === 'Formatação' && (
                                 <div className="col-span-full mt-4 p-4 border-2 border-primary/20 bg-primary/5 rounded-lg space-y-4">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Wrench className="h-4 w-4 text-primary" />
