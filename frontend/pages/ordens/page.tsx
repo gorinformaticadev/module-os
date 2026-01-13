@@ -26,7 +26,9 @@ import {
   MessageCircle,
   Filter,
   FileText,
-  RotateCcw
+  RotateCcw,
+  Receipt,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../../types/ordem-servico.types';
@@ -164,6 +166,7 @@ export default function OrdensPage() {
   const [statusFilter, setStatusFilter] = useState<StatusOS | 'all'>('all');
   const [origemFilter, setOrigemFilter] = useState<OrigemSolicitacao | 'all'>('all');
   const [reopenOrder, setReopenOrder] = useState<OrdemServico | null>(null);
+  const [printMenuOpen, setPrintMenuOpen] = useState<string | null>(null);
 
   // Carregar ordens de serviço
   const loadOrdens = async () => {
@@ -260,12 +263,22 @@ export default function OrdensPage() {
     }
   };
 
-  const handlePrint = (ordem: OrdemServico) => {
-    // TODO: Implementar impressão
+  const handlePrintA4 = (ordem: OrdemServico) => {
+    // TODO: Implementar impressão A4
     toast({
       title: "Info",
-      description: "Funcionalidade de impressão será implementada em breve"
+      description: "Impressão A4 será implementada em breve"
     });
+    setPrintMenuOpen(null);
+  };
+
+  const handlePrintThermal = (ordem: OrdemServico) => {
+    // TODO: Implementar impressão térmica 50/80mm
+    toast({
+      title: "Info",
+      description: "Impressão térmica será implementada em breve"
+    });
+    setPrintMenuOpen(null);
   };
 
   const handleWhatsApp = (ordem: OrdemServico) => {
@@ -483,14 +496,40 @@ export default function OrdensPage() {
                             </Button>
                           )}
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePrint(ordem)}
-                            className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
+                          <div className="relative">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setPrintMenuOpen(printMenuOpen === ordem.id ? null : ordem.id)}
+                              onMouseEnter={() => setPrintMenuOpen(ordem.id)}
+                              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                            >
+                              <Printer className="h-4 w-4" />
+                              <ChevronDown className="h-3 w-3 ml-0.5" />
+                            </Button>
+
+                            {printMenuOpen === ordem.id && (
+                              <div
+                                className="absolute left-0 top-full mt-1 bg-background border border-border rounded-md shadow-lg z-50 min-w-[180px]"
+                                onMouseLeave={() => setPrintMenuOpen(null)}
+                              >
+                                <button
+                                  onClick={() => handlePrintA4(ordem)}
+                                  className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-b border-border transition-colors"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  <span>Impressão A4</span>
+                                </button>
+                                <button
+                                  onClick={() => handlePrintThermal(ordem)}
+                                  className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors"
+                                >
+                                  <Receipt className="h-4 w-4" />
+                                  <span>Impressão 50/80mm</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
 
                           {ordem.cliente?.phone_primary && (
                             <Button
