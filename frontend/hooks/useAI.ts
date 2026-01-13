@@ -19,8 +19,22 @@ export const useAI = () => {
         }
     };
 
+    const gerarLaudo = async (problema: string, notas: string) => {
+        try {
+            setAnalyzing(true);
+            const response = await api.post('/api/ordem_servico/ai/gerar-laudo', { problema, notas });
+            return response.data.laudo;
+        } catch (error) {
+            console.error('Erro ao gerar laudo técnico com IA:', error);
+            throw error;
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
     return {
         analisarDescricao,
+        gerarLaudo,
         analyzing
     };
 };

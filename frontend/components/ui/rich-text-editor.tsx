@@ -57,6 +57,18 @@ export function RichTextEditor({ value, onChange, disabled }: RichTextEditorProp
         },
     })
 
+    React.useEffect(() => {
+        if (editor && value !== editor.getHTML()) {
+            editor.commands.setContent(value)
+        }
+    }, [value, editor])
+
+    React.useEffect(() => {
+        if (editor) {
+            editor.setEditable(!disabled)
+        }
+    }, [disabled, editor])
+
     if (!editor) {
         return null
     }

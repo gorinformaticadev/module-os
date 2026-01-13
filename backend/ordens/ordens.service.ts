@@ -452,13 +452,13 @@ export class OrdensService {
                 INSERT INTO mod_ordem_servico_ordens (
                     tenant_id, numero, cliente_id, tipo_servico, prioridade, descricao, 
                     status, origem_solicitacao, valor_servico,
-                    usuario_responsavel_id, observacoes_internas, observacoes_cliente,
+                    usuario_responsavel_id, observacoes_internas, observacoes_cliente, laudo_tecnico,
                     equipamento_tipo, equipamento_marca, equipamento_modelo, equipamento_serie,
                     equipamento_acessorios, equipamento_estado, equipamento_fotos,
                     formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha,
                     data_abertura, orcamento_aprovado, itens
                 ) VALUES (
-                    $1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), $24, $25
+                    $1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW(), $25, $26
                 )
                 RETURNING *
             `;
@@ -480,19 +480,20 @@ export class OrdensService {
                 createDto.usuario_responsavel_id === 'UNASSIGNED' || createDto.usuario_responsavel_id === 'NONE' || !createDto.usuario_responsavel_id ? userId : createDto.usuario_responsavel_id, // $10 - Fallback to creator if not assigned
                 createDto.observacoes_internas || null,                                                     // $11
                 createDto.observacoes_cliente || null,                                                      // $12
-                createDto.equipamento_tipo || null,                                                         // $13
-                createDto.equipamento_marca || null,                                                        // $14
-                createDto.equipamento_modelo || null,                                                       // $15
-                createDto.equipamento_serie || null,                                                        // $16
-                createDto.equipamento_acessorios || null,                                                   // $17
-                createDto.equipamento_estado || null,                                                       // $18
-                createDto.equipamento_fotos ? JSON.stringify(createDto.equipamento_fotos) : null,          // $19
-                createDto.formatacao_so || null,                                                            // $20
-                createDto.formatacao_backup || false,                                                       // $21
-                createDto.formatacao_backup_descricao || null,                                              // $22
-                createDto.formatacao_senha || null,                                                         // $23
-                orcamentoAprovado,                                                                          // $24
-                createDto.itens ? JSON.stringify(createDto.itens) : null                                    // $25
+                createDto.laudo_tecnico || null,                                                            // $13
+                createDto.equipamento_tipo || null,                                                         // $14
+                createDto.equipamento_marca || null,                                                        // $15
+                createDto.equipamento_modelo || null,                                                       // $16
+                createDto.equipamento_serie || null,                                                        // $17
+                createDto.equipamento_acessorios || null,                                                   // $18
+                createDto.equipamento_estado || null,                                                       // $19
+                createDto.equipamento_fotos ? JSON.stringify(createDto.equipamento_fotos) : null,          // $20
+                createDto.formatacao_so || null,                                                            // $21
+                createDto.formatacao_backup || false,                                                       // $22
+                createDto.formatacao_backup_descricao || null,                                              // $23
+                createDto.formatacao_senha || null,                                                         // $24
+                orcamentoAprovado,                                                                          // $25
+                createDto.itens ? JSON.stringify(createDto.itens) : null                                    // $26
             ];
 
             this.logger.log(`Parâmetros da query:`, params);

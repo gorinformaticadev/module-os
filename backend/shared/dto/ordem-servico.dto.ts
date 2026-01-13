@@ -69,6 +69,10 @@ export class CreateOrdemServicoDTO {
 
     @IsOptional()
     @IsString()
+    laudo_tecnico?: string;
+
+    @IsOptional()
+    @IsString()
     usuario_responsavel_id?: string;
 
     // Equipamento
@@ -299,6 +303,7 @@ export class OrdemServicoResponseDTO {
     usuario_responsavel_id: string;
     tipo_servico: string;
     descricao: string;
+    laudo_tecnico: string;
     observacoes_internas: string;
     observacoes_cliente: string;
     valor_servico: number;

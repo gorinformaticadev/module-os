@@ -9,6 +9,7 @@ export interface OrdemServico {
   tipo_servico: string;
   prioridade: 'BAIXA' | 'MEDIA' | 'ALTA';
   descricao: string;
+  laudo_tecnico?: string;
   observacoes_internas?: string;
   observacoes_cliente?: string;
   valor_servico: number;
@@ -166,6 +167,7 @@ export interface CreateOrdemServicoDTO {
   tipo_servico: string;
   prioridade: 'BAIXA' | 'MEDIA' | 'ALTA';
   descricao: string;
+  laudo_tecnico?: string;
   observacoes_internas?: string;
   observacoes_cliente?: string;
   valor_servico?: number;
@@ -194,6 +196,7 @@ export interface UpdateOrdemServicoDTO {
   tipo_servico?: string;
   prioridade?: 'BAIXA' | 'MEDIA' | 'ALTA';
   descricao?: string;
+  laudo_tecnico?: string;
   observacoes_internas?: string;
   observacoes_cliente?: string;
   valor_servico?: number;

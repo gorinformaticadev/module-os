@@ -32,4 +32,21 @@ export class AiController {
             throw error;
         }
     }
+
+    @Post('gerar-laudo')
+    async gerarLaudo(@Req() req: ExpressRequest & { user: any }, @Body() body: { problema: string, notas: string }) {
+        try {
+            this.logger.log(`Solicitação de geração de laudo para tenant ${req.user.tenantId}`);
+
+            const prompt = AI_PROMPTS.GERAR_LAUDO.user(body.problema, body.notas);
+            const system = AI_PROMPTS.GERAR_LAUDO.system;
+
+            const result = await this.aiService.callAI(req.user.tenantId, { prompt, system });
+
+            return { laudo: result };
+        } catch (error) {
+            this.logger.error(`Erro ao gerar laudo:`, error);
+            throw error;
+        }
+    }
 }
