@@ -458,9 +458,9 @@ export class OrdensService {
                     equipamento_tipo, equipamento_marca, equipamento_modelo, equipamento_serie,
                     equipamento_acessorios, equipamento_estado, equipamento_fotos,
                     formatacao_so, formatacao_backup, formatacao_backup_descricao, formatacao_senha,
-                    data_abertura, orcamento_aprovado, itens
+                    data_abertura, orcamento_aprovado, itens, garantia_dias
                 ) VALUES (
-                    $1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW(), $25, $26
+                    $1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10::uuid, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW(), $25, $26, $27
                 )
                 RETURNING *
             `;
@@ -495,7 +495,8 @@ export class OrdensService {
                 createDto.formatacao_backup_descricao || null,                                              // $23
                 createDto.formatacao_senha || null,                                                         // $24
                 orcamentoAprovado,                                                                          // $25
-                createDto.itens ? JSON.stringify(createDto.itens) : null                                    // $26
+                createDto.itens ? JSON.stringify(createDto.itens) : null,                                   // $26
+                createDto.garantia_dias || 0                                                                // $27
             ];
 
             this.logger.log(`Parâmetros da query:`, params);
@@ -559,7 +560,7 @@ export class OrdensService {
                 'equipamento_modelo', 'equipamento_serie', 'equipamento_acessorios',
                 'equipamento_estado', 'formatacao_so', 'formatacao_backup',
                 'formatacao_backup_descricao', 'formatacao_senha', 'equipamento_fotos', 'itens',
-                'laudo_tecnico'
+                'laudo_tecnico', 'garantia_dias'
             ];
 
             // Handle Status Update if present

@@ -125,6 +125,11 @@ export class CreateOrdemServicoDTO {
     @IsOptional()
     @IsArray()
     itens?: ItemOrdem[];
+
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    garantia_dias?: number;
 }
 
 export class UpdateOrdemServicoDTO {
@@ -228,6 +233,11 @@ export class UpdateOrdemServicoDTO {
     @IsOptional()
     @IsArray()
     itens?: ItemOrdem[];
+
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    garantia_dias?: number;
 }
 
 // ============================================

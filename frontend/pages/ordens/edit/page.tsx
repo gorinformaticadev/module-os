@@ -229,7 +229,8 @@ export default function EditOrdemPage() {
         laudo_tecnico: '',
         motivo_cancelamento: '',
         itens: [] as ItemOrdem[],
-        equipamento_fotos: [] as string[]
+        equipamento_fotos: [] as string[],
+        garantia_dias: 0
     });
 
     useEffect(() => {
@@ -509,7 +510,8 @@ export default function EditOrdemPage() {
                 laudo_tecnico: ordemData.laudo_tecnico || '',
                 motivo_cancelamento: ordemData.motivo_cancelamento || '',
                 itens: ordemData.itens || [],
-                equipamento_fotos: ordemData.equipamento_fotos || []
+                equipamento_fotos: ordemData.equipamento_fotos || [],
+                garantia_dias: ordemData.garantia_dias || 0
             });
 
         } catch (error: any) {
@@ -610,7 +612,8 @@ export default function EditOrdemPage() {
                 equipamento_serie: formData.equipamento_serie || undefined,
                 equipamento_fotos: formData.equipamento_fotos,
                 laudo_tecnico: formData.laudo_tecnico || undefined,
-                itens: formData.itens
+                itens: formData.itens,
+                garantia_dias: formData.garantia_dias || 0
             };
 
             // Remove undefined values
@@ -916,6 +919,18 @@ export default function EditOrdemPage() {
                                 value={formData.data_previsao}
                                 onChange={(e) => setFormData({ ...formData, data_previsao: e.target.value })}
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Garantia (dias)</Label>
+                            <Input
+                                type="number"
+                                placeholder="0"
+                                min="0"
+                                value={formData.garantia_dias || ''}
+                                onChange={(e) => setFormData({ ...formData, garantia_dias: parseInt(e.target.value) || 0 })}
+                            />
+                            <p className="text-[10px] text-muted-foreground italic">Período de garantia em dias para o serviço realizado.</p>
                         </div>
 
                         <div className="col-span-full space-y-2">
