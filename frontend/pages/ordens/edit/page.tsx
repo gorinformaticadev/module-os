@@ -164,9 +164,14 @@ export default function EditOrdemPage() {
     const [itemTemp, setItemTemp] = useState<Partial<ItemOrdem>>({
         descricao: '',
         quantidade: 1,
-        valor_unitario: 0
     });
+    // State for image preview
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+    // Refs for keyboard navigation
+    const descriptionInputRef = React.useRef<HTMLInputElement>(null);
+    const valueInputRef = React.useRef<HTMLInputElement>(null);
+    const quantityInputRef = React.useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
     const [openCombobox, setOpenCombobox] = useState(false);
     // Estados do formulário
@@ -259,6 +264,7 @@ export default function EditOrdemPage() {
         });
         setDebouncedSearch('');
         setOpenCombobox(false);
+        setTimeout(() => descriptionInputRef.current?.focus(), 100);
     };
 
     const handleRemoveItem = (index: number) => {
@@ -291,14 +297,18 @@ export default function EditOrdemPage() {
 
     const handleProductClick = (produto: Produto) => {
         setItemTemp({
-            ...itemTemp,
             produto_id: produto.id,
-            descricao: produto.name, // Usar o NOME do produto
+            descricao: produto.name,
             valor_unitario: Number(produto.price),
+            quantidade: 1,
+            valor_total: Number(produto.price),
             // Se tiver imagem, salva na lista (opcional, se ItemOrdem tiver image_url)
             image_url: produto.image_url
         });
         setOpenCombobox(false);
+        setDebouncedSearch('');
+        // Focus on Value input after selection
+        setTimeout(() => valueInputRef.current?.focus(), 100);
     };
 
     const [compressing, setCompressing] = useState(false);
@@ -997,12 +1007,20 @@ export default function EditOrdemPage() {
                                                 onKeyDown={e => {
                                                     if (e.key === 'Enter') {
                                                         e.preventDefault();
-                                                        setDebouncedSearch(itemTemp.descricao || '');
-                                                        if ((itemTemp.descricao || '').length >= 2) {
-                                                            setOpenCombobox(true);
+                                                        // If filtered products has exact match or just one, select it
+                                                        if (filteredProducts.length === 1) {
+                                                            handleProductClick(filteredProducts[0]);
+                                                            return;
+                                                        }
+
+                                                        // If it's a custom item (no match or user ignored matches)
+                                                        if (itemTemp.descricao && itemTemp.descricao.length > 0) {
+                                                            setOpenCombobox(false);
+                                                            valueInputRef.current?.focus();
                                                         }
                                                     }
                                                 }}
+                                                ref={descriptionInputRef}
                                                 placeholder="Digite para buscar ou descrever o item..."
                                                 className="w-full"
                                                 autoComplete="off"
@@ -1053,6 +1071,13 @@ export default function EditOrdemPage() {
                                         className="pl-9"
                                         value={itemTemp.valor_unitario}
                                         onChange={e => setItemTemp({ ...itemTemp, valor_unitario: Number(e.target.value) })}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                quantityInputRef.current?.focus();
+                                            }
+                                        }}
+                                        ref={valueInputRef}
                                     />
                                 </div>
                             </div>
@@ -1064,6 +1089,13 @@ export default function EditOrdemPage() {
                                     min="1"
                                     value={itemTemp.quantidade}
                                     onChange={e => setItemTemp({ ...itemTemp, quantidade: Number(e.target.value) })}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddItem();
+                                        }
+                                    }}
+                                    ref={quantityInputRef}
                                 />
                             </div>
 
@@ -1201,20 +1233,20 @@ export default function EditOrdemPage() {
                                 <Label className="flex items-center gap-2">
                                     Observações Internas <Badge variant="secondary" className="text-[9px] h-4">Privado</Badge>
                                 </Label>
-                                <Textarea
-                                    placeholder="Senhas, detalhes técnicos para equipe..."
-                                    value={formData.observacoes_internas}
-                                    onChange={(e) => setFormData({ ...formData, observacoes_internas: e.target.value })}
+                                <RichTextEditor
+                                    value={formData.observacoes_internas || ''}
+                                    onChange={(content) => setFormData(prev => ({ ...prev, observacoes_internas: content }))}
+                                    disabled={loading}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-2">
                                     Observações para o Cliente <Badge variant="outline" className="text-[9px] h-4">Visível</Badge>
                                 </Label>
-                                <Textarea
-                                    placeholder="Notas que aparecerão na impressão ou consulta online..."
-                                    value={formData.observacoes_cliente}
-                                    onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
+                                <RichTextEditor
+                                    value={formData.observacoes_cliente || ''}
+                                    onChange={(content) => setFormData(prev => ({ ...prev, observacoes_cliente: content }))}
+                                    disabled={loading}
                                 />
                             </div>
                         </CardContent>

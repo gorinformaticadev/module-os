@@ -54,6 +54,7 @@ import {
 import ClientModal from '../../../components/ClientModal';
 import ClientEditModal from '../../../components/ClientEditModal';
 import ClientOrdersList from '../../../components/ClientOrdersList';
+import { RichTextEditor } from '../../../components/ui/rich-text-editor';
 
 interface Client {
     id: string;
@@ -125,6 +126,11 @@ export default function NewOrdemRefactoredPage() {
     });
 
     const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+    // Refs for keyboard navigation
+    const descriptionInputRef = React.useRef<HTMLInputElement>(null);
+    const valueInputRef = React.useRef<HTMLInputElement>(null);
+    const quantityInputRef = React.useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         fetchTechnicians();
@@ -864,6 +870,13 @@ export default function NewOrdemRefactoredPage() {
                                     className="min-h-[120px]"
                                     value={formData.descricao}
                                     onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && !e.shiftKey) { // Allow Shift+Enter for new line
+                                            e.preventDefault();
+                                            valueInputRef.current?.focus();
+                                        }
+                                    }}
+                                    ref={descriptionInputRef}
                                 />
                             </div>
 
@@ -1056,6 +1069,18 @@ export default function NewOrdemRefactoredPage() {
                                             className="pl-9"
                                             value={formData.valor_servico}
                                             onChange={(e) => setFormData({ ...formData, valor_servico: e.target.value })}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    // Since there's no 'quantity' field, we can focus on the next logical element,
+                                                    // or simply prevent default to avoid form submission if this is the last field.
+                                                    // For now, let's assume the user might want to focus on the save button or similar.
+                                                    // If a 'quantity' field is added later, this would be the place to focus it.
+                                                    // For now, we'll just prevent default.
+                                                    // quantityInputRef.current?.focus(); // If a quantity input existed
+                                                }
+                                            }}
+                                            ref={valueInputRef}
                                         />
                                     </div>
                                     <p className="text-[10px] text-muted-foreground italic">Nota: Não gera cobrança automática nesta etapa.</p>
@@ -1076,20 +1101,20 @@ export default function NewOrdemRefactoredPage() {
                                     <Label className="flex items-center gap-2">
                                         Observações Internas <Badge variant="secondary" className="text-[9px] h-4">Privado</Badge>
                                     </Label>
-                                    <Textarea
-                                        placeholder="Senhas, detalhes técnicos para equipe..."
-                                        value={formData.observacoes_internas}
-                                        onChange={(e) => setFormData({ ...formData, observacoes_internas: e.target.value })}
+                                    <RichTextEditor
+                                        value={formData.observacoes_internas || ''}
+                                        onChange={(content) => setFormData(prev => ({ ...prev, observacoes_internas: content }))}
+                                        disabled={loading}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="flex items-center gap-2">
                                         Observações para o Cliente <Badge variant="outline" className="text-[9px] h-4">Visível</Badge>
                                     </Label>
-                                    <Textarea
-                                        placeholder="Notas que aparecerão na impressão ou consulta online..."
-                                        value={formData.observacoes_cliente}
-                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
+                                    <RichTextEditor
+                                        value={formData.observacoes_cliente || ''}
+                                        onChange={(content) => setFormData(prev => ({ ...prev, observacoes_cliente: content }))}
+                                        disabled={loading}
                                     />
                                 </div>
                             </CardContent>
