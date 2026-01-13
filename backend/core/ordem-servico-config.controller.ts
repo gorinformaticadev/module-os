@@ -16,20 +16,22 @@ export class OrdemServicoConfigController {
     ) { }
 
     @Get('notifications')
-    async getNotificationConfigs() {
+    async getNotificationConfigs(@Req() req: ExpressRequest & { user: any }) {
         const result = await this.prisma.$queryRaw<any[]>`
-            SELECT * FROM mod_ordemServico_notification_schedules
+            SELECT * FROM mod_ordem_servico_notification_schedules
+            WHERE tenant_id = ${req.user.tenantId}
             ORDER BY created_at DESC
         `;
         return result;
     }
 
     @Post('notifications')
-    async createNotificationConfig(@Body() body: any) {
+    async createNotificationConfig(@Req() req: ExpressRequest & { user: any }, @Body() body: any) {
         const result = await this.prisma.$executeRaw`
-            INSERT INTO mod_ordemServico_notification_schedules
-            (title, content, audience, cron_expression, enabled)
+            INSERT INTO mod_ordem_servico_notification_schedules
+            (tenant_id, title, content, audience, cron_expression, enabled)
             VALUES (
+                ${req.user.tenantId},
                 ${body.title},
                 ${body.content},
                 ${body.audience},

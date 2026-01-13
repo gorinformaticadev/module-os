@@ -281,6 +281,8 @@ export class OrdensService {
                         formatacao_so: os.formatacao_so ? String(os.formatacao_so) : null,
                         formatacao_backup_descricao: os.formatacao_backup_descricao ? String(os.formatacao_backup_descricao) : null,
                         formatacao_senha: os.formatacao_senha ? String(os.formatacao_senha) : null,
+                        laudo_tecnico: os.laudo_tecnico ? String(os.laudo_tecnico) : null,
+                        itens: os.itens ? (typeof os.itens === 'string' ? JSON.parse(os.itens) : os.itens) : [],
 
                         // Números garantidos como números
                         valor_servico: os.valor_servico ? Number(parseFloat(String(os.valor_servico))) : 0,

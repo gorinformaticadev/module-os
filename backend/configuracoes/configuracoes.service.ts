@@ -141,7 +141,7 @@ export class ConfiguracoesService {
             this.logger.log(`Buscando notificações para tenant ${tenantId}`);
 
             const notifications = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT * FROM mod_ordemServico_notification_schedules ORDER BY created_at DESC`
+                `SELECT * FROM mod_ordem_servico_notification_schedules ORDER BY created_at DESC`
             );
 
             this.logger.log(`✅ ${notifications.length} notificações encontradas`);
@@ -158,7 +158,7 @@ export class ConfiguracoesService {
             this.logger.log(`Criando notificação para tenant ${tenantId}`);
 
             const result = await this.prisma.$executeRawUnsafe(
-                `INSERT INTO mod_ordemServico_notification_schedules
+                `INSERT INTO mod_ordem_servico_notification_schedules
                 (title, content, audience, cron_expression, enabled)
                 VALUES ($1, $2, $3, $4, $5)`,
                 data.title,

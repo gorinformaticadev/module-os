@@ -97,22 +97,23 @@ CREATE TABLE IF NOT EXISTS mod_ordem_servico_products (
 );
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- 5. TABELA DE STAFF/FUNCIONÁRIOS
+-- 5. TABELA DE TEMPLATES (DOCUMENTOS/LAUDOS)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-CREATE TABLE IF NOT EXISTS mod_ordem_servico_staff (
+CREATE TABLE IF NOT EXISTS mod_ordem_servico_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    is_technician BOOLEAN DEFAULT FALSE,
+    name VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    type VARCHAR(50) DEFAULT 'GENERAL',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by TEXT,
 
-    CONSTRAINT fk_mod_ordem_servico_staff_tenant FOREIGN KEY (tenant_id)
-        REFERENCES tenants(id) ON DELETE CASCADE,
-    
-    CONSTRAINT uk_mod_ordem_servico_staff_user_tenant UNIQUE (tenant_id, user_id)
+    CONSTRAINT fk_mod_ordem_servico_templates_tenant FOREIGN KEY (tenant_id)
+        REFERENCES tenants(id) ON DELETE CASCADE
 );
+
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 6. SISTEMA DE PERMISSÕES - TABELAS
@@ -227,6 +228,8 @@ CREATE TABLE IF NOT EXISTS mod_ordem_servico_ordens (
     equipamento_acessorios TEXT,
     equipamento_estado TEXT,
     equipamento_fotos TEXT,
+    laudo_tecnico TEXT,
+    itens TEXT,
     -- Campos de formatação
     formatacao_so TEXT,
     formatacao_backup BOOLEAN DEFAULT FALSE,
@@ -345,9 +348,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_mod_ordem_servico_products_unique_code
 ON mod_ordem_servico_products(tenant_id, code) 
 WHERE deleted_at IS NULL;
 
--- Índices para staff
-CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_staff_tenant_id ON mod_ordem_servico_staff(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_staff_user_id ON mod_ordem_servico_staff(user_id);
+-- Índices para templates
+CREATE INDEX IF NOT EXISTS idx_mod_ordem_servico_templates_tenant ON mod_ordem_servico_templates(tenant_id);
 
 -- Índices para sistema de permissões
 CREATE INDEX IF NOT EXISTS idx_user_permissions_tenant_id ON mod_ordem_servico_user_permissions(tenant_id);

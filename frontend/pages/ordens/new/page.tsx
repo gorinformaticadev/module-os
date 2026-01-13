@@ -113,6 +113,7 @@ export default function NewOrdemRefactoredPage() {
     const [isClientModalOpen, setIsClientModalOpen] = useState(false);
     const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
     const [isObservationsExpanded, setIsObservationsExpanded] = useState(false);
+    const [openCombobox, setOpenCombobox] = useState(false);
 
     // Technicians State
     const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -162,6 +163,7 @@ export default function NewOrdemRefactoredPage() {
     const descriptionInputRef = React.useRef<HTMLInputElement>(null);
     const valueInputRef = React.useRef<HTMLInputElement>(null);
     const quantityInputRef = React.useRef<HTMLInputElement>(null);
+    const clientSearchInputRef = React.useRef<HTMLInputElement>(null);
 
     // State for keyboard navigation selection
     const [selectedIndex, setSelectedIndex] = useState(0);

@@ -13,33 +13,14 @@ export class OrdemServicoCronService implements OnModuleInit {
 
     async onModuleInit() {
         this.logger.log('Inicializando OrdemServico Cron Service');
-        await this.ensureDatabaseTable();
         await this.registerNotificationJob();
     }
 
-    private async ensureDatabaseTable() {
-        try {
-            await this.prisma.$executeRawUnsafe(`
-                CREATE TABLE IF NOT EXISTS mod_ordemServico_notification_schedules (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    title VARCHAR(255) NOT NULL,
-                    content TEXT,
-                    audience VARCHAR(50) DEFAULT 'all',
-                    cron_expression VARCHAR(100) NOT NULL,
-                    enabled BOOLEAN DEFAULT true,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            `);
-        } catch (error) {
-            this.logger.warn('Aviso ao verificar tabela mod_ordemServico_notification_schedules: ' + error.message);
-        }
-    }
 
     async registerNotificationJob() {
         try {
             const schedules = await this.prisma.$queryRawUnsafe<any[]>(`
-                SELECT * FROM mod_ordemServico_notification_schedules
+                SELECT * FROM mod_ordem_servico_notification_schedules
             `);
 
             const activeKeys = new Set<string>();
