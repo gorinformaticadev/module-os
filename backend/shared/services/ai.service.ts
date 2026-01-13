@@ -30,10 +30,14 @@ export class AiService {
         }
     }
 
-    async callAI(tenantId: string, { prompt, system }: AIRequest) {
-        const config = await this.getAiConfig(tenantId);
+    async callAI(tenantId: string, { prompt, system }: AIRequest, configOverride?: any) {
+        let config = configOverride;
 
-        if (!config || !config.enabled) {
+        if (!config) {
+            config = await this.getAiConfig(tenantId);
+        }
+
+        if (!config || (config.enabled === false && !configOverride)) {
             throw new BadRequestException('IA não habilitada para este tenant');
         }
 

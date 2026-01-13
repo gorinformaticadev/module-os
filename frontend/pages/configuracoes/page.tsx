@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield, Brain } from 'lucide-react';
+import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield, Brain, Loader2 } from 'lucide-react';
 import { PermissionManagement } from '../../components/PermissionManagement';
 import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatrix';
 import { TiposServicoManager } from '../../components/TiposServicoManager';
@@ -384,6 +384,8 @@ export default function OrdemServicoConfiguracoesPage() {
     maxTokens: 800,
     enabled: false
   });
+  const [testingAi, setTestingAi] = useState(false);
+  const [testResponse, setTestResponse] = useState<string | null>(null);
 
   const getFrequencyType = (cron: string) => {
     if (!cron) return 'daily';
@@ -493,6 +495,40 @@ export default function OrdemServicoConfiguracoesPage() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestAi = async () => {
+    try {
+      setTestingAi(true);
+      setTestResponse(null);
+
+      const response = await api.post('/modules/ordem_servico/config/ai/test', aiConfig);
+
+      if (response.data.success) {
+        setTestResponse(response.data.response);
+        toast({
+          title: 'Teste bem sucedido!',
+          description: 'A IA respondeu corretamente.',
+        });
+      } else {
+        setTestResponse(`Erro: ${response.data.message}`);
+        toast({
+          title: 'Falha no teste',
+          description: response.data.message,
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao testar IA:', error);
+      setTestResponse(`Erro na requisição: ${error.message}`);
+      toast({
+        title: 'Erro de conexão',
+        description: 'Não foi possível contatar o serviço de teste.',
+        variant: 'destructive'
+      });
+    } finally {
+      setTestingAi(false);
     }
   };
 
@@ -1058,6 +1094,50 @@ export default function OrdemServicoConfiguracoesPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {testResponse && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-primary" />
+                      Resultado do Teste
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-background/50 p-3 rounded border text-xs font-mono whitespace-pre-wrap">
+                      {testResponse}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleTestAi}
+                  disabled={testingAi || !aiConfig.apiKey}
+                >
+                  {testingAi ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Testando...
+                    </>
+                  ) : 'Testar Conexão'}
+                </Button>
+                <Button onClick={saveAiConfig} disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Salvar Configurações
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         )}

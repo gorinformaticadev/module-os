@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
+import { AiService } from '../shared/services/ai.service';
 
 @Injectable()
 export class ConfiguracoesService {
     private readonly logger = new Logger(ConfiguracoesService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly aiService: AiService
+    ) { }
 
     private getDefaultPermissions() {
         // Permissões padrão caso a tabela não exista
@@ -245,6 +249,34 @@ export class ConfiguracoesService {
             return results.length > 0 ? JSON.parse(results[0].value) : null;
         } catch {
             return null;
+        }
+    }
+    async testAiConfig(tenantId: string, testConfig: any) {
+        try {
+            this.logger.log(`Testando configuração de IA para tenant ${tenantId}`);
+
+            // Se a key vier mascarada, precisamos da key real do banco (se estiver testando a config salva)
+            if (testConfig.apiKey && testConfig.apiKey.startsWith('********')) {
+                const currentConfig = await this.getAiConfigInternal(tenantId);
+                if (currentConfig && currentConfig.apiKey) {
+                    testConfig.apiKey = currentConfig.apiKey;
+                }
+            }
+
+            const response = await this.aiService.callAI(
+                tenantId,
+                { prompt: 'Olá! Por favor, responda confirmando que você está funcionando corretamente.' },
+                testConfig
+            );
+
+            return { success: true, response };
+        } catch (error: any) {
+            this.logger.error(`❌ Erro no teste de IA:`, error);
+            return {
+                success: false,
+                message: error.message || 'Erro desconhecido ao testar IA',
+                details: error.response?.data || error.response || error
+            };
         }
     }
 }

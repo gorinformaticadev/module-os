@@ -30,6 +30,9 @@ import { AuditModule } from '@core/audit/audit.module';
 })
 export class OrdemServicoModule {
     constructor() {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] ✅✅✅ MÓDULO ORDEM_SERVICO CARREGADO!!!\n`;
+        fs.appendFileSync('d:/github/Projeto-menu-multitenant-seguro/module_loading_debug.log', logMsg);
         console.log('✅✅✅ MÓDULO ORDEM_SERVICO REORGANIZADO E CARREGADO COM TODAS AS FUNCIONALIDADES!!! ✅✅✅');
     }
 }

@@ -97,4 +97,15 @@ export class ConfiguracoesController {
             throw error;
         }
     }
+
+    @Post('ai/test')
+    async testAiConfig(@Req() req: ExpressRequest & { user: any }, @Body() body: any) {
+        try {
+            this.logger.log(`testAiConfig endpoint chamado. Tenant: ${req.user?.tenantId}`);
+            return await this.service.testAiConfig(req.user.tenantId, body);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint testAiConfig:`, error);
+            throw error;
+        }
+    }
 }

@@ -7,8 +7,10 @@ import { TiposEquipamentoController } from './tipos-equipamento.controller';
 import { TiposEquipamentoService } from './tipos-equipamento.service';
 import { PrismaModule } from '@core/prisma/prisma.module';
 
+import { SharedModule } from '../shared/shared.module';
+
 @Module({
-    imports: [PrismaModule],
+    imports: [PrismaModule, SharedModule],
     controllers: [
         ConfiguracoesController,
         TiposServicoController,
@@ -25,4 +27,4 @@ import { PrismaModule } from '@core/prisma/prisma.module';
         TiposEquipamentoService
     ],
 })
-export class ConfiguracoesModule {}
+export class ConfiguracoesModule { }
