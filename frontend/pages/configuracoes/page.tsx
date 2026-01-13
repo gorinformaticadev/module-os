@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield } from 'lucide-react';
+import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield, Brain } from 'lucide-react';
 import { PermissionManagement } from '../../components/PermissionManagement';
 import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatrix';
 import { TiposServicoManager } from '../../components/TiposServicoManager';
@@ -376,6 +376,15 @@ export default function OrdemServicoConfiguracoesPage() {
     enabled: true
   });
 
+  const [aiConfig, setAiConfig] = useState({
+    provider: 'openai',
+    apiKey: '',
+    model: 'gpt-4o-mini',
+    temperature: 0.3,
+    maxTokens: 800,
+    enabled: false
+  });
+
   const getFrequencyType = (cron: string) => {
     if (!cron) return 'daily';
     if (cron.startsWith('*/')) return 'interval';
@@ -430,6 +439,8 @@ export default function OrdemServicoConfiguracoesPage() {
       fetchSchedules();
     } else if (activeTab === 'usuarios') {
       fetchUsers();
+    } else if (activeTab === 'ia') {
+      fetchAiConfig();
     }
   }, [activeTab]);
 
@@ -447,6 +458,41 @@ export default function OrdemServicoConfiguracoesPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAiConfig = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/modules/ordem_servico/config/ai');
+      if (response.data) {
+        setAiConfig(prev => ({ ...prev, ...response.data }));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar config de IA:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveAiConfig = async () => {
+    try {
+      setSaving(true);
+      await api.post('/modules/ordem_servico/config/ai', aiConfig);
+      toast({
+        title: 'Sucesso',
+        description: 'Configurações de IA salvas com sucesso!',
+      });
+      // Recarregar para pegar a chave mascarada
+      fetchAiConfig();
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Falha ao salvar configurações de IA.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -595,6 +641,17 @@ export default function OrdemServicoConfiguracoesPage() {
           >
             <Settings className="h-4 w-4 mr-2" />
             Opções OS
+          </Button>
+          <Button
+            variant="ghost"
+            className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'ia'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            onClick={() => setActiveTab('ia')}
+          >
+            <Brain className="h-4 w-4 mr-2" />
+            Inteligência Artificial
           </Button>
         </nav>
       </div>
@@ -862,14 +919,145 @@ export default function OrdemServicoConfiguracoesPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Tipos de Serviço */}
               <TiposServicoManager />
-              
+
               {/* Tipos de Equipamento */}
               <TiposEquipamentoManager />
-              
+
               {/* Espaço para futuras configurações */}
               <div className="space-y-4">
                 {/* Placeholder para próximas configurações */}
               </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'ia' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  Inteligência Artificial
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Configure a integração com modelos de linguagem (IA) para automação e análise
+                </p>
+              </div>
+              <Button
+                onClick={saveAiConfig}
+                className="gap-2"
+                disabled={saving}
+              >
+                {saving ? 'Salvando...' : 'Salvar Alterações'}
+                <Save className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configurações do Provedor</CardTitle>
+                  <CardDescription>
+                    Selecione o provedor e informe a chave de API
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                    <div className="space-y-1">
+                      <Label htmlFor="ai-enabled" className="text-base">Ativar IA no Módulo</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Permite o uso de recursos de IA em todo o módulo de OS
+                      </p>
+                    </div>
+                    <Switch
+                      id="ai-enabled"
+                      checked={aiConfig.enabled}
+                      onCheckedChange={(checked) => setAiConfig({ ...aiConfig, enabled: checked })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ai-provider">Provedor</Label>
+                    <Select
+                      value={aiConfig.provider}
+                      onValueChange={(val) => setAiConfig({ ...aiConfig, provider: val })}
+                    >
+                      <SelectItem value="openai">OpenAI (Direct)</SelectItem>
+                      <SelectItem value="openrouter">OpenRouter (Unified API)</SelectItem>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ai-api-key">API Key</Label>
+                    <Input
+                      id="ai-api-key"
+                      type="password"
+                      value={aiConfig.apiKey}
+                      onChange={(e) => setAiConfig({ ...aiConfig, apiKey: e.target.value })}
+                      placeholder={aiConfig.apiKey ? "********" : "Sua chave de API..."}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      {aiConfig.provider === 'openrouter'
+                        ? 'Obtenha em openrouter.ai. Permite usar Claude, GPT-4, Llama, etc.'
+                        : 'Obtenha em platform.openai.com'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Modelo e Parâmetros</CardTitle>
+                  <CardDescription>
+                    Ajuste o comportamento da inteligência artificial
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ai-model">Modelo (ID)</Label>
+                    <Input
+                      id="ai-model"
+                      value={aiConfig.model}
+                      onChange={(e) => setAiConfig({ ...aiConfig, model: e.target.value })}
+                      placeholder="Ex: gpt-4o-mini"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-temp">Temperatura ({aiConfig.temperature})</Label>
+                      <Input
+                        id="ai-temp"
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={aiConfig.temperature}
+                        onChange={(e) => setAiConfig({ ...aiConfig, temperature: parseFloat(e.target.value) })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-tokens">Max Tokens</Label>
+                      <Input
+                        id="ai-tokens"
+                        type="number"
+                        value={aiConfig.maxTokens}
+                        onChange={(e) => setAiConfig({ ...aiConfig, maxTokens: parseInt(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <h4 className="text-sm font-medium text-blue-500 mb-1 flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      Dica de Uso
+                    </h4>
+                    <p className="text-xs text-blue-500/70 leading-relaxed">
+                      A temperatura baixa (0.1 a 0.3) torna a IA mais precisa e determinista, ideal para análise de dados.
+                      Temperaturas altas (0.7 a 1.0) tornam o texto mais criativo.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         )}

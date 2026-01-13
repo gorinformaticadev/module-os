@@ -75,4 +75,26 @@ export class ConfiguracoesController {
             throw error;
         }
     }
+
+    @Get('ai')
+    async getAiConfig(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            this.logger.log(`getAiConfig endpoint chamado. Tenant: ${req.user?.tenantId}`);
+            return await this.service.getAiConfig(req.user.tenantId);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint getAiConfig:`, error);
+            throw error;
+        }
+    }
+
+    @Post('ai')
+    async updateAiConfig(@Req() req: ExpressRequest & { user: any }, @Body() body: any) {
+        try {
+            this.logger.log(`updateAiConfig endpoint chamado. Tenant: ${req.user?.tenantId}`);
+            return await this.service.updateAiConfig(req.user.tenantId, body);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint updateAiConfig:`, error);
+            throw error;
+        }
+    }
 }

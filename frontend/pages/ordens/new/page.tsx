@@ -55,6 +55,8 @@ import ClientModal from '../../../components/ClientModal';
 import ClientEditModal from '../../../components/ClientEditModal';
 import ClientOrdersList from '../../../components/ClientOrdersList';
 import { RichTextEditor } from '../../../components/ui/rich-text-editor';
+import { useAI } from '../../../hooks/useAI';
+import { Brain } from 'lucide-react';
 
 interface Client {
     id: string;
@@ -73,6 +75,35 @@ export default function NewOrdemRefactoredPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
+
+    const { analisarDescricao, analyzing } = useAI();
+    const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+
+    const handleAIAnalyze = async () => {
+        if (!formData.descricao) {
+            toast({
+                title: 'Atenção',
+                description: 'Descreva o problema primeiro para que a IA possa analisar.',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        try {
+            const result = await analisarDescricao(formData.descricao);
+            setAiAnalysis(result);
+            toast({
+                title: 'Análise Concluída',
+                description: 'A IA analisou o problema e forneceu sugestões.',
+            });
+        } catch (error) {
+            toast({
+                title: 'Erro na IA',
+                description: 'Não foi possível realizar a análise no momento. Verifique as configurações de IA.',
+                variant: 'destructive'
+            });
+        }
+    };
 
     // Client State
     const [searchTerm, setSearchTerm] = useState('');
@@ -891,7 +922,24 @@ export default function NewOrdemRefactoredPage() {
                             )}
 
                             <div className="col-span-full space-y-2">
-                                <Label>Descrição do Problema / Serviço Solicitado *</Label>
+                                <div className="flex justify-between items-center">
+                                    <Label>Descrição do Problema / Serviço Solicitado *</Label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 gap-2 text-primary border-primary/20 hover:bg-primary/5"
+                                        onClick={handleAIAnalyze}
+                                        disabled={analyzing || !formData.descricao}
+                                    >
+                                        {analyzing ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                            <Brain className="h-3.5 w-3.5" />
+                                        )}
+                                        {analyzing ? 'Analisando...' : 'Analisar com IA'}
+                                    </Button>
+                                </div>
                                 <Textarea
                                     placeholder="Detalhe o que o cliente relatou ou o que deve ser feito..."
                                     className="min-h-[120px]"
@@ -905,6 +953,54 @@ export default function NewOrdemRefactoredPage() {
                                     }}
                                     ref={descriptionInputRef}
                                 />
+
+                                {aiAnalysis && (
+                                    <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2">
+                                        <div className="flex items-center gap-2 mb-3 text-primary font-semibold text-sm">
+                                            <Brain className="h-4 w-4" />
+                                            Sugestão da Inteligência Artificial
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                            <div className="space-y-1">
+                                                <span className="font-bold block uppercase text-[10px] text-muted-foreground">Resumo Técnico</span>
+                                                <p className="text-foreground leading-relaxed">
+                                                    {typeof aiAnalysis === 'string' ? aiAnalysis : aiAnalysis.resumo || aiAnalysis.text}
+                                                </p>
+                                            </div>
+                                            {aiAnalysis.causas && (
+                                                <div className="space-y-1">
+                                                    <span className="font-bold block uppercase text-[10px] text-muted-foreground">Possíveis Causas</span>
+                                                    <p className="text-foreground leading-relaxed">{aiAnalysis.causas}</p>
+                                                </div>
+                                            )}
+                                            {aiAnalysis.sugestoes && (
+                                                <div className="space-y-1">
+                                                    <span className="font-bold block uppercase text-[10px] text-muted-foreground">Peças/Serviços Sugeridos</span>
+                                                    <p className="text-foreground leading-relaxed">{aiAnalysis.sugestoes}</p>
+                                                </div>
+                                            )}
+                                            {aiAnalysis.complexidade && (
+                                                <div className="space-y-1">
+                                                    <span className="font-bold block uppercase text-[10px] text-muted-foreground">Complexidade Estimada</span>
+                                                    <span className={`px-2 py-0.5 rounded-full inline-block font-medium ${aiAnalysis.complexidade === 'Baixo' ? 'bg-green-500/10 text-green-600' :
+                                                        aiAnalysis.complexidade === 'Médio' ? 'bg-yellow-500/10 text-yellow-600' :
+                                                            'bg-red-500/10 text-red-600'
+                                                        }`}>
+                                                        {aiAnalysis.complexidade}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="mt-3 h-7 text-[10px] text-muted-foreground hover:text-foreground p-0 h-auto"
+                                            onClick={() => setAiAnalysis(null)}
+                                        >
+                                            Limpar sugestão
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
 
                         </CardContent>
