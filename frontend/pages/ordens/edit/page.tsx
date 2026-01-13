@@ -21,9 +21,12 @@ import {
     CheckCircle2,
     Info,
     Plus,
+    Search,
     Trash2,
     X,
-    Image as ImageIcon
+    ImageIcon,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -54,6 +57,7 @@ interface OrdemServico {
     laudo_tecnico?: string;
     motivo_cancelamento?: string;
     cliente?: Cliente;
+    equipamento_fotos?: string[];
     itens?: ItemOrdem[];
 }
 
@@ -162,7 +166,8 @@ export default function EditOrdemPage() {
         valor_unitario: 0
     });
     const [previewImage, setPreviewImage] = useState<string | null>(null);
-
+    const [uploading, setUploading] = useState(false);
+    const [openCombobox, setOpenCombobox] = useState(false);
     // Estados do formulário
     const [formData, setFormData] = useState({
         tipo_servico: '',
@@ -182,7 +187,8 @@ export default function EditOrdemPage() {
         observacoes_cliente: '',
         laudo_tecnico: '',
         motivo_cancelamento: '',
-        itens: [] as ItemOrdem[]
+        itens: [] as ItemOrdem[],
+        equipamento_fotos: [] as string[]
     });
 
     useEffect(() => {
@@ -284,15 +290,46 @@ export default function EditOrdemPage() {
 
     const handleProductClick = (produto: Produto) => {
         setItemTemp({
+            ...itemTemp,
             produto_id: produto.id,
             descricao: produto.name, // Usar o NOME do produto
             valor_unitario: Number(produto.price),
-            quantidade: 1,
+            // Se tiver imagem, salva na lista (opcional, se ItemOrdem tiver image_url)
             image_url: produto.image_url
         });
         setOpenCombobox(false);
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+        setUploading(true);
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', file);
+            const response = await api.post('/api/ordem_servico/ordens/upload', formDataUpload);
+            // Response is { url: string }
+            const newUrl = response.data.url;
+            const currentPhotos = formData.equipamento_fotos || [];
+            setFormData({ ...formData, equipamento_fotos: [...currentPhotos, newUrl] });
+            toast({ title: 'Sucesso', description: 'Foto enviada com sucesso!' });
+        } catch (error) {
+            console.error(error);
+            toast({ title: 'Erro', description: 'Erro ao enviar foto.', variant: 'destructive' });
+        } finally {
+            setUploading(false);
+            // Reset input
+            e.target.value = '';
+        }
+    };
+
+    const handleRemovePhoto = (index: number) => {
+        const currentPhotos = [...(formData.equipamento_fotos || [])];
+        currentPhotos.splice(index, 1);
+        setFormData({ ...formData, equipamento_fotos: currentPhotos });
+    };
+
+    // --- CARREGAMENTO INICIAL ---
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
     useEffect(() => {
@@ -316,7 +353,6 @@ export default function EditOrdemPage() {
         }
     }, [debouncedSearch, itemTemp.produto_id, filteredProducts.length]);
 
-    const [openCombobox, setOpenCombobox] = useState(false);
 
     const loadOrdem = async () => {
         try {
@@ -418,6 +454,7 @@ export default function EditOrdemPage() {
                 equipamento_marca: formData.equipamento_marca || undefined,
                 equipamento_modelo: formData.equipamento_modelo || undefined,
                 equipamento_serie: formData.equipamento_serie || undefined,
+                equipamento_fotos: formData.equipamento_fotos,
                 laudo_tecnico: formData.laudo_tecnico || undefined,
                 itens: formData.itens
             };
@@ -789,6 +826,56 @@ export default function EditOrdemPage() {
                     </CardContent>
                 </Card>
 
+                {/* Section: FOTOS DO EQUIPAMENTO */}
+                <Card className="shadow-sm border-2">
+                    <CardHeader className="bg-muted/20 pb-4">
+                        <div className="flex items-center gap-2">
+                            <ImageIcon className="h-5 w-5 text-primary" />
+                            <CardTitle className="text-lg">Fotos do Equipamento</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <div className="flex flex-wrap gap-2">
+                            {formData.equipamento_fotos?.map((photo, index) => (
+                                <div key={index} className="relative group w-24 h-24">
+                                    <img
+                                        src={photo}
+                                        alt={`Foto ${index + 1}`}
+                                        className="w-full h-full object-cover rounded-md border cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => setPreviewImage(photo)}
+                                    />
+                                    <button
+                                        onClick={() => handleRemovePhoto(index)}
+                                        className="absolute top-1 right-1 bg-destructive/90 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remover foto"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ))}
+                            <div className="flex items-center justify-center border-2 border-dashed rounded-md w-24 h-24 hover:bg-muted/50 transition-colors">
+                                <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                        disabled={uploading}
+                                    />
+                                    {uploading ? (
+                                        <div className="animate-spin h-5 w-5 border-b-2 border-primary rounded-full" />
+                                    ) : (
+                                        <>
+                                            <Plus className="h-6 w-6 text-muted-foreground" />
+                                            <span className="text-[10px] text-muted-foreground font-medium mt-1">Add</span>
+                                        </>
+                                    )}
+                                </label>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Section 3: LAUDO TÉCNICO (Moved DOWN) */}
                 <Card className="shadow-sm border-2">
                     <CardHeader className="bg-muted/20 pb-4">
@@ -1110,13 +1197,49 @@ export default function EditOrdemPage() {
             {previewImage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
                     <div className="relative max-w-4xl max-h-[90vh] p-2 animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+
                         <button
-                            className="absolute -top-4 -right-4 bg-white text-black rounded-full p-1 shadow-lg hover:bg-gray-200 transition-colors"
+                            className="absolute -top-4 -right-4 bg-white text-black rounded-full p-1 shadow-lg hover:bg-gray-200 transition-colors z-10"
                             onClick={() => setPreviewImage(null)}
                         >
                             <X className="h-6 w-6" />
                         </button>
-                        <img src={previewImage} alt="Full Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+
+                        <div className="relative flex items-center justify-center">
+                            {/* Previous Button */}
+                            {formData.equipamento_fotos && formData.equipamento_fotos.length > 1 && (
+                                <button
+                                    className="absolute left-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentPhotos = formData.equipamento_fotos || [];
+                                        const currentIndex = currentPhotos.indexOf(previewImage);
+                                        const prevIndex = (currentIndex - 1 + currentPhotos.length) % currentPhotos.length;
+                                        setPreviewImage(currentPhotos[prevIndex]);
+                                    }}
+                                >
+                                    <ChevronLeft className="h-8 w-8" />
+                                </button>
+                            )}
+
+                            <img src={previewImage} alt="Full Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+
+                            {/* Next Button */}
+                            {formData.equipamento_fotos && formData.equipamento_fotos.length > 1 && (
+                                <button
+                                    className="absolute right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentPhotos = formData.equipamento_fotos || [];
+                                        const currentIndex = currentPhotos.indexOf(previewImage);
+                                        const nextIndex = (currentIndex + 1) % currentPhotos.length;
+                                        setPreviewImage(currentPhotos[nextIndex]);
+                                    }}
+                                >
+                                    <ChevronRight className="h-8 w-8" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
