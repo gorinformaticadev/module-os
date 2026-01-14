@@ -52,11 +52,14 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
         return labels[status] || 'Desconhecido';
     };
 
-    // Helper para limpar HTML mais robusto
+    // Helper para limpar HTML e manter quebras de linha básicas
     const stripHtml = (html: string) => {
         if (!html) return '';
-        // Decodificar entidades básicas
+
         let text = html
+            .replace(/<p[^>]*>/gi, '') // Remove tags <p> mas mantém o conteúdo
+            .replace(/<\/p>/gi, '\n')  // Fecha </p> com quebra de linha
+            .replace(/<br\s*\/?>/gi, '\n') // <br> vira quebra de linha
             .replace(/&nbsp;/g, ' ')
             .replace(/&amp;/g, '&')
             .replace(/&lt;/g, '<')
@@ -64,10 +67,9 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
             .replace(/&quot;/g, '"')
             .replace(/&#39;/g, "'");
 
-        // Remover tags
+        // Remover todas as outras tags
         text = text.replace(/<[^>]*>?/gm, '');
 
-        // Limpar múltiplos espaços e quebras
         return text.trim();
     };
 
@@ -145,20 +147,23 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
             )}
 
             {/* Section: SERVIÇO/DEFEITO */}
-            <div className="text-center font-bold text-[11px] border-b border-black py-1 uppercase mb-2">
-                SERVIÇO/DEFEITO
-            </div>
-            <div className="font-bold text-[11px] text-justify mb-3">
-                <div className="mb-1">{ordem.tipo_servico || 'Tipo de serviço não informado'}</div>
+            <div className="font-bold text-[11px] text-justify mb-3 whitespace-pre-wrap">
+                <div className="mb-1 border-b border-dashed border-gray-300 pb-1">{ordem.tipo_servico || 'Tipo de serviço não informado'}</div>
                 {(ordem.formatacao_so || ordem.formatacao_backup !== undefined || ordem.formatacao_senha) && (
-                    <div className="text-[10px] mb-1 p-1 bg-gray-50 border border-gray-200">
-                        {ordem.formatacao_so && <div>SO: {ordem.formatacao_so}</div>}
+                    <div className="text-[10px] mb-2 p-1 bg-gray-50 border border-gray-200 font-normal">
+                        {ordem.formatacao_so && <div><span className="font-bold">S.O.:</span> {ordem.formatacao_so}</div>}
                         {ordem.formatacao_backup !== undefined && (
-                            <div>Backup: {ordem.formatacao_backup ? 'Sim' : 'Não'}
-                                {ordem.formatacao_backup_descricao && <span className="font-normal italic"> ({ordem.formatacao_backup_descricao})</span>}
+                            <div className="mt-1">
+                                <span className="font-bold">Backup:</span> {ordem.formatacao_backup ? 'Sim' : 'Não'}
+                                {ordem.formatacao_backup && (
+                                    <div className="mt-1 pl-2 border-l-2 border-black/20 text-[9px] italic">
+                                        <div className="font-bold not-italic underline uppercase text-[8px]">O que deve ser salvo no Backup?</div>
+                                        <div>{ordem.formatacao_backup_descricao || 'Não informado'}</div>
+                                    </div>
+                                )}
                             </div>
                         )}
-                        {ordem.formatacao_senha && <div>Senha: {ordem.formatacao_senha}</div>}
+                        {ordem.formatacao_senha && <div className="mt-1"><span className="font-bold">Senha do Equipamento:</span> {ordem.formatacao_senha}</div>}
                     </div>
                 )}
                 <div className="font-normal">{stripHtml(ordem.descricao)}</div>
@@ -181,7 +186,7 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
                         <div key={index} className="flex flex-col mb-2 text-[9px]">
                             <div className="flex">
                                 <span className="w-4">{(index + 1).toString().padStart(3, '0')}</span>
-                                <span className="flex-1 font-bold">{item.descricao}</span>
+                                <span className="flex-1 font-bold whitespace-pre-wrap">{item.descricao}</span>
                             </div>
                             <div className="flex justify-end gap-2">
                                 <span className="w-8 text-center">{item.quantidade} Un</span>
@@ -234,18 +239,13 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
 
             {/* Observações */}
             {stripHtml(ordem.observacoes_cliente) && (
-                <div className="mt-4 border-t border-gray-200 pt-2">
-                    <div className="font-bold text-[11px] mb-1">Observações do Cliente</div>
-                    <div className="text-[10px] italic">{stripHtml(ordem.observacoes_cliente)}</div>
+                <div className="mt-4 border-t border-black pt-2">
+                    <div className="font-bold text-[11px] mb-1 uppercase">Observações do Cliente</div>
+                    <div className="text-[10px] italic whitespace-pre-wrap">{stripHtml(ordem.observacoes_cliente)}</div>
                 </div>
             )}
 
-            {stripHtml(ordem.observacoes_internas) && (
-                <div className="mt-2 border-t border-dashed border-gray-200 pt-2">
-                    <div className="font-bold text-[11px] mb-1">Observações Internas (Uso Técnico)</div>
-                    <div className="text-[10px] italic">{stripHtml(ordem.observacoes_internas)}</div>
-                </div>
-            )}
+
 
             {/* Rodapé decorativo no print do navegador */}
             <style dangerouslySetInnerHTML={{

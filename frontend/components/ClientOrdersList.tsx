@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw, Eye } from 'lucide-react';
 import api from '@/lib/api';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../types/ordem-servico.types';
+import { OrdemViewModal } from './OrdemViewModal';
 
 interface Props {
     clientId: string;
@@ -25,6 +26,10 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Modal State
+    const [selectedOrder, setSelectedOrder] = useState<OrdemServico | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const fetchOrders = async () => {
         if (!clientId) {
             setOrders([]);
@@ -41,16 +46,16 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
 
         setLoading(true);
         setError(null);
-        
+
         try {
             const response = await api.get(`/api/ordem_servico/ordens?cliente_id=${clientId}`);
-            
+
             // Tratar resposta com paginação
             const data = response.data?.data || response.data || [];
             setOrders(Array.isArray(data) ? data : []);
         } catch (err: any) {
             console.error('Erro ao buscar ordens do cliente:', err);
-            
+
             // Mensagens de erro mais amigáveis
             if (err.response?.status === 400) {
                 setError('ID de cliente inválido. Por favor, verifique os dados.');
@@ -61,7 +66,7 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
             } else {
                 setError('Erro ao carregar ordens do cliente.');
             }
-            
+
             setOrders([]);
         } finally {
             setLoading(false);
@@ -74,10 +79,9 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
 
     const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR');
 
-    const handleViewOrder = (orderId: string, orderNumber: string) => {
-        // TODO: Implementar visualização da ordem
-        console.log(`Visualizar ordem ${orderNumber} (ID: ${orderId})`);
-        // Aqui será implementada a navegação ou modal para visualizar a ordem
+    const handleViewOrder = (order: OrdemServico) => {
+        setSelectedOrder(order);
+        setIsModalOpen(true);
     };
 
     return (
@@ -95,9 +99,9 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
                 <div className="flex flex-col items-center justify-center py-4 space-y-2">
                     <AlertCircle className="h-8 w-8 text-destructive" />
                     <p className="text-xs text-destructive text-center">{error}</p>
-                    <Button 
-                        onClick={fetchOrders} 
-                        variant="outline" 
+                    <Button
+                        onClick={fetchOrders}
+                        variant="outline"
                         size="sm"
                         className="gap-1 h-7 text-xs"
                     >
@@ -112,7 +116,7 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
             ) : (
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                     {orders.map((order) => (
-                        <div 
+                        <div
                             key={order.id}
                             className="flex items-center justify-between p-2 bg-background/50 rounded border border-muted-foreground/10 hover:bg-background/80 transition-colors"
                         >
@@ -126,12 +130,12 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
                                     </span>
                                 </div>
                             </div>
-                            
+
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
-                                onClick={() => handleViewOrder(order.id, order.numero)}
+                                onClick={() => handleViewOrder(order)}
                                 title={`Visualizar ordem #${order.numero}`}
                             >
                                 <Eye className="h-3 w-3" />
@@ -140,6 +144,12 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
                     ))}
                 </div>
             )}
+
+            <OrdemViewModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                ordem={selectedOrder}
+            />
         </div>
     );
 }

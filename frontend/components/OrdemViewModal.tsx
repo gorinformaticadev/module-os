@@ -14,7 +14,6 @@ import {
     User,
     Smartphone,
     Monitor,
-    Tool,
     CreditCard,
     FileText,
     AlertCircle,
@@ -170,6 +169,10 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                                         <span>{ordem.equipamento_serie || '-'}</span>
                                     </div>
                                     <div>
+                                        <span className="text-xs text-muted-foreground block">Estado</span>
+                                        <span className="truncate block" title={ordem.equipamento_estado}>{ordem.equipamento_estado || '-'}</span>
+                                    </div>
+                                    <div>
                                         <span className="text-xs text-muted-foreground block">Responsável</span>
                                         <span>{ordem.usuario_responsavel?.name || 'Não atribuído'}</span>
                                     </div>
@@ -209,11 +212,19 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                                     </div>
                                 )}
                                 {ordem.formatacao_backup !== undefined && (
-                                    <div>
-                                        <span className="text-xs text-muted-foreground block">Backup</span>
-                                        <Badge variant={ordem.formatacao_backup ? 'default' : 'secondary'} className="h-5">
-                                            {ordem.formatacao_backup ? 'Sim' : 'Não'}
-                                        </Badge>
+                                    <div className="md:col-span-2 flex flex-col gap-1">
+                                        <span className="text-xs text-muted-foreground block font-bold uppercase text-[10px]">Backup</span>
+                                        <div className="flex items-start gap-2">
+                                            <Badge variant={ordem.formatacao_backup ? 'default' : 'secondary'} className="h-5 shrink-0">
+                                                {ordem.formatacao_backup ? 'Sim' : 'Não'}
+                                            </Badge>
+                                            {ordem.formatacao_backup && ordem.formatacao_backup_descricao && (
+                                                <div className="text-xs bg-primary/5 border border-primary/20 rounded p-1.5 flex-1 italic">
+                                                    <span className="font-bold block text-[9px] uppercase text-primary mb-0.5">O que salvar:</span>
+                                                    {ordem.formatacao_backup_descricao}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -279,18 +290,36 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                         </div>
                     )}
 
-                    {/* Observações do Cliente */}
-                    {ordem.observacoes_cliente && (
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm font-semibold uppercase text-muted-foreground">
-                                <AlertCircle className="h-4 w-4" />
-                                Observações do Cliente
+                    {/* Observações */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+                        {/* Observações do Cliente */}
+                        {ordem.observacoes_cliente && (
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-semibold uppercase text-muted-foreground">
+                                    <AlertCircle className="h-4 w-4" />
+                                    Observações do Cliente
+                                </div>
+                                <div
+                                    className="bg-yellow-50/50 border border-yellow-100 rounded-lg p-3 text-sm text-yellow-800 italic prose prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: ordem.observacoes_cliente }}
+                                />
                             </div>
-                            <div className="bg-yellow-50/50 border border-yellow-100 rounded-lg p-3 text-sm text-yellow-800 italic">
-                                {ordem.observacoes_cliente}
+                        )}
+
+                        {/* Observações Internas */}
+                        {ordem.observacoes_internas && (
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-semibold uppercase text-muted-foreground">
+                                    <Search className="h-4 w-4" />
+                                    Observações Internas (Uso Técnico)
+                                </div>
+                                <div
+                                    className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 text-sm text-blue-800 italic prose prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: ordem.observacoes_internas }}
+                                />
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
