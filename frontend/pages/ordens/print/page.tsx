@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PrintTemplateA4 } from '../../../components/PrintTemplateA4';
 import { Button } from '@/components/ui/button';
-import { Printer, ArrowLeft, Loader2 } from 'lucide-react';
+import { Printer, ArrowLeft, Loader2, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import api, { API_URL } from '@/lib/api';
 
@@ -66,9 +66,24 @@ export default function PrintPreviewPage() {
             setOrdem(ordemResponse.data);
 
             if (user?.tenant) {
-                const logoUrl = user.tenant.logoUrl
-                    ? `${API_URL}/uploads/logos/${user.tenant.logoUrl}?t=${Date.now()}`
-                    : undefined;
+                let logoUrl = undefined;
+
+                if (user.tenant.logoUrl) {
+                    const originalUrl = `${API_URL}/uploads/logos/${user.tenant.logoUrl}?t=${Date.now()}`;
+                    try {
+                        const response = await fetch(originalUrl);
+                        const blob = await response.blob();
+                        logoUrl = await new Promise<string>((resolve) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result as string);
+                            reader.readAsDataURL(blob);
+                        });
+                    } catch (error) {
+                        console.error('Erro ao converter logo para base64:', error);
+                        // Fallback para URL original se falhar a conversão
+                        logoUrl = originalUrl;
+                    }
+                }
 
                 setTenantInfo({
                     name: user.tenant.nomeFantasia || 'Empresa',
@@ -111,6 +126,45 @@ export default function PrintPreviewPage() {
         window.print();
     };
 
+    const handleDownloadPDF = async () => {
+        if (!ordem || !ordem.id) return;
+
+        try {
+            setLoading(true); // Opcional, apenas para feedback visual rápido
+            // URL do endpoint de PDF
+            const pdfUrl = `${API_URL}/api/ordem_servico/ordens/${ordem.id}/pdf`;
+
+            // Abrir em nova aba (ou baixar direto dependendo do header do backend)
+            // Para baixar com token de auth, pode ser necessário usar fetch com blob, 
+            // mas como é window.open, o browser gerencia. 
+            // Se precisar de auth header, teremos que usar axios/fetch e blob.
+            // Dado que a rota é protegida por JWT, window.open pode falhar se o cookie não estiver setado ou se o token estiver só no header.
+            // 
+            // VERIFICAÇÃO: O backend usa @UseGuards(JwtAuthGuard). O browser não envia o header Authorization automaticamente no window.open.
+            // SOLUÇÃO: Usar axios com responseType 'blob' e criar url do objeto.
+
+            const response = await api.get(pdfUrl, {
+                responseType: 'blob'
+            });
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `OS_${ordem.numero}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('Erro ao baixar PDF:', error);
+            alert('Erro ao baixar PDF. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -145,6 +199,10 @@ export default function PrintPreviewPage() {
                     Voltar
                 </Button>
                 <div className="flex gap-2">
+                    <Button onClick={handleDownloadPDF} variant="outline" className="gap-2">
+                        <Download className="h-4 w-4" />
+                        Download PDF (Via 1)
+                    </Button>
                     <Button onClick={handlePrint} className="gap-2">
                         <Printer className="h-4 w-4" />
                         Imprimir

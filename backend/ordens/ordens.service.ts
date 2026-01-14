@@ -1,12 +1,126 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
 import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../shared/dto/ordem-servico.dto';
+import * as puppeteer from 'puppeteer';
+import * as path from 'path';
+import * as fs from 'fs';
+import { generatePdfHtml } from './pdf-template.util';
 
 @Injectable()
 export class OrdensService {
     private readonly logger = new Logger(OrdensService.name);
 
     constructor(private readonly prisma: PrismaService) { }
+
+    // Implementação de PDF com Puppeteer
+    async generatePdf(tenantId: string, id: string): Promise<Buffer> {
+        try {
+            this.logger.log(`Gerando PDF para ordem ${id}. Tenant: ${tenantId}`);
+
+            // 1. Buscar dados da ordem
+            const ordem = await this.findOne(tenantId, id);
+            if (!ordem) {
+                throw new Error('Ordem de serviço não encontrada');
+            }
+
+            // 2. Buscar config do tenant (logo, detalhes)
+            // Aqui estamos simulando busca de info do tenant, ideal seria ter um TenantsService injetado ou query no banco
+            // Vou tentar buscar dados básicos do tenant via Prisma se possível, ou usar dados da ordem se ela tiver algo
+            // NOTE: A query findOne já faz joins com clientes, mas não traz dados do Tenant em si (nome, logo, etc).
+            // O ideal é buscar na tabela de Tenants ou Configurações.
+            // Vou usar uma query raw rápida para pegar info do tenant.
+
+            const tenantQuery = `SELECT * FROM tenants WHERE id = $1`;
+            const tenantResult = await this.prisma.$queryRawUnsafe(tenantQuery, tenantId) as any[];
+            const tenantData = tenantResult[0] || {};
+
+
+            // Buscar configurações para "condicoes_execucao"
+            const configQuery = `SELECT value FROM mod_ordem_servico_configs WHERE tenant_id = $1 AND key = 'condicoes_execucao'`;
+            const configResult = await this.prisma.$queryRawUnsafe(configQuery, tenantId) as any[];
+            const condicoesExecucao = configResult.length > 0 ? configResult[0].value : '';
+
+            // Preparar objeto tenantInfo
+            // OBS: O logoUrl geralmente precisa ser resolvido para um path local ou URL pública acessível pelo puppeteer
+            // Se for URL relativa (/api/...), o puppeteer pode não conseguir acessar se não tiver o host.
+            // O ideal é converter para base64 ou usar path absoluto de arquivo se local.
+            // Vou tentar usar a URL completa se possível, ou Base64 se eu tivesse acesso aos arquivos aqui.
+            // Por simplicidade, assumindo que logos são urls publicas ou tratadas no template.
+            // Para garantir, se user tiver logoUrl, vou tentar ler o arquivo do disco e converter pra base64.
+
+            let logoBase64 = undefined;
+            if (tenantData.logoUrl) {
+                try {
+                    const logoPath = path.resolve(process.cwd(), 'uploads', 'logos', tenantData.logoUrl);
+                    if (fs.existsSync(logoPath)) {
+                        const logoBuffer = fs.readFileSync(logoPath);
+                        logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString('base64')}`;
+                    }
+                } catch (e) {
+                    this.logger.warn(`Erro ao ler logo para PDF: ${e.message}`);
+                }
+            }
+
+            const tenantInfo = {
+                name: tenantData.nomeFantasia || tenantData.razaoSocial || 'Empresa',
+                document: tenantData.cnpjCpf,
+                address: tenantData.endereco || '', // Simplificação
+                phone: tenantData.telefone,
+                email: tenantData.email,
+                logo_url: logoBase64
+            };
+
+            // Injetar condicoes nas ordens para o template
+            // @ts-ignore
+            ordem.condicoesExecucao = condicoesExecucao;
+
+            // 3. Gerar HTML
+            const html = generatePdfHtml(ordem, tenantInfo);
+
+            // 4. Puppeteer
+
+            // Configuração otimizada para ambiente Windows/Server e prevenção de timeout
+            const browser = await puppeteer.launch({
+                headless: true, // ou 'new' se suportado
+                timeout: 60000, // Aumentar timeout para 60s
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage', // Reduz uso de memória compartilhada
+                    '--disable-gpu', // Evita problemas de renderização em alguns ambientes
+                    '--disable-extensions',
+                    '--no-first-run',
+                    '--no-zygote',
+                ]
+            });
+            const page = await browser.newPage();
+
+            // Otimizar carregamento da página
+            await page.setContent(html, {
+                waitUntil: ['load', 'networkidle0'], // Esperar carregamento completo
+                timeout: 60000 // Timeout também para o carregamento do conteúdo
+            });
+
+            const pdfBuffer = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: {
+                    top: '0mm', // Margens controladas pelo CSS do @page
+                    bottom: '0mm',
+                    left: '0mm',
+                    right: '0mm'
+                }
+            });
+
+            await browser.close();
+
+            this.logger.log(`✅ PDF gerado com sucesso. Tamanho: ${pdfBuffer.length} bytes`);
+            return Buffer.from(pdfBuffer);
+        } catch (error) {
+            this.logger.error(`❌ Erro ao gerar PDF: ${error.message}`);
+            throw error;
+        }
+    }
 
     // Transições de status permitidas
     private readonly TRANSICOES_PERMITIDAS = {

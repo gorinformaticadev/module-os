@@ -6,10 +6,10 @@ import * as path from 'path';
 import { Public } from '@core/common/decorators/public.decorator';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { OrdensService } from './ordens.service';
-import { 
-    CreateOrdemServicoDTO, 
-    UpdateOrdemServicoDTO, 
-    OrdemServicoFilters, 
+import {
+    CreateOrdemServicoDTO,
+    UpdateOrdemServicoDTO,
+    OrdemServicoFilters,
     UpdateStatusDTO,
     OrdemServicoListResponseDTO,
     OrdemServicoResponseDTO,
@@ -38,12 +38,12 @@ export class OrdensController {
     ): Promise<OrdemServicoListResponseDTO> {
         try {
             this.logger.log(`🎯 [Controller] INÍCIO - Buscando ordens. Tenant: ${req.user?.tenantId}`);
-            
+
             const result = await this.ordensService.findAll(req.user.tenantId, filters);
-            
+
             this.logger.log(`🎯 [Controller] Service retornou ${result.data.length} ordens`);
             this.logger.log(`🎯 [Controller] ANTES DE RETORNAR - Resultado OK`);
-            
+
             return result;
         } catch (error) {
             this.logger.error(`❌ [Controller] ERRO CAPTURADO:`, error);
@@ -129,6 +129,30 @@ export class OrdensController {
         } catch (error) {
             this.logger.error(`Erro ao buscar histórico da ordem ${id}:`, error);
             throw error;
+        }
+    }
+
+    @Get(':id/pdf')
+    async downloadPdf(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
+        @Res() res: Response
+    ) {
+        try {
+            this.logger.log(`Solicitação de PDF para ordem ${id}. Tenant: ${req.user?.tenantId}`);
+
+            const pdfBuffer = await this.ordensService.generatePdf(req.user.tenantId, id);
+
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="OS_${id}.pdf"`,
+                'Content-Length': pdfBuffer.length,
+            });
+
+            res.send(pdfBuffer);
+        } catch (error) {
+            this.logger.error(`Erro ao gerar PDF da ordem ${id}:`, error);
+            res.status(500).json({ message: 'Erro ao gerar PDF' });
         }
     }
 

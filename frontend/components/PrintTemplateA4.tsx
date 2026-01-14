@@ -110,8 +110,9 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
     };
 
     // Componente interno para renderizar uma única via
-    const SingleCopy = ({ isSecondCopy = false }: { isSecondCopy?: boolean }) => (
-        <div className="single-copy-wrapper">
+    // Aceita um id opcional para facilitar seleção na geração de PDF
+    const SingleCopy = ({ isSecondCopy = false, id }: { isSecondCopy?: boolean; id?: string }) => (
+        <div id={id} className="single-copy-wrapper">
             {/* Header */}
             <div className="header-box">
                 <div className="logo-section">
@@ -535,6 +536,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .items-table thead {
                     background: #a39e9eff;
+                    border-bottom: 1px solid #d0d0d0;
                 }
 
                 .items-table th {
@@ -670,7 +672,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 }
             `}} />
 
-            <SingleCopy />
+            <SingleCopy id="print-copy-1" />
 
             <div className="page-break" />
 
