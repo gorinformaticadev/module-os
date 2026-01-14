@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -158,6 +159,7 @@ const useToast = () => ({
 });
 
 export default function OrdensPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
   const [ordens, setOrdens] = useState<OrdemServico[]>([]);
@@ -264,18 +266,13 @@ export default function OrdensPage() {
   };
 
   const handlePrintA4 = (ordem: OrdemServico) => {
-    // Abrir página de preview em nova aba
-    const printUrl = `/modules/ordem_servico/pages/ordens/print?id=${ordem.id}`;
-    window.open(printUrl, '_blank');
+    // Abrir página de preview na aba atual
+    router.push(`/modules/ordem_servico/pages/ordens/print?id=${ordem.id}`);
     setPrintMenuOpen(null);
   };
 
   const handlePrintThermal = (ordem: OrdemServico) => {
-    // TODO: Implementar impressão térmica 50/80mm
-    toast({
-      title: "Info",
-      description: "Impressão térmica será implementada em breve"
-    });
+    router.push(`/modules/ordem_servico/pages/ordens/print?id=${ordem.id}&format=thermal`);
     setPrintMenuOpen(null);
   };
 

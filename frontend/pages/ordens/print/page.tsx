@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PrintTemplateA4 } from '../../../components/PrintTemplateA4';
+import { PrintTemplateThermal } from '../../../components/PrintTemplateThermal';
 import { Button } from '@/components/ui/button';
 import { Printer, ArrowLeft, Loader2, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,6 +42,8 @@ export default function PrintPreviewPage() {
     const router = useRouter();
     const { user } = useAuth();
     const ordemId = searchParams.get('id');
+    const format = searchParams.get('format');
+
 
     const [loading, setLoading] = useState(true);
     const [ordem, setOrdem] = useState<OrdemServico | null>(null);
@@ -199,10 +202,12 @@ export default function PrintPreviewPage() {
                     Voltar
                 </Button>
                 <div className="flex gap-2">
-                    <Button onClick={handleDownloadPDF} variant="outline" className="gap-2">
-                        <Download className="h-4 w-4" />
-                        Download PDF (Via 1)
-                    </Button>
+                    {format !== 'thermal' && (
+                        <Button onClick={handleDownloadPDF} variant="outline" className="gap-2">
+                            <Download className="h-4 w-4" />
+                            Download PDF (Via 1)
+                        </Button>
+                    )}
                     <Button onClick={handlePrint} className="gap-2">
                         <Printer className="h-4 w-4" />
                         Imprimir
@@ -211,19 +216,27 @@ export default function PrintPreviewPage() {
             </div>
 
             <div id="print-area">
-                <PrintTemplateA4
-                    ordem={ordem}
-                    tenantInfo={tenantInfo}
-                    condicoesExecucao={condicoesExecucao}
-                />
+                {format === 'thermal' ? (
+                    <PrintTemplateThermal
+                        ordem={ordem}
+                        tenantInfo={tenantInfo}
+                        condicoesExecucao={condicoesExecucao}
+                    />
+                ) : (
+                    <PrintTemplateA4
+                        ordem={ordem}
+                        tenantInfo={tenantInfo}
+                        condicoesExecucao={condicoesExecucao}
+                    />
+                )}
             </div>
 
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @media print {
                     @page {
-                        margin: 5mm 5mm 1mm 5mm;
-                        size: auto;
+                        margin: ${format === 'thermal' ? '0' : '5mm 5mm 1mm 5mm'};
+                        size: ${format === 'thermal' ? '80mm auto' : 'auto'};
                     }
 
                     body * {
