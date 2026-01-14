@@ -160,7 +160,8 @@ export default function PrintPreviewPage() {
                 />
             </div>
 
-            <style jsx global>{`
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media print {
                     @page {
                         margin: 5mm 5mm 1mm 5mm;
@@ -176,11 +177,10 @@ export default function PrintPreviewPage() {
                     }
 
                     #print-area {
-                        position: fixed;
+                        position: absolute;
                         left: 0;
                         top: 0;
                         width: 100%;
-                        height: 100%;
                         z-index: 9999;
                         background: white;
                     }
@@ -189,7 +189,7 @@ export default function PrintPreviewPage() {
                         display: none !important;
                     }
                 }
-            `}</style>
+            `}} />
         </div>
     );
 }

@@ -109,13 +109,224 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
         return document; // Retorna original se não for CPF nem CNPJ
     };
 
+    // Componente interno para renderizar uma única via
+    const SingleCopy = ({ isSecondCopy = false }: { isSecondCopy?: boolean }) => (
+        <div className="single-copy-wrapper">
+            {/* Header */}
+            <div className="header-box">
+                <div className="logo-section">
+                    {tenantInfo.logo_url ? (
+                        <img src={tenantInfo.logo_url} alt="Logo" />
+                    ) : (
+                        <div style={{ fontSize: '11px', color: '#ccc', fontWeight: 600 }}>LOGO</div>
+                    )}
+                </div>
+                <div className="company-data">
+                    <div className="company-name">{tenantInfo.name}</div>
+                    <div className="company-info">
+                        {tenantInfo.document && <div>CNPJ: {formatCpfCnpj(tenantInfo.document)}</div>}
+                        {tenantInfo.address && <div>{tenantInfo.address}</div>}
+                    </div>
+                </div>
+                <div className="contact-section">
+                    {tenantInfo.phone && <div><strong>Tel:</strong> {tenantInfo.phone}</div>}
+                    {tenantInfo.email && <div>{tenantInfo.email}</div>}
+                </div>
+            </div>
+
+            {/* Título da OS */}
+            <div className="os-title-bar">
+                <div className="os-title">ORDEM DE SERVIÇO #{ordem.numero} {isSecondCopy ? '(2ª Via)' : ''}</div>
+                <div className="os-emission">Emissão: {formatDateTime(ordem.data_abertura)}</div>
+            </div>
+
+            {/* Tabela de Informações */}
+            <table className="info-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Data Inicial</th>
+                        <th>Data Prevista</th>
+                        <th>Garantia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{STATUS_LABELS[ordem.status]}</td>
+                        <td>{formatDate(ordem.data_abertura)}</td>
+                        <td>{ordem.data_previsao ? formatDate(ordem.data_previsao) : '-'}</td>
+                        <td>{ordem.garantia_dias ? `${ordem.garantia_dias} dia(s)` : '-'}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {/* Dados do Cliente */}
+            {ordem.cliente && (
+                <>
+                    <div className="section-header">Dados do Cliente</div>
+                    <div className="section-content">
+                        <strong>Nome:</strong> {ordem.cliente.name}
+                        {' | '}
+                        <strong>Telefone:</strong> {ordem.cliente.phone_primary}
+                        {ordem.cliente.email && (
+                            <>
+                                {' | '}
+                                <strong>Email:</strong> {ordem.cliente.email}
+                            </>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {/* Descrição Produto/Serviço */}
+            <div className="section-header">Descrição Produto/Serviço</div>
+            <div className="section-content">
+                {ordem.equipamento_tipo && (
+                    <>
+                        <strong>{ordem.equipamento_tipo}</strong>
+                        {ordem.equipamento_marca && <span> | <strong>Marca:</strong> {ordem.equipamento_marca}</span>}
+                        {ordem.equipamento_modelo && <span> | <strong>Modelo:</strong> {ordem.equipamento_modelo}</span>}
+                        {ordem.equipamento_serie && <span> | <strong>Série:</strong> {ordem.equipamento_serie}</span>}
+                    </>
+                )}
+            </div>
+
+            {/* Defeito/Solicitação */}
+            <div className="section-header">Defeito/Solicitação</div>
+            <div className="section-content">
+                {/* Linha com campos de formatação */}
+                {(ordem.tipo_servico || ordem.formatacao_so || ordem.formatacao_backup !== undefined || ordem.formatacao_senha) && (
+                    <div style={{ marginBottom: '12px', fontWeight: 600 }}>
+                        {ordem.tipo_servico}
+                        {ordem.formatacao_so && <span> - {ordem.formatacao_so}</span>}
+                        {ordem.formatacao_backup !== undefined && (
+                            <span> - Backup: {ordem.formatacao_backup ? 'Sim' : 'Não'}</span>
+                        )}
+                        {ordem.formatacao_backup && ordem.formatacao_backup_descricao && (
+                            <span> ({ordem.formatacao_backup_descricao})</span>
+                        )}
+                        {ordem.formatacao_senha && <span> - Senha: {ordem.formatacao_senha}</span>}
+                    </div>
+                )}
+                {/* Descrição do defeito */}
+                <div dangerouslySetInnerHTML={{ __html: ordem.descricao }} />
+            </div>
+
+            {/* Produtos/Serviços */}
+            {ordem.itens && ordem.itens.length > 0 && (
+                <>
+                    <div className="section-header">Produtos e Serviços</div>
+                    <table className="items-table">
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th style={{ width: '70px', textAlign: 'center' }}>Qtd</th>
+                                <th style={{ width: '100px', textAlign: 'right' }}>Valor Unit.</th>
+                                <th style={{ width: '100px', textAlign: 'right' }}>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {ordem.itens.map((item, index) => (
+                                <tr key={index}>
+                                    <td>{item.descricao}</td>
+                                    <td style={{ textAlign: 'center' }}>{item.quantidade}</td>
+                                    <td style={{ textAlign: 'right' }}>{formatCurrency(item.valor_unitario)}</td>
+                                    <td style={{ textAlign: 'right' }}>{formatCurrency(item.valor_total)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colSpan={3} style={{ textAlign: 'right' }}>VALOR TOTAL:</td>
+                                <td style={{ textAlign: 'right' }}>{formatCurrency(ordem.valor_servico)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </>
+            )}
+
+            {/* Condições de Execução */}
+            {!isHtmlEmpty(condicoesExecucao) && (
+                <>
+                    <div className="section-header">Condições de Execução</div>
+                    <div className="section-content conditions-text" dangerouslySetInnerHTML={{ __html: condicoesExecucao || '' }} />
+                </>
+            )}
+
+            {/* Observações */}
+            {!isHtmlEmpty(ordem.observacoes_cliente) && (
+                <>
+                    <div className="section-header">Observações</div>
+                    <div className="section-content" dangerouslySetInnerHTML={{ __html: ordem.observacoes_cliente! }} />
+                </>
+            )}
+
+            {/* Assinaturas */}
+            <div className="signatures" style={isSecondCopy ? { marginTop: '0px', marginBottom: '2px' } : {}}>
+                <div className="signature-box">
+                    <div className="signature-line">
+                        {ordem.usuario_responsavel?.name || 'Atendente'}
+                        <br />
+                        <span style={{ fontSize: '9px', color: '#999' }}>Assinatura do Atendente</span>
+                    </div>
+                </div>
+                <div className="signature-box">
+                    <div className="signature-line">
+                        {ordem.cliente?.name || 'Cliente'}
+                        <br />
+                        <span style={{ fontSize: '9px', color: '#999' }}>Assinatura do Cliente</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Declaração de Recebimento - Apenas 2ª Via */}
+            {isSecondCopy && (
+                <div className="declaration-box">
+                    <div className="declaration-header">
+                        Declaração de Recebimento de Equipamento
+                    </div>
+                    <div className="declaration-content">
+                        <p style={{ marginBottom: '10px' }}>
+                            Eu, <strong>{ordem.cliente?.name || '__________________________'}</strong>, declaro que recebi da empresa <strong>{tenantInfo.name}</strong>, o equipamento acima descrito após realização dos serviços contratados.
+                        </p>
+                        <p style={{ marginBottom: '15px' }}>
+                            <strong>Status do serviço:</strong> &nbsp;
+                            ( &nbsp; ) Consertado &nbsp;&nbsp;
+                            ( &nbsp; ) Sem conserto &nbsp;&nbsp;
+                            ( &nbsp; ) Cancelado
+                        </p>
+                        <div className="declaration-row">
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '10px' }}>
+                                    Data de retirada: ______/______/________
+                                </div>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div className="declaration-field" style={{ width: '100%' }}></div>
+                                <div className="declaration-label">Assinatura do Cliente / Responsável</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Rodapé com marca d'água */}
+            {!isSecondCopy && (
+                <div className="footer-watermark">
+                    Sistema de Ordem de Serviço | Desenvolvido por: GOR Informática | {new Date().getFullYear()} - {formatDateTime(new Date().toISOString())}
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div className="print-container">
-            <style jsx>{`
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media print {
                     @page {
                         size: A4;
-                        margin: 15mm;
+                        margin: 10mm; /* Ajustado para 10mm para coincidir com a tela */
                     }
                     
                     body {
@@ -129,6 +340,13 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     
                     .no-print {
                         display: none !important;
+                    }
+
+                    .page-break {
+                        page-break-after: always;
+                        height: 0;
+                        display: block;
+                        clear: both;
                     }
 
                     .print-container {
@@ -147,11 +365,30 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         width: 210mm;
                         min-height: 297mm;
                         margin: 10px auto;
-                        padding: 8mm;
+                        padding: 10mm; /* Ajustado para 10mm para coincidir com a impressão */
                         background: white !important;
                         color: #000 !important;
                         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                         position: relative;
+                        margin-bottom: 2rem;
+                        box-sizing: border-box; /* Garante cálculo correto da largura */
+                    }
+
+                    .page-break {
+                        height: 20px;
+                        background: #f0f0f0;
+                        border-top: 1px dashed #ccc;
+                        border-bottom: 1px dashed #ccc;
+                        margin: 20px 0;
+                        text-align: center;
+                        color: #666;
+                        font-size: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .page-break::after {
+                        content: 'Quebra de Página (2ª Via)';
                     }
                 }
 
@@ -337,8 +574,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     display: grid;
                     grid-template-columns: 1fr 1fr;
                     gap: 40px;
-                    margin-top: 60px;
-                    margin-bottom: 60px;
+                    margin-top: 10px;
+                    margin-bottom: 40px;
                     page-break-inside: avoid;
                 }
 
@@ -358,10 +595,10 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 /* Rodapé com marca d'água */
                 .footer-watermark {
                     position: absolute;
-                    bottom: 4mm;
+                    bottom: -10mm;
                     right: 8mm;
                     left: 8mm;
-                    padding-top: 10px;
+                    padding-top: 5px;
                     border-top: 1px solid #e0e0e0;
                     text-align: right;
                     font-size: 10px;
@@ -377,190 +614,67 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     color: #000 !important;
                 }
 
-                /* Condições de execução compactas - usando :global para atingir HTML injetado */
+                /* Condições de execução compactas */
                 .conditions-text {
                     font-size: 10px !important;
                     text-align: justify !important;
                 }
-                .conditions-text :global(*) {
+                .conditions-text * {
                     font-size: 10px !important;
                     line-height: 1.2 !important;
                     margin-bottom: 2px !important;
                     text-align: justify !important;
                 }
-            `}</style>
+                /* Estilos da Declaração de Recebimento */
+                .declaration-box {
+                    margin-top: 5px;
+                    border: 1px dashed #000;
+                    padding: 5px;
+                    page-break-inside: avoid;
+                }
+                .declaration-header {
+                    font-size: 10px;
+                    font-weight: bold;
+                    text-align: center;
+                    margin-bottom: 5px;
+                    text-transform: uppercase;
+                    background-color: #f0f0f0;
+                    padding: 3px;
+                    border: 1px solid #ccc;
+                }
+                .declaration-content {
+                    font-size: 10px;
+                }
+                .declaration-row {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 25px;
+                }
+                .declaration-field {
+                    border-bottom: 1px solid #000;
+                    min-width: 200px;
+                    height: 16px; /* Altura para alinhar borda com texto da esquerda */
+                }
+                .declaration-label {
+                    font-size: 8px;
+                    color: #666;
+                    margin-top: 2px;
+                }
 
-            {/* Header */}
-            <div className="header-box">
-                <div className="logo-section">
-                    {tenantInfo.logo_url ? (
-                        <img src={tenantInfo.logo_url} alt="Logo" />
-                    ) : (
-                        <div style={{ fontSize: '11px', color: '#ccc', fontWeight: 600 }}>LOGO</div>
-                    )}
-                </div>
-                <div className="company-data">
-                    <div className="company-name">{tenantInfo.name}</div>
-                    <div className="company-info">
-                        {tenantInfo.document && <div>CNPJ: {formatCpfCnpj(tenantInfo.document)}</div>}
-                        {tenantInfo.address && <div>{tenantInfo.address}</div>}
-                    </div>
-                </div>
-                <div className="contact-section">
-                    {tenantInfo.phone && <div><strong>Tel:</strong> {tenantInfo.phone}</div>}
-                    {tenantInfo.email && <div>{tenantInfo.email}</div>}
-                </div>
-            </div>
+                /* Wrapper para cada via (escopo de posicionamento) */
+                .single-copy-wrapper {
+                    position: relative;
+                    min-height: 277mm; /* Garante altura de página para posicionar rodapé no fim */
+                    display: flex;
+                    flex-direction: column;
+                }
+            `}} />
 
-            {/* Título da OS */}
-            <div className="os-title-bar">
-                <div className="os-title">ORDEM DE SERVIÇO #{ordem.numero}</div>
-                <div className="os-emission">Emissão: {formatDateTime(ordem.data_abertura)}</div>
-            </div>
+            <SingleCopy />
 
-            {/* Tabela de Informações */}
-            <table className="info-table">
-                <thead>
-                    <tr>
-                        <th>Status</th>
-                        <th>Data Inicial</th>
-                        <th>Data Prevista</th>
-                        <th>Garantia</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{STATUS_LABELS[ordem.status]}</td>
-                        <td>{formatDate(ordem.data_abertura)}</td>
-                        <td>{ordem.data_previsao ? formatDate(ordem.data_previsao) : '-'}</td>
-                        <td>{ordem.garantia_dias ? `${ordem.garantia_dias} dia(s)` : '-'}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div className="page-break" />
 
-            {/* Dados do Cliente */}
-            {ordem.cliente && (
-                <>
-                    <div className="section-header">Dados do Cliente</div>
-                    <div className="section-content">
-                        <strong>Nome:</strong> {ordem.cliente.name}
-                        {' | '}
-                        <strong>Telefone:</strong> {ordem.cliente.phone_primary}
-                        {ordem.cliente.email && (
-                            <>
-                                {' | '}
-                                <strong>Email:</strong> {ordem.cliente.email}
-                            </>
-                        )}
-                    </div>
-                </>
-            )}
-
-            {/* Descrição Produto/Serviço */}
-            <div className="section-header">Descrição Produto/Serviço</div>
-            <div className="section-content">
-                {ordem.equipamento_tipo && (
-                    <>
-                        <strong>{ordem.equipamento_tipo}</strong>
-                        {ordem.equipamento_marca && <span> | <strong>Marca:</strong> {ordem.equipamento_marca}</span>}
-                        {ordem.equipamento_modelo && <span> | <strong>Modelo:</strong> {ordem.equipamento_modelo}</span>}
-                        {ordem.equipamento_serie && <span> | <strong>Série:</strong> {ordem.equipamento_serie}</span>}
-                    </>
-                )}
-            </div>
-
-            {/* Defeito/Solicitação */}
-            <div className="section-header">Defeito/Solicitação</div>
-            <div className="section-content">
-                {/* Linha com campos de formatação */}
-                {(ordem.tipo_servico || ordem.formatacao_so || ordem.formatacao_backup !== undefined || ordem.formatacao_senha) && (
-                    <div style={{ marginBottom: '12px', fontWeight: 600 }}>
-                        {ordem.tipo_servico}
-                        {ordem.formatacao_so && <span> - {ordem.formatacao_so}</span>}
-                        {ordem.formatacao_backup !== undefined && (
-                            <span> - Backup: {ordem.formatacao_backup ? 'Sim' : 'Não'}</span>
-                        )}
-                        {ordem.formatacao_backup && ordem.formatacao_backup_descricao && (
-                            <span> ({ordem.formatacao_backup_descricao})</span>
-                        )}
-                        {ordem.formatacao_senha && <span> - Senha: {ordem.formatacao_senha}</span>}
-                    </div>
-                )}
-                {/* Descrição do defeito */}
-                <div dangerouslySetInnerHTML={{ __html: ordem.descricao }} />
-            </div>
-
-            {/* Produtos/Serviços */}
-            {ordem.itens && ordem.itens.length > 0 && (
-                <>
-                    <div className="section-header">Produtos e Serviços</div>
-                    <table className="items-table">
-                        <thead>
-                            <tr>
-                                <th>Descrição</th>
-                                <th style={{ width: '70px', textAlign: 'center' }}>Qtd</th>
-                                <th style={{ width: '100px', textAlign: 'right' }}>Valor Unit.</th>
-                                <th style={{ width: '100px', textAlign: 'right' }}>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {ordem.itens.map((item, index) => (
-                                <tr key={index}>
-                                    <td>{item.descricao}</td>
-                                    <td style={{ textAlign: 'center' }}>{item.quantidade}</td>
-                                    <td style={{ textAlign: 'right' }}>{formatCurrency(item.valor_unitario)}</td>
-                                    <td style={{ textAlign: 'right' }}>{formatCurrency(item.valor_total)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colSpan={3} style={{ textAlign: 'right' }}>VALOR TOTAL:</td>
-                                <td style={{ textAlign: 'right' }}>{formatCurrency(ordem.valor_servico)}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </>
-            )}
-
-            {/* Condições de Execução */}
-            {!isHtmlEmpty(condicoesExecucao) && (
-                <>
-                    <div className="section-header">Condições de Execução</div>
-                    <div className="section-content conditions-text" dangerouslySetInnerHTML={{ __html: condicoesExecucao || '' }} />
-                </>
-            )}
-
-            {/* Observações */}
-            {!isHtmlEmpty(ordem.observacoes_cliente) && (
-                <>
-                    <div className="section-header">Observações</div>
-                    <div className="section-content" dangerouslySetInnerHTML={{ __html: ordem.observacoes_cliente! }} />
-                </>
-            )}
-
-            {/* Assinaturas */}
-            <div className="signatures">
-                <div className="signature-box">
-                    <div className="signature-line">
-                        {ordem.usuario_responsavel?.name || 'Atendente'}
-                        <br />
-                        <span style={{ fontSize: '9px', color: '#999' }}>Assinatura do Atendente</span>
-                    </div>
-                </div>
-                <div className="signature-box">
-                    <div className="signature-line">
-                        {ordem.cliente?.name || 'Cliente'}
-                        <br />
-                        <span style={{ fontSize: '9px', color: '#999' }}>Assinatura do Cliente</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Rodapé com marca d'água */}
-            <div className="footer-watermark">
-                Sistema de Ordem de Serviço | Desenvolvido por: GOR Informática | {new Date().getFullYear()} - {formatDateTime(new Date().toISOString())}
-            </div>
+            <SingleCopy isSecondCopy={true} />
         </div>
     );
 };
