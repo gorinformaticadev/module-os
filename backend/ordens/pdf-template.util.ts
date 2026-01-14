@@ -111,6 +111,10 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
                     ${ordem.equipamento_marca ? `<span> | <strong>Marca:</strong> ${ordem.equipamento_marca}</span>` : ''}
                     ${ordem.equipamento_modelo ? `<span> | <strong>Modelo:</strong> ${ordem.equipamento_modelo}</span>` : ''}
                     ${ordem.equipamento_serie ? `<span> | <strong>Série:</strong> ${ordem.equipamento_serie}</span>` : ''}
+                    <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 4px;">
+                        ${ordem.equipamento_acessorios ? `<div style="flex-shrink: 0;"><strong>Acessórios / Outros:</strong> ${ordem.equipamento_acessorios}</div>` : ''}
+                        ${ordem.equipamento_estado ? `<div style="flex-shrink: 0;"><strong>Estado de Entrega / Obs:</strong> ${ordem.equipamento_estado}</div>` : ''}
+                    </div>
                 ` : ''}
             </div>
 

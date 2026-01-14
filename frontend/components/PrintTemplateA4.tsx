@@ -34,6 +34,8 @@ interface OrdemServico {
     equipamento_marca?: string;
     equipamento_modelo?: string;
     equipamento_serie?: string;
+    equipamento_acessorios?: string;
+    equipamento_estado?: string;
     usuario_responsavel?: { name: string };
     formatacao_so?: string;
     formatacao_backup?: boolean;
@@ -58,7 +60,7 @@ interface PrintTemplateA4Props {
 
 const STATUS_LABELS: Record<number, string> = {
     0: 'Orçamento',
-    1: 'Aberto',
+    1: 'Aberta',
     2: 'Em Análise',
     3: 'Aguardando Cliente',
     4: 'Aguardando Peças',
@@ -188,6 +190,18 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         {ordem.equipamento_marca && <span> | <strong>Marca:</strong> {ordem.equipamento_marca}</span>}
                         {ordem.equipamento_modelo && <span> | <strong>Modelo:</strong> {ordem.equipamento_modelo}</span>}
                         {ordem.equipamento_serie && <span> | <strong>Série:</strong> {ordem.equipamento_serie}</span>}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginTop: '4px' }}>
+                            {ordem.equipamento_acessorios && (
+                                <div style={{ flexShrink: 0 }}>
+                                    <strong>Acessórios / Outros:</strong> {ordem.equipamento_acessorios}
+                                </div>
+                            )}
+                            {ordem.equipamento_estado && (
+                                <div style={{ flexShrink: 0 }}>
+                                    <strong>Estado de Entrega / Obs:</strong> {ordem.equipamento_estado}
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
             </div>

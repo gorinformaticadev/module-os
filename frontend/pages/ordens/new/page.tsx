@@ -1063,11 +1063,11 @@ export default function NewOrdemRefactoredPage() {
 
                             <div className="space-y-2">
                                 <Label>Acessórios / Outros</Label>
-                                <Input
+                                <Textarea
                                     placeholder="Cabo, Carregador, Capinha, Mouse..."
-                                    className="w-full"
+                                    className="min-h-[60px]"
                                     value={formData.equipamento_acessorios}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_acessorios: e.target.value })}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, equipamento_acessorios: e.target.value })}
                                 />
                             </div>
 

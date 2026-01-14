@@ -165,22 +165,29 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                                         <span className="font-medium">{ordem.equipamento_marca} {ordem.equipamento_modelo}</span>
                                     </div>
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Série</span>
+                                        <span className="text-xs text-muted-foreground block">Número de Série</span>
                                         <span>{ordem.equipamento_serie || '-'}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-muted-foreground block">Estado</span>
-                                        <span className="truncate block" title={ordem.equipamento_estado}>{ordem.equipamento_estado || '-'}</span>
                                     </div>
                                     <div>
                                         <span className="text-xs text-muted-foreground block">Responsável</span>
                                         <span>{ordem.usuario_responsavel?.name || 'Não atribuído'}</span>
                                     </div>
                                 </div>
-                                {ordem.equipamento_acessorios && (
-                                    <div>
-                                        <span className="text-xs text-muted-foreground block">Acessórios</span>
-                                        <span className="text-xs">{ordem.equipamento_acessorios}</span>
+
+                                {(ordem.equipamento_acessorios || ordem.equipamento_estado) && (
+                                    <div className="flex flex-wrap gap-x-6 gap-y-3 pt-2 border-t border-muted/50">
+                                        {ordem.equipamento_acessorios && (
+                                            <div className="flex-shrink-0 max-w-[45%]">
+                                                <span className="text-xs text-muted-foreground block">Acessórios / Outros</span>
+                                                <span className="text-xs">{ordem.equipamento_acessorios}</span>
+                                            </div>
+                                        )}
+                                        {ordem.equipamento_estado && (
+                                            <div className="flex-shrink-0 max-w-[45%]">
+                                                <span className="text-xs text-muted-foreground block">Estado de Entrega / Obs</span>
+                                                <span className="text-xs">{ordem.equipamento_estado}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </CardContent>

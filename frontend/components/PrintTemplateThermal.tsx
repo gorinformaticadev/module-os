@@ -41,7 +41,7 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
     const getStatusLabel = (status: number) => {
         const labels: Record<number, string> = {
             0: 'Orçamento',
-            1: 'Aberto',
+            1: 'Aberta',
             2: 'Em Análise',
             3: 'Aguardando Cliente',
             4: 'Aguardando Peças',
@@ -140,9 +140,17 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
                 {ordem.equipamento_serie && <span> - S/N: {ordem.equipamento_serie}</span>}
             </div>
             {(ordem.equipamento_acessorios || ordem.equipamento_estado) && (
-                <div className="text-[9px] mb-3 border border-dashed border-gray-300 p-1">
-                    {ordem.equipamento_acessorios && <div><span className="font-bold">Acessórios:</span> {ordem.equipamento_acessorios}</div>}
-                    {ordem.equipamento_estado && <div><span className="font-bold">Estado:</span> {ordem.equipamento_estado}</div>}
+                <div className="text-[9px] mb-3 border border-dashed border-gray-300 p-1 flex flex-wrap gap-x-3 gap-y-1">
+                    {ordem.equipamento_acessorios && (
+                        <div className="flex-shrink-0">
+                            <span className="font-bold">Acessórios / Outros:</span> {ordem.equipamento_acessorios}
+                        </div>
+                    )}
+                    {ordem.equipamento_estado && (
+                        <div className="flex-shrink-0">
+                            <span className="font-bold">Estado de Entrega / Obs:</span> {ordem.equipamento_estado}
+                        </div>
+                    )}
                 </div>
             )}
 

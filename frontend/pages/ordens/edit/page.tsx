@@ -238,6 +238,8 @@ export default function EditOrdemPage() {
         formatacao_backup: false,
         formatacao_backup_descricao: '',
         formatacao_senha: '',
+        equipamento_acessorios: '',
+        equipamento_estado: '',
     });
 
     useEffect(() => {
@@ -523,7 +525,9 @@ export default function EditOrdemPage() {
                 formatacao_so: ordemData.formatacao_so || '',
                 formatacao_backup: !!ordemData.formatacao_backup,
                 formatacao_backup_descricao: ordemData.formatacao_backup_descricao || '',
-                formatacao_senha: ordemData.formatacao_senha || ''
+                formatacao_senha: ordemData.formatacao_senha || '',
+                equipamento_acessorios: ordemData.equipamento_acessorios || '',
+                equipamento_estado: ordemData.equipamento_estado || '',
             });
 
         } catch (error: any) {
@@ -608,38 +612,48 @@ export default function EditOrdemPage() {
             });
         }
     };
-
     const handleSave = async () => {
         if (!ordem) return;
 
         try {
             setLoading(true);
 
+            // Create payload matching the DTO structure exactly
             const payload = {
                 tipo_servico: formData.tipo_servico,
                 prioridade: formData.prioridade,
                 descricao: formData.descricao,
                 observacoes_internas: formData.observacoes_internas || undefined,
                 observacoes_cliente: formData.observacoes_cliente || undefined,
-                valor_servico: formData.valor_servico ? parseFloat(formData.valor_servico.replace(',', '.')) : 0,
-                forma_pagamento: formData.forma_pagamento || undefined,
-                data_previsao: formData.data_previsao ? formData.data_previsao : undefined,
+                valor_servico: formData.valor_servico ? parseFloat(formData.valor_servico.toString().replace(',', '.')) : undefined,
+                origem_solicitacao: formData.origem_solicitacao,
+                status: Number(formData.status),
                 usuario_responsavel_id: formData.usuario_responsavel_id || undefined,
-                status: formData.status,
-                motivo_cancelamento: formData.motivo_cancelamento || undefined,
+
+                // Equipment fields
                 equipamento_tipo: formData.equipamento_tipo || undefined,
                 equipamento_marca: formData.equipamento_marca || undefined,
                 equipamento_modelo: formData.equipamento_modelo || undefined,
                 equipamento_serie: formData.equipamento_serie || undefined,
+                equipamento_acessorios: formData.equipamento_acessorios || undefined,
+                equipamento_estado: formData.equipamento_estado || undefined,
+
+                // Formatting fields
+                formatacao_so: formData.formatacao_so || undefined,
+                formatacao_backup: formData.formatacao_backup || undefined,
+                formatacao_backup_descricao: formData.formatacao_backup_descricao || undefined,
+                formatacao_senha: formData.formatacao_senha || undefined,
+                garantia_dias: formData.garantia_dias || 0,
+
+                // These fields are not in the provided instruction's payload, but were in the original.
+                // Assuming they should be kept if not explicitly removed by the instruction.
+                // Re-adding them based on the original structure, but with the new formatting for existing fields.
+                forma_pagamento: formData.forma_pagamento || undefined,
+                data_previsao: formData.data_previsao ? formData.data_previsao : undefined,
+                motivo_cancelamento: formData.motivo_cancelamento || undefined,
                 equipamento_fotos: formData.equipamento_fotos,
                 laudo_tecnico: formData.laudo_tecnico || undefined,
                 itens: formData.itens,
-                garantia_dias: formData.garantia_dias || 0,
-                // Formatting fields
-                formatacao_so: formData.formatacao_so || undefined,
-                formatacao_backup: formData.formatacao_backup,
-                formatacao_backup_descricao: formData.formatacao_backup_descricao || undefined,
-                formatacao_senha: formData.formatacao_senha || undefined
             };
 
             // Remove undefined values
@@ -1184,6 +1198,33 @@ export default function EditOrdemPage() {
                                     placeholder="S/N ou IMEI..."
                                     value={formData.equipamento_serie}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_serie: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-dashed">
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                    Acessórios / Outros
+                                    <span className="text-[10px] text-muted-foreground font-normal">(Cabos, capas, carregador...)</span>
+                                </Label>
+                                <Textarea
+                                    placeholder="Descreva o que foi deixado com o equipamento..."
+                                    className="min-h-[80px] resize-none"
+                                    value={formData.equipamento_acessorios}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, equipamento_acessorios: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                    Estado de Entrega / Obs
+                                    <span className="text-[10px] text-muted-foreground font-normal">(Riscos, trincas, marcas...)</span>
+                                </Label>
+                                <Textarea
+                                    placeholder="Descreva o estado físico do equipamento..."
+                                    className="min-h-[80px] resize-none"
+                                    value={formData.equipamento_estado}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, equipamento_estado: e.target.value })}
                                 />
                             </div>
                         </div>
