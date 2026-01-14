@@ -34,6 +34,11 @@ interface OrdemServico {
     equipamento_marca?: string;
     equipamento_modelo?: string;
     equipamento_serie?: string;
+    usuario_responsavel?: { name: string };
+    formatacao_so?: string;
+    formatacao_backup?: boolean;
+    formatacao_backup_descricao?: string;
+    formatacao_senha?: string;
 }
 
 interface TenantInfo {
@@ -70,7 +75,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
     const formatDateTime = (dateString: string) => {
         const date = new Date(dateString);
-        return `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR')}`;
+        return `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`;
     };
 
     const formatCurrency = (value: number) => {
@@ -78,6 +83,30 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
             style: 'currency',
             currency: 'BRL'
         }).format(value);
+    };
+
+    // Função para verificar se HTML está vazio
+    const isHtmlEmpty = (html?: string): boolean => {
+        if (!html || !html.trim()) return true;
+        // Remove tags HTML e verifica se sobrou conteúdo
+        const textContent = html.replace(/<[^>]*>/g, '').trim();
+        return textContent.length === 0;
+    };
+
+    // Função para formatar CPF/CNPJ
+    const formatCpfCnpj = (document?: string): string => {
+        if (!document) return '';
+        const numbers = document.replace(/\D/g, '');
+
+        if (numbers.length === 11) {
+            // CPF: 000.000.000-00
+            return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        } else if (numbers.length === 14) {
+            // CNPJ: 00.000.000/0000-00
+            return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+        }
+
+        return document; // Retorna original se não for CPF nem CNPJ
     };
 
     return (
@@ -118,6 +147,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         background: white !important;
                         color: #000 !important;
                         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                        position: relative;
                     }
                 }
 
@@ -304,6 +334,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     grid-template-columns: 1fr 1fr;
                     gap: 40px;
                     margin-top: 60px;
+                    margin-bottom: 60px;
                     page-break-inside: avoid;
                 }
 
@@ -320,6 +351,19 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     color: #666 !important;
                 }
 
+                /* Rodapé com marca d'água */
+                .footer-watermark {
+                    position: absolute;
+                    bottom: 4mm;
+                    right: 8mm;
+                    left: 8mm;
+                    padding-top: 10px;
+                    border-top: 1px solid #e0e0e0;
+                    text-align: right;
+                    font-size: 10px;
+                    color: #999 !important;
+                }
+
                 /* Força cores */
                 .print-container * {
                     color: #000 !important;
@@ -327,6 +371,10 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .print-container strong {
                     color: #000 !important;
+                }
+
+                .footer-watermark * {
+                    color: #999 !important;
                 }
             `}</style>
 
@@ -342,7 +390,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 <div className="company-data">
                     <div className="company-name">{tenantInfo.name}</div>
                     <div className="company-info">
-                        {tenantInfo.document && <div>CNPJ: {tenantInfo.document}</div>}
+                        {tenantInfo.document && <div>CNPJ: {formatCpfCnpj(tenantInfo.document)}</div>}
                         {tenantInfo.address && <div>{tenantInfo.address}</div>}
                     </div>
                 </div>
@@ -405,15 +453,30 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         {ordem.equipamento_marca && <span> | <strong>Marca:</strong> {ordem.equipamento_marca}</span>}
                         {ordem.equipamento_modelo && <span> | <strong>Modelo:</strong> {ordem.equipamento_modelo}</span>}
                         {ordem.equipamento_serie && <span> | <strong>Série:</strong> {ordem.equipamento_serie}</span>}
-                        <br /><br />
                     </>
                 )}
-                <strong>Tipo de Serviço:</strong> {ordem.tipo_servico}
             </div>
 
             {/* Defeito/Solicitação */}
             <div className="section-header">Defeito/Solicitação</div>
-            <div className="section-content" dangerouslySetInnerHTML={{ __html: ordem.descricao }} />
+            <div className="section-content">
+                {/* Linha com campos de formatação */}
+                {(ordem.tipo_servico || ordem.formatacao_so || ordem.formatacao_backup !== undefined || ordem.formatacao_senha) && (
+                    <div style={{ marginBottom: '12px', fontWeight: 600 }}>
+                        {ordem.tipo_servico}
+                        {ordem.formatacao_so && <span> - {ordem.formatacao_so}</span>}
+                        {ordem.formatacao_backup !== undefined && (
+                            <span> - Backup: {ordem.formatacao_backup ? 'Sim' : 'Não'}</span>
+                        )}
+                        {ordem.formatacao_backup && ordem.formatacao_backup_descricao && (
+                            <span> ({ordem.formatacao_backup_descricao})</span>
+                        )}
+                        {ordem.formatacao_senha && <span> - Senha: {ordem.formatacao_senha}</span>}
+                    </div>
+                )}
+                {/* Descrição do defeito */}
+                <div dangerouslySetInnerHTML={{ __html: ordem.descricao }} />
+            </div>
 
             {/* Produtos/Serviços */}
             {ordem.itens && ordem.itens.length > 0 && (
@@ -449,7 +512,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
             )}
 
             {/* Condições de Execução */}
-            {condicoesExecucao && (
+            {condicoesExecucao && condicoesExecucao.trim() && (
                 <>
                     <div className="section-header">Condições de Execução</div>
                     <div className="section-content">{condicoesExecucao}</div>
@@ -457,21 +520,34 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
             )}
 
             {/* Observações */}
-            {ordem.observacoes_cliente && (
+            {!isHtmlEmpty(ordem.observacoes_cliente) && (
                 <>
                     <div className="section-header">Observações</div>
-                    <div className="section-content" dangerouslySetInnerHTML={{ __html: ordem.observacoes_cliente }} />
+                    <div className="section-content" dangerouslySetInnerHTML={{ __html: ordem.observacoes_cliente! }} />
                 </>
             )}
 
             {/* Assinaturas */}
             <div className="signatures">
                 <div className="signature-box">
-                    <div className="signature-line">Assinatura do Atendente</div>
+                    <div className="signature-line">
+                        {ordem.usuario_responsavel?.name || 'Atendente'}
+                        <br />
+                        <span style={{ fontSize: '9px', color: '#999' }}>Assinatura do Atendente</span>
+                    </div>
                 </div>
                 <div className="signature-box">
-                    <div className="signature-line">Assinatura do Cliente</div>
+                    <div className="signature-line">
+                        {ordem.cliente?.name || 'Cliente'}
+                        <br />
+                        <span style={{ fontSize: '9px', color: '#999' }}>Assinatura do Cliente</span>
+                    </div>
                 </div>
+            </div>
+
+            {/* Rodapé com marca d'água */}
+            <div className="footer-watermark">
+                Sistema de Ordem de Serviço | Desenvolvido por: GOR Informática | {new Date().getFullYear()} - {formatDateTime(new Date().toISOString())}
             </div>
         </div>
     );
