@@ -264,11 +264,9 @@ export default function OrdensPage() {
   };
 
   const handlePrintA4 = (ordem: OrdemServico) => {
-    // TODO: Implementar impressão A4
-    toast({
-      title: "Info",
-      description: "Impressão A4 será implementada em breve"
-    });
+    // Abrir página de preview em nova aba
+    const printUrl = `/modules/ordem_servico/pages/ordens/print?id=${ordem.id}`;
+    window.open(printUrl, '_blank');
     setPrintMenuOpen(null);
   };
 
