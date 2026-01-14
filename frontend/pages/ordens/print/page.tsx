@@ -90,7 +90,7 @@ export default function PrintPreviewPage() {
             }
 
             try {
-                const configResponse = await api.get('/api/ordem_servico/configuracoes');
+                const configResponse = await api.get('/api/ordem_servico/config/settings');
                 const condicoesConfig = configResponse.data.find((c: any) => c.config_key === 'condicoes_execucao');
                 if (condicoesConfig) {
                     setCondicoesExecucao(condicoesConfig.config_value);

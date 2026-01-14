@@ -279,4 +279,53 @@ export class ConfiguracoesService {
             };
         }
     }
+
+    async getConfigurations(tenantId: string) {
+        try {
+            this.logger.log(`Buscando configurações genéricas para tenant ${tenantId}`);
+
+            const results = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT key as config_key, value as config_value FROM mod_ordem_servico_configs WHERE tenant_id = $1`,
+                tenantId
+            );
+
+            return results;
+        } catch (error) {
+            this.logger.error(`❌ Erro ao buscar configurações genéricas:`, error);
+            return [];
+        }
+    }
+
+    async saveConfiguration(tenantId: string, key: string, value: any) {
+        try {
+            this.logger.log(`Salvando configuração: ${key} para tenant ${tenantId}`);
+
+            const configValue = typeof value === 'string' ? value : JSON.stringify(value);
+
+            // Tentar atualizar
+            const updateResult = await this.prisma.$executeRawUnsafe(
+                `UPDATE mod_ordem_servico_configs SET value = $1, updated_at = CURRENT_TIMESTAMP 
+                 WHERE tenant_id = $2 AND key = $3`,
+                configValue,
+                tenantId,
+                key
+            );
+
+            // Se não atualizou nenhum, inserir
+            if (updateResult === 0) {
+                await this.prisma.$executeRawUnsafe(
+                    `INSERT INTO mod_ordem_servico_configs (tenant_id, key, value, created_at, updated_at) 
+                     VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+                    tenantId,
+                    key,
+                    configValue
+                );
+            }
+
+            return { success: true };
+        } catch (error) {
+            this.logger.error(`❌ Erro ao salvar configuração:`, error);
+            throw error;
+        }
+    }
 }

@@ -512,10 +512,10 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
             )}
 
             {/* Condições de Execução */}
-            {condicoesExecucao && condicoesExecucao.trim() && (
+            {!isHtmlEmpty(condicoesExecucao) && (
                 <>
                     <div className="section-header">Condições de Execução</div>
-                    <div className="section-content">{condicoesExecucao}</div>
+                    <div className="section-content" style={{ fontSize: '10px' }} dangerouslySetInnerHTML={{ __html: condicoesExecucao || '' }} />
                 </>
             )}
 

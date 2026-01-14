@@ -111,4 +111,28 @@ export class ConfiguracoesController {
             throw error;
         }
     }
+
+    // ==================== CONFIGURAÇÕES GENÉRICAS ====================
+
+    @Get('settings')
+    async getConfigurations(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            this.logger.log(`getConfigurations endpoint chamado. Tenant: ${req.user?.tenantId}`);
+            return await this.service.getConfigurations(req.user.tenantId);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint getConfigurations:`, error);
+            throw error;
+        }
+    }
+
+    @Post('settings')
+    async saveConfiguration(@Req() req: ExpressRequest & { user: any }, @Body() body: { config_key: string, config_value: any }) {
+        try {
+            this.logger.log(`saveConfiguration endpoint chamado. Tenant: ${req.user?.tenantId}, Key: ${body.config_key}`);
+            return await this.service.saveConfiguration(req.user.tenantId, body.config_key, body.config_value);
+        } catch (error) {
+            this.logger.error(`❌ Erro no endpoint saveConfiguration:`, error);
+            throw error;
+        }
+    }
 }

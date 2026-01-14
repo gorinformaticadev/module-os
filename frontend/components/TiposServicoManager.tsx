@@ -246,7 +246,7 @@ export function TiposServicoManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.nome.trim()) {
       toast({
         title: 'Erro',
@@ -264,7 +264,7 @@ export function TiposServicoManager() {
         await api.post('/api/ordem_servico/tipos-servico', formData);
         toast({ title: 'Tipo de serviço criado com sucesso!' });
       }
-      
+
       setFormData({ nome: '' });
       setEditingId(null);
       setShowForm(false);
@@ -372,7 +372,7 @@ export function TiposServicoManager() {
             <p className="text-xs opacity-75">Clique em "Novo Tipo"</p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-1 pr-2 custom-scrollbar" style={{ maxHeight: '200px', overflowY: 'auto' }}>
             {tipos.map((tipo) => (
               <div key={tipo.id} className="flex items-center justify-between p-1.5 border rounded hover:bg-muted/50 transition-colors min-h-[32px]">
                 <div className="flex-1">
@@ -386,13 +386,13 @@ export function TiposServicoManager() {
                   </div>
                 </div>
                 <div className="flex gap-2 ml-2">
-                  <Edit2 
-                    className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors" 
+                  <Edit2
+                    className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors"
                     onClick={() => handleEdit(tipo)}
                   />
                   {!tipo.is_default && (
-                    <Trash2 
-                      className="h-4 w-4 text-muted-foreground hover:text-destructive cursor-pointer transition-colors" 
+                    <Trash2
+                      className="h-4 w-4 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
                       onClick={() => handleDelete(tipo.id, tipo.nome, tipo.is_default)}
                     />
                   )}

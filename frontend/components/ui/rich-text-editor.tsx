@@ -52,7 +52,7 @@ export function RichTextEditor({ value, onChange, disabled }: RichTextEditorProp
         },
         editorProps: {
             attributes: {
-                class: 'min-h-[150px] ...',
+                class: 'min-h-[150px] focus:outline-none p-4',
             },
         },
     })
@@ -214,7 +214,12 @@ export function RichTextEditor({ value, onChange, disabled }: RichTextEditorProp
                     <Minus className="h-4 w-4" />
                 </Toggle>
             </div>
-            <EditorContent editor={editor} className="bg-transparent" />
+            <div className="custom-scrollbar" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                <EditorContent
+                    editor={editor}
+                    className="bg-transparent"
+                />
+            </div>
         </div>
     )
 }

@@ -6,6 +6,7 @@ import { PermissionManagement } from '../../components/PermissionManagement';
 import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatrix';
 import { TiposServicoManager } from '../../components/TiposServicoManager';
 import { TiposEquipamentoManager } from '../../components/TiposEquipamentoManager';
+import { RichTextEditor } from '../../components/ui/rich-text-editor';
 
 // Cliente API customizado para o módulo raiz (sem autenticação automática)
 const api = {
@@ -387,6 +388,11 @@ export default function OrdemServicoConfiguracoesPage() {
   const [testingAi, setTestingAi] = useState(false);
   const [testResponse, setTestResponse] = useState<string | null>(null);
 
+  // Estado para Condições de Execução
+  const [condicoesExecucao, setCondicoesExecucao] = useState<string>('');
+  const [loadingCondicoes, setLoadingCondicoes] = useState(false);
+  const [savingCondicoes, setSavingCondicoes] = useState(false);
+
   const getFrequencyType = (cron: string) => {
     if (!cron) return 'daily';
     if (cron.startsWith('*/')) return 'interval';
@@ -443,6 +449,8 @@ export default function OrdemServicoConfiguracoesPage() {
       fetchUsers();
     } else if (activeTab === 'ia') {
       fetchAiConfig();
+    } else if (activeTab === 'opcoes-os') {
+      fetchCondicoesExecucao();
     }
   }, [activeTab]);
 
@@ -614,6 +622,48 @@ export default function OrdemServicoConfiguracoesPage() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const fetchCondicoesExecucao = async () => {
+    try {
+      setLoadingCondicoes(true);
+      const response = await api.get('/api/ordem_servico/config/settings');
+      const condicoesConfig = response.data.find((c: any) => c.config_key === 'condicoes_execucao');
+      if (condicoesConfig) {
+        setCondicoesExecucao(condicoesConfig.config_value || '');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar condições de execução:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar as condições de execução.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingCondicoes(false);
+    }
+  };
+
+  const saveCondicoesExecucao = async () => {
+    try {
+      setSavingCondicoes(true);
+      await api.post('/api/ordem_servico/config/settings', {
+        config_key: 'condicoes_execucao',
+        config_value: condicoesExecucao
+      });
+      toast({
+        title: 'Sucesso',
+        description: 'Condições de execução salvas com sucesso!',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Falha ao salvar condições de execução.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingCondicoes(false);
     }
   };
 
@@ -944,7 +994,7 @@ export default function OrdemServicoConfiguracoesPage() {
               <div>
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Opções OS
+                  Opções da Ordem de Serviço
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   Configurações específicas do módulo Ordem de Serviço
@@ -959,10 +1009,56 @@ export default function OrdemServicoConfiguracoesPage() {
               {/* Tipos de Equipamento */}
               <TiposEquipamentoManager />
 
-              {/* Espaço para futuras configurações */}
-              <div className="space-y-4">
-                {/* Placeholder para próximas configurações */}
-              </div>
+              {/* Condições de Execução */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle>Condições de Execução</CardTitle>
+                  <CardDescription>
+                    Defina as condições padrão que aparecerão nas ordens de serviço
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {loadingCondicoes ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Texto das Condições</Label>
+                        <div className="border rounded-md">
+                          <RichTextEditor
+                            value={condicoesExecucao}
+                            onChange={setCondicoesExecucao}
+                            disabled={savingCondicoes}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Este texto será exibido automaticamente no template de impressão A4
+                        </p>
+                      </div>
+
+                      <Button
+                        onClick={saveCondicoesExecucao}
+                        disabled={savingCondicoes}
+                        className="w-full"
+                      >
+                        {savingCondicoes ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Salvar Condições
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         )}
@@ -1144,4 +1240,33 @@ export default function OrdemServicoConfiguracoesPage() {
       </div>
     </div>
   );
+}
+
+// Estilos globais para a página de configurações
+const styles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+`;
+
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.innerHTML = styles;
+  document.head.appendChild(styleElement);
 }
