@@ -420,7 +420,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .logo-section {
                     width: 140px;
-                    height: 70px;
+                    height: 60px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -430,7 +430,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .logo-section img {
                     max-width: 130px;
-                    max-height: 65px;
+                    max-height: 55px;
                     object-fit: contain;
                 }
 
@@ -602,7 +602,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 .signature-line {
                     border-top: 1px solid #999;
                     padding-top: 6px;
-                    margin-top: 35px;
+                    margin-top: 25px;
                     font-size: 10px;
                     font-weight: 600;
                     color: #666 !important;
