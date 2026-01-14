@@ -217,7 +217,7 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
             
             body {
                 font-family: 'Roboto', Arial, sans-serif;
-                font-size: 11pt;
+                font-size: 10pt;
                 color: #000;
                 background: white;
                 margin: 0;
@@ -229,15 +229,15 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
                 width: 100%;
                 max-width: 210mm;
                 margin: 0 auto;
-                padding: 10mm;
+                padding: 8mm;
                 box-sizing: border-box;
             }
 
             /* Header com bordas sutis */
             .header-box {
-                border: 1px solid #a1a1a1;
-                padding: 10px;
-                margin-bottom: 10px;
+                border: 1px solid #aaa;
+                padding: 8px;
+                margin-bottom: 5px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -245,65 +245,67 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
             }
 
             .logo-section {
-                width: 140px;
-                height: 70px;
+                width: 120px;
+                height: 60px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 border-right: 1px solid #e0e0e0;
-                padding-right: 20px;
+                padding-right: 15px;
             }
 
             .logo-section img {
-                max-width: 130px;
-                max-height: 65px;
+                max-width: 120px;
+                max-height: 60px;
                 object-fit: contain;
             }
 
             .company-data {
                 flex: 1;
-                padding: 0 20px;
+                padding: 0 15px;
                 text-align: center;
             }
 
             .company-name {
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: bold;
-                margin-bottom: 6px;
+                color: #000;
+                margin-bottom: 4px;
             }
 
             .company-info {
-                font-size: 10px;
-                color: #682525;
-                line-height: 1.5;
+                font-size: 9px;
+                color: #555;
+                line-height: 1.4;
             }
 
             .contact-section {
                 text-align: right;
-                font-size: 10px;
-                color: #682525;
-                min-width: 140px;
+                font-size: 9px;
+                color: #555;
+                min-width: 120px;
             }
 
             /* Título da OS */
             .os-title-bar {
-                background: #d8d7d7;
-                border: 1px solid #a5a5a5;
+                background: #f0f0f0;
+                border: 1px solid #ccc;
                 border-radius: 4px;
-                padding: 10px 15px;
-                margin-bottom: 15px;
+                padding: 6px 12px;
+                margin-bottom: 6px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
             }
 
             .os-title {
-                font-size: 14px;
+                font-size: 12px;
                 font-weight: bold;
+                color: #000;
             }
 
             .os-emission {
-                font-size: 10px;
+                font-size: 9px;
                 color: #666;
             }
 
@@ -311,17 +313,17 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
             .info-table {
                 width: 100%;
                 border-collapse: collapse;
-                margin-bottom: 15px;
-                border: 1px solid #a5a5a5;
+                margin-bottom: 8px;
+                border: 1px solid #ccc;
                 border-radius: 4px;
                 overflow: hidden;
             }
 
             .info-table th {
                 background: #f8f8f8;
-                border: 1px solid #dfdede;
-                padding: 8px 12px;
-                font-size: 10px;
+                border: 1px solid #eee;
+                padding: 6px 10px;
+                font-size: 9px;
                 font-weight: 600;
                 color: #333;
                 text-align: center;
@@ -330,34 +332,36 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
             }
 
             .info-table td {
-                border: 1px solid #dfdede;
-                padding: 8px 12px;
-                font-size: 10px;
+                border: 1px solid #eee;
+                padding: 6px 10px;
+                font-size: 9px;
+                color: #000;
                 text-align: center;
             }
 
             /* Seções */
             .section-header {
-                background: #d8d7d7;
-                border: 1px solid #a5a5a5;
+                background: #f0f0f0;
+                border: 1px solid #ccc;
                 border-bottom: none;
                 border-radius: 4px 4px 0 0;
-                padding: 3px 12px;
-                font-size: 10px;
+                padding: 2px 10px;
+                font-size: 9px;
                 font-weight: 600;
                 color: #333;
-                margin-top: 10px;
+                margin-top: 5px;
                 text-transform: uppercase;
                 letter-spacing: 0.3px;
             }
 
             .section-content {
-                border: 1px solid #e0e0e0;
+                border: 1px solid #eee;
                 border-radius: 0 0 4px 4px;
-                padding: 12px;
-                font-size: 11px;
-                line-height: 1.6;
-                min-height: 30px;
+                padding: 8px 10px;
+                font-size: 9px;
+                color: #000;
+                line-height: 1.4;
+                min-height: 20px;
             }
 
             /* Tabela de itens */
@@ -406,8 +410,8 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 40px;
-                margin-top: 40px;
-                margin-bottom: 20px;
+                margin-top: 15px;
+                margin-bottom: 10px;
                 page-break-inside: avoid;
             }
 
@@ -418,7 +422,7 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
             .signature-line {
                 border-top: 1px solid #999;
                 padding-top: 6px;
-                margin-top: 40px;
+                margin-top: 30px;
                 font-size: 10px;
                 font-weight: 600;
                 color: #666;
@@ -426,7 +430,7 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
 
             /* Rodapé com marca d'água */
             .footer-watermark {
-                margin-top: 30px;
+                margin-top: 10px;
                 border-top: 1px solid #e0e0e0;
                 padding-top: 5px;
                 text-align: right;

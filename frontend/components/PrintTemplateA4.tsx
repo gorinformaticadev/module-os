@@ -301,10 +301,10 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         Declaração de Recebimento de Equipamento
                     </div>
                     <div className="declaration-content">
-                        <p style={{ marginBottom: '10px' }}>
+                        <p style={{ marginBottom: '5px' }}>
                             Eu, <strong>{ordem.cliente?.name || '__________________________'}</strong>, declaro que recebi da empresa <strong>{tenantInfo.name}</strong>, o equipamento acima descrito após realização dos serviços contratados.
                         </p>
-                        <p style={{ marginBottom: '15px' }}>
+                        <p style={{ marginBottom: '8px' }}>
                             <strong>Status do serviço:</strong> &nbsp;
                             ( &nbsp; ) Consertado &nbsp;&nbsp;
                             ( &nbsp; ) Sem conserto &nbsp;&nbsp;
@@ -346,7 +346,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     
                     body {
                         font-family: Arial, sans-serif;
-                        font-size: 11pt;
+                        font-size: 10pt;
                         color: #000 !important;
                         background: white !important;
                         -webkit-print-color-adjust: exact !important;
@@ -465,21 +465,21 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     background: #d8d7d7ff;
                     border: 1px solid #a5a5a5ff;
                     border-radius: 4px;
-                    padding: 10px 15px;
-                    margin-bottom: 15px;
+                    padding: 8px 12px;
+                    margin-bottom: 8px;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                 }
 
                 .os-title {
-                    font-size: 14px;
+                    font-size: 13px;
                     font-weight: bold;
                     color: #000 !important;
                 }
 
                 .os-emission {
-                    font-size: 10px;
+                    font-size: 9px;
                     color: #666 !important;
                 }
 
@@ -487,7 +487,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 .info-table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin-bottom: 15px;
+                    margin-bottom: 10px;
                     border: 1px solid #a5a5a5ff;
                     border-radius: 4px;
                     overflow: hidden;
@@ -496,8 +496,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 .info-table th {
                     background: #f8f8f8;
                     border: 1px solid #dfdedeff;
-                    padding: 8px 12px;
-                    font-size: 10px;
+                    padding: 4px 10px;
+                    font-size: 9px;
                     font-weight: 600;
                     color: #333 !important;
                     text-align: center;
@@ -507,8 +507,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .info-table td {
                     border: 1px solid #dfdedeff;
-                    padding: 1px 12px;
-                    font-size: 10px;
+                    padding: 4px 10px;
+                    font-size: 9px;
                     color: #000 !important;
                     text-align: center;
                 }
@@ -519,8 +519,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     border: 1px solid #a5a5a5ff;
                     border-bottom: none;
                     border-radius: 4px 4px 0 0;
-                    padding: 3px 12px;
-                    font-size: 10px;
+                    padding: 2px 12px;
+                    font-size: 9px;
                     font-weight: 600;
                     color: #333 !important;
                     margin-top: 1px;
@@ -531,11 +531,11 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 .section-content {
                     border: 1px solid #e0e0e0;
                     border-radius: 0 0 4px 4px;
-                    padding: 12px;
-                    font-size: 11px;
+                    padding: 8px 12px;
+                    font-size: 10px;
                     color: #000 !important;
-                    line-height: 1.6;
-                    min-height: 40px;
+                    line-height: 1.4;
+                    min-height: 20px;
                 }
 
                 /* Tabela de itens */
@@ -555,8 +555,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .items-table th {
                     border: 1px solid #e0e0e0;
-                    padding: 8px 10px;
-                    font-size: 10px;
+                    padding: 4px 8px;
+                    font-size: 9px;
                     font-weight: 600;
                     color: #333 !important;
                     text-align: left;
@@ -566,8 +566,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .items-table td {
                     border: 1px solid #e0e0e0;
-                    padding: 8px 10px;
-                    font-size: 10px;
+                    padding: 4px 8px;
+                    font-size: 9px;
                     color: #000 !important;
                 }
 
@@ -581,7 +581,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .items-table tfoot td {
                     font-weight: 600;
-                    font-size: 11px;
+                    font-size: 10px;
                     border-top: 2px solid #d0d0d0;
                 }
 
@@ -591,7 +591,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     grid-template-columns: 1fr 1fr;
                     gap: 40px;
                     margin-top: 10px;
-                    margin-bottom: 40px;
+                    margin-bottom: 15px;
                     page-break-inside: avoid;
                 }
 
@@ -602,7 +602,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 .signature-line {
                     border-top: 1px solid #999;
                     padding-top: 6px;
-                    margin-top: 50px;
+                    margin-top: 35px;
                     font-size: 10px;
                     font-weight: 600;
                     color: #666 !important;
@@ -610,10 +610,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 /* Rodapé com marca d'água */
                 .footer-watermark {
-                    position: absolute;
-                    bottom: -10mm;
-                    right: 8mm;
-                    left: 8mm;
+                    margin-top: auto;
                     padding-top: 5px;
                     border-top: 1px solid #e0e0e0;
                     text-align: right;
@@ -664,7 +661,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 .declaration-row {
                     display: flex;
                     justify-content: space-between;
-                    margin-bottom: 25px;
+                    margin-bottom: 10px;
                 }
                 .declaration-field {
                     border-bottom: 1px solid #000;
@@ -680,7 +677,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 /* Wrapper para cada via (escopo de posicionamento) */
                 .single-copy-wrapper {
                     position: relative;
-                    min-height: 277mm; /* Garante altura de página para posicionar rodapé no fim */
+                    min-height: 255mm; /* Reduzido ainda mais para garantir caber em uma página */
                     display: flex;
                     flex-direction: column;
                 }
