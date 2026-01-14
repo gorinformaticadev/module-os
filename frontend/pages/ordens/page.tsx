@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../../types/ordem-servico.types';
+import { OrdemViewModal } from '../../components/OrdemViewModal';
 
 // Cliente API customizado para o módulo raiz
 const api = {
@@ -168,6 +169,8 @@ export default function OrdensPage() {
   const [statusFilter, setStatusFilter] = useState<StatusOS | 'all'>('all');
   const [origemFilter, setOrigemFilter] = useState<OrigemSolicitacao | 'all'>('all');
   const [reopenOrder, setReopenOrder] = useState<OrdemServico | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewOrder, setViewOrder] = useState<OrdemServico | null>(null);
   const [printMenuOpen, setPrintMenuOpen] = useState<string | null>(null);
 
   // Carregar ordens de serviço
@@ -238,7 +241,8 @@ export default function OrdensPage() {
 
   // Ações das ordens
   const handleView = (ordem: OrdemServico) => {
-    window.location.href = `/modules/ordem_servico/ordens/${ordem.id}`;
+    setViewOrder(ordem);
+    setIsViewModalOpen(true);
   };
 
   const handleEdit = (ordem: OrdemServico) => {
@@ -590,6 +594,12 @@ export default function OrdensPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <OrdemViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        ordem={viewOrder}
+      />
     </div>
   );
 }

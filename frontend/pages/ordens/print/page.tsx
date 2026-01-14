@@ -26,6 +26,14 @@ interface OrdemServico {
     equipamento_marca?: string;
     equipamento_modelo?: string;
     equipamento_serie?: string;
+    equipamento_acessorios?: string;
+    equipamento_estado?: string;
+    observacoes_internas?: string;
+    formatacao_so?: string;
+    formatacao_backup?: boolean;
+    formatacao_backup_descricao?: string;
+    formatacao_senha?: string;
+    chavePix?: string;
 }
 
 interface TenantInfo {

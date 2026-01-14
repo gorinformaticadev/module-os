@@ -52,10 +52,23 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
         return labels[status] || 'Desconhecido';
     };
 
-    // Helper para limpar HTML
+    // Helper para limpar HTML mais robusto
     const stripHtml = (html: string) => {
         if (!html) return '';
-        return html.replace(/<[^>]*>?/gm, '');
+        // Decodificar entidades básicas
+        let text = html
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'");
+
+        // Remover tags
+        text = text.replace(/<[^>]*>?/gm, '');
+
+        // Limpar múltiplos espaços e quebras
+        return text.trim();
     };
 
     return (
@@ -118,25 +131,37 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
             <div className="text-center font-bold text-[11px] border-b border-black py-1 uppercase mb-2">
                 EQUIPAMENTO
             </div>
-            <div className="text-center font-bold text-[12px] mb-3 italic">
-                {ordem.equipamento_tipo} - Marca: {ordem.equipamento_marca} - Modelo: {ordem.equipamento_modelo}
+            <div className="text-center font-bold text-[11px] mb-3 italic">
+                {ordem.equipamento_tipo || 'Equipamento não informado'}
+                {ordem.equipamento_marca && <span> - Marca: {ordem.equipamento_marca}</span>}
+                {ordem.equipamento_modelo && <span> - Mod: {ordem.equipamento_modelo}</span>}
+                {ordem.equipamento_serie && <span> - S/N: {ordem.equipamento_serie}</span>}
             </div>
+            {(ordem.equipamento_acessorios || ordem.equipamento_estado) && (
+                <div className="text-[9px] mb-3 border border-dashed border-gray-300 p-1">
+                    {ordem.equipamento_acessorios && <div><span className="font-bold">Acessórios:</span> {ordem.equipamento_acessorios}</div>}
+                    {ordem.equipamento_estado && <div><span className="font-bold">Estado:</span> {ordem.equipamento_estado}</div>}
+                </div>
+            )}
 
             {/* Section: SERVIÇO/DEFEITO */}
             <div className="text-center font-bold text-[11px] border-b border-black py-1 uppercase mb-2">
                 SERVIÇO/DEFEITO
             </div>
             <div className="font-bold text-[11px] text-justify mb-3">
-                {ordem.tipo_servico}
-                {ordem.formatacao_so && <span> - {ordem.formatacao_so}</span>}
-                {ordem.formatacao_backup !== undefined && (
-                    <span> - Backup: {ordem.formatacao_backup ? 'Sim' : 'Não'}</span>
+                <div className="mb-1">{ordem.tipo_servico || 'Tipo de serviço não informado'}</div>
+                {(ordem.formatacao_so || ordem.formatacao_backup !== undefined || ordem.formatacao_senha) && (
+                    <div className="text-[10px] mb-1 p-1 bg-gray-50 border border-gray-200">
+                        {ordem.formatacao_so && <div>SO: {ordem.formatacao_so}</div>}
+                        {ordem.formatacao_backup !== undefined && (
+                            <div>Backup: {ordem.formatacao_backup ? 'Sim' : 'Não'}
+                                {ordem.formatacao_backup_descricao && <span className="font-normal italic"> ({ordem.formatacao_backup_descricao})</span>}
+                            </div>
+                        )}
+                        {ordem.formatacao_senha && <div>Senha: {ordem.formatacao_senha}</div>}
+                    </div>
                 )}
-                {ordem.formatacao_backup && ordem.formatacao_backup_descricao && (
-                    <span> ({ordem.formatacao_backup_descricao})</span>
-                )}
-                {ordem.formatacao_senha && <span> - Senha: {ordem.formatacao_senha}</span>}
-                <span> {stripHtml(ordem.descricao)}</span>
+                <div className="font-normal">{stripHtml(ordem.descricao)}</div>
             </div>
 
             {/* Section: ITENS/SERVIÇOS */}
@@ -209,9 +234,16 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
 
             {/* Observações */}
             {stripHtml(ordem.observacoes_cliente) && (
-                <div className="mt-4">
-                    <div className="font-bold text-[11px] mb-1">Observações</div>
+                <div className="mt-4 border-t border-gray-200 pt-2">
+                    <div className="font-bold text-[11px] mb-1">Observações do Cliente</div>
                     <div className="text-[10px] italic">{stripHtml(ordem.observacoes_cliente)}</div>
+                </div>
+            )}
+
+            {stripHtml(ordem.observacoes_internas) && (
+                <div className="mt-2 border-t border-dashed border-gray-200 pt-2">
+                    <div className="font-bold text-[11px] mb-1">Observações Internas (Uso Técnico)</div>
+                    <div className="text-[10px] italic">{stripHtml(ordem.observacoes_internas)}</div>
                 </div>
             )}
 

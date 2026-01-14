@@ -44,6 +44,7 @@ export interface OrdemServico {
   cliente?: Cliente;
   usuario_responsavel?: Usuario;
   historico?: HistoricoOS[];
+  itens?: any[];
 }
 
 export interface Cliente {

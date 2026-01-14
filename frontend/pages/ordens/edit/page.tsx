@@ -29,7 +29,8 @@ import {
     ChevronRight,
     Sparkles,
     Loader2,
-    Brain
+    Brain,
+    Wrench
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -190,6 +191,7 @@ export default function EditOrdemPage() {
     const [ordem, setOrdem] = useState<OrdemServico | null>(null);
     const [technicians, setTechnicians] = useState<Technician[]>([]);
     const [tiposServico, setTiposServico] = useState<{ id: string; nome: string; is_default: boolean }[]>([]);
+    const [tiposEquipamento, setTiposEquipamento] = useState<{ id: string; nome: string }[]>([]);
 
     // Estados para Produtos
     const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -230,7 +232,12 @@ export default function EditOrdemPage() {
         motivo_cancelamento: '',
         itens: [] as ItemOrdem[],
         equipamento_fotos: [] as string[],
-        garantia_dias: 0
+        garantia_dias: 0,
+        // Formatação
+        formatacao_so: '',
+        formatacao_backup: false,
+        formatacao_backup_descricao: '',
+        formatacao_senha: '',
     });
 
     useEffect(() => {
@@ -247,6 +254,7 @@ export default function EditOrdemPage() {
         loadOrdem();
         fetchTechnicians();
         fetchTiposServico();
+        fetchTiposEquipamento();
         fetchProdutos();
     }, [ordemId]);
 
@@ -511,7 +519,11 @@ export default function EditOrdemPage() {
                 motivo_cancelamento: ordemData.motivo_cancelamento || '',
                 itens: ordemData.itens || [],
                 equipamento_fotos: ordemData.equipamento_fotos || [],
-                garantia_dias: ordemData.garantia_dias || 0
+                garantia_dias: ordemData.garantia_dias || 0,
+                formatacao_so: ordemData.formatacao_so || '',
+                formatacao_backup: !!ordemData.formatacao_backup,
+                formatacao_backup_descricao: ordemData.formatacao_backup_descricao || '',
+                formatacao_senha: ordemData.formatacao_senha || ''
             });
 
         } catch (error: any) {
@@ -554,6 +566,15 @@ export default function EditOrdemPage() {
             setTiposServico(response.data);
         } catch (error) {
             console.error('Erro ao buscar tipos de serviço:', error);
+        }
+    };
+
+    const fetchTiposEquipamento = async () => {
+        try {
+            const response = await api.get('/api/ordem_servico/ordens/tipos-equipamento');
+            setTiposEquipamento(response.data);
+        } catch (error) {
+            console.error('Erro ao buscar tipos de equipamento:', error);
         }
     };
 
@@ -613,7 +634,12 @@ export default function EditOrdemPage() {
                 equipamento_fotos: formData.equipamento_fotos,
                 laudo_tecnico: formData.laudo_tecnico || undefined,
                 itens: formData.itens,
-                garantia_dias: formData.garantia_dias || 0
+                garantia_dias: formData.garantia_dias || 0,
+                // Formatting fields
+                formatacao_so: formData.formatacao_so || undefined,
+                formatacao_backup: formData.formatacao_backup,
+                formatacao_backup_descricao: formData.formatacao_backup_descricao || undefined,
+                formatacao_senha: formData.formatacao_senha || undefined
             };
 
             // Remove undefined values
@@ -845,7 +871,7 @@ export default function EditOrdemPage() {
                             <Label>Status *</Label>
                             <Select
                                 value={formData.status.toString()}
-                                onValueChange={(v) => setFormData({ ...formData, status: parseInt(v) })}
+                                onValueChange={(v: string) => setFormData({ ...formData, status: parseInt(v) })}
                             >
                                 <SelectTrigger>
                                     <SelectValue />
@@ -886,7 +912,7 @@ export default function EditOrdemPage() {
                             <Label>Técnico Responsável</Label>
                             <Select
                                 value={formData.usuario_responsavel_id || 'NONE'}
-                                onValueChange={(v) => setFormData({ ...formData, usuario_responsavel_id: v === 'NONE' ? '' : v })}
+                                onValueChange={(v: string) => setFormData({ ...formData, usuario_responsavel_id: v === 'NONE' ? '' : v })}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione um técnico" />
@@ -917,7 +943,7 @@ export default function EditOrdemPage() {
                             <Input
                                 type="date"
                                 value={formData.data_previsao}
-                                onChange={(e) => setFormData({ ...formData, data_previsao: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, data_previsao: e.target.value })}
                             />
                         </div>
 
@@ -928,10 +954,94 @@ export default function EditOrdemPage() {
                                 placeholder="0"
                                 min="0"
                                 value={formData.garantia_dias || ''}
-                                onChange={(e) => setFormData({ ...formData, garantia_dias: parseInt(e.target.value) || 0 })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, garantia_dias: parseInt(e.target.value) || 0 })}
                             />
                             <p className="text-[10px] text-muted-foreground italic">Período de garantia em dias para o serviço realizado.</p>
                         </div>
+
+                        {/* Campos Condicionais: FORMATAÇÃO */}
+                        {formData.tipo_servico === 'Formatação' && (
+                            <div className="col-span-full mt-4 p-4 border-2 border-primary/20 bg-primary/5 rounded-lg space-y-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Wrench className="h-4 w-4 text-primary" />
+                                    <h4 className="text-sm font-semibold uppercase tracking-wider">Detalhes da Formatação</h4>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Sistema Operacional</Label>
+                                        <Select value={formData.formatacao_so} onValueChange={(v: string) => setFormData({ ...formData, formatacao_so: v })}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione o SO" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Windows 10">Windows 10</SelectItem>
+                                                <SelectItem value="Windows 11">Windows 11</SelectItem>
+                                                <SelectItem value="Linux">Linux</SelectItem>
+                                                <SelectItem value="MacOS">MacOS</SelectItem>
+                                                <SelectItem value="Outro">Outro</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Precisa de Backup?</Label>
+                                        <Select
+                                            value={formData.formatacao_backup ? "sim" : "nao"}
+                                            onValueChange={(v: string) => setFormData({ ...formData, formatacao_backup: v === "sim" })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="nao">Não</SelectItem>
+                                                <SelectItem value="sim">Sim</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Possui Senha?</Label>
+                                        <Select
+                                            value={formData.formatacao_senha ? "sim" : "nao"}
+                                            onValueChange={(v: string) => {
+                                                if (v === "nao") setFormData({ ...formData, formatacao_senha: '' });
+                                                else if (!formData.formatacao_senha) setFormData({ ...formData, formatacao_senha: ' ' }); // Trigger display
+                                            }}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="nao">Não</SelectItem>
+                                                <SelectItem value="sim">Sim</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {formData.formatacao_senha !== '' && (
+                                        <div className="space-y-2">
+                                            <Label>Digite a Senha</Label>
+                                            <Input
+                                                placeholder="Senha do sistema/BIOS"
+                                                value={formData.formatacao_senha}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, formatacao_senha: e.target.value })}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {formData.formatacao_backup && (
+                                    <div className="space-y-2 mt-4">
+                                        <Label>O que deve ser salvo no Backup? (Pastas, Arquivos, Apps...)</Label>
+                                        <Textarea
+                                            placeholder="Ex: Pasta Documentos, Fotos, Desktop..."
+                                            value={formData.formatacao_backup_descricao}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, formatacao_backup_descricao: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <div className="col-span-full space-y-2">
                             <div className="flex justify-between items-center">
@@ -1014,7 +1124,7 @@ export default function EditOrdemPage() {
                                 <Textarea
                                     placeholder="Descreva o motivo do cancelamento..."
                                     value={formData.motivo_cancelamento}
-                                    onChange={(e) => setFormData({ ...formData, motivo_cancelamento: e.target.value })}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, motivo_cancelamento: e.target.value })}
                                 />
                             </div>
                         )}
@@ -1036,18 +1146,28 @@ export default function EditOrdemPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="space-y-2">
                                 <Label>Tipo de Equipamento</Label>
-                                <Input
-                                    placeholder="Notebook, Smartphone..."
+                                <Select
                                     value={formData.equipamento_tipo}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_tipo: e.target.value })}
-                                />
+                                    onValueChange={(v: string) => setFormData({ ...formData, equipamento_tipo: v })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {tiposEquipamento.map((tipo) => (
+                                            <SelectItem key={tipo.id} value={tipo.nome}>
+                                                {tipo.nome}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label>Marca</Label>
                                 <Input
                                     placeholder="Dell, HP, Samsung..."
                                     value={formData.equipamento_marca}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_marca: e.target.value })}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_marca: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -1055,7 +1175,7 @@ export default function EditOrdemPage() {
                                 <Input
                                     placeholder="Vostro 3500, Galaxy S21..."
                                     value={formData.equipamento_modelo}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_modelo: e.target.value })}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_modelo: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -1063,7 +1183,7 @@ export default function EditOrdemPage() {
                                 <Input
                                     placeholder="S/N ou IMEI..."
                                     value={formData.equipamento_serie}
-                                    onChange={(e) => setFormData({ ...formData, equipamento_serie: e.target.value })}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, equipamento_serie: e.target.value })}
                                 />
                             </div>
                         </div>
@@ -1180,10 +1300,10 @@ export default function EditOrdemPage() {
                                         <div className="relative">
                                             <Input
                                                 value={itemTemp.descricao}
-                                                onChange={e => {
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                     handleDescriptionChange(e.target.value);
                                                 }}
-                                                onKeyDown={e => {
+                                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                                     if (e.key === 'ArrowDown') {
                                                         e.preventDefault();
                                                         setSelectedIndex(prev => (prev + 1) % filteredProducts.length);
@@ -1218,7 +1338,7 @@ export default function EditOrdemPage() {
                                             )}
                                         </div>
                                     </PopoverAnchor>
-                                    <PopoverContent className="p-0 w-[400px]" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                    <PopoverContent className="p-0 w-[400px]" align="start" onOpenAutoFocus={(e: Event) => e.preventDefault()}>
                                         <div className="max-h-[200px] overflow-y-auto p-1 bg-popover border rounded-md shadow-md">
                                             {filteredProducts.length > 0 ? (
                                                 filteredProducts.map((p, index) => (
@@ -1255,8 +1375,8 @@ export default function EditOrdemPage() {
                                         step="0.01"
                                         className="pl-9"
                                         value={itemTemp.valor_unitario}
-                                        onChange={e => setItemTemp({ ...itemTemp, valor_unitario: Number(e.target.value) })}
-                                        onKeyDown={e => {
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemTemp({ ...itemTemp, valor_unitario: Number(e.target.value) })}
+                                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
                                                 quantityInputRef.current?.focus();
@@ -1273,8 +1393,8 @@ export default function EditOrdemPage() {
                                     type="number"
                                     min="1"
                                     value={itemTemp.quantidade}
-                                    onChange={e => setItemTemp({ ...itemTemp, quantidade: Number(e.target.value) })}
-                                    onKeyDown={e => {
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemTemp({ ...itemTemp, quantidade: Number(e.target.value) })}
+                                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
                                             handleAddItem();
@@ -1329,7 +1449,7 @@ export default function EditOrdemPage() {
                                                         min="1"
                                                         className="h-8 w-20 text-center mx-auto"
                                                         value={item.quantidade}
-                                                        onChange={(e) => handleUpdateItemQuantity(index, parseInt(e.target.value) || 0)}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdateItemQuantity(index, parseInt(e.target.value) || 0)}
                                                     />
                                                 </td>
                                                 <td className="p-3 text-right">R$ {Number(item.valor_unitario).toFixed(2)}</td>
@@ -1388,7 +1508,7 @@ export default function EditOrdemPage() {
                                         placeholder="0,00"
                                         className="pl-9"
                                         value={formData.valor_servico}
-                                        onChange={(e) => setFormData({ ...formData, valor_servico: e.target.value })}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, valor_servico: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -1396,7 +1516,7 @@ export default function EditOrdemPage() {
                                 <Label>Forma de Pagamento</Label>
                                 <Select
                                     value={formData.forma_pagamento}
-                                    onValueChange={(v) => setFormData({ ...formData, forma_pagamento: v })}
+                                    onValueChange={(v: string) => setFormData({ ...formData, forma_pagamento: v })}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecione..." />
