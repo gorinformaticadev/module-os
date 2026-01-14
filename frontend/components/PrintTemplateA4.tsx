@@ -123,6 +123,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         font-size: 11pt;
                         color: #000 !important;
                         background: white !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                     
                     .no-print {
@@ -135,6 +137,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         margin: 0 auto;
                         background: white !important;
                         color: #000 !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                 }
 
@@ -373,8 +377,16 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     color: #000 !important;
                 }
 
-                .footer-watermark * {
-                    color: #999 !important;
+                /* Condições de execução compactas - usando :global para atingir HTML injetado */
+                .conditions-text {
+                    font-size: 10px !important;
+                    text-align: justify !important;
+                }
+                .conditions-text :global(*) {
+                    font-size: 10px !important;
+                    line-height: 1.2 !important;
+                    margin-bottom: 2px !important;
+                    text-align: justify !important;
                 }
             `}</style>
 
@@ -515,7 +527,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
             {!isHtmlEmpty(condicoesExecucao) && (
                 <>
                     <div className="section-header">Condições de Execução</div>
-                    <div className="section-content" style={{ fontSize: '10px' }} dangerouslySetInnerHTML={{ __html: condicoesExecucao || '' }} />
+                    <div className="section-content conditions-text" dangerouslySetInnerHTML={{ __html: condicoesExecucao || '' }} />
                 </>
             )}
 

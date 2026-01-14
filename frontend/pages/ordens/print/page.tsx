@@ -152,19 +152,39 @@ export default function PrintPreviewPage() {
                 </div>
             </div>
 
-            <PrintTemplateA4
-                ordem={ordem}
-                tenantInfo={tenantInfo}
-                condicoesExecucao={condicoesExecucao}
-            />
+            <div id="print-area">
+                <PrintTemplateA4
+                    ordem={ordem}
+                    tenantInfo={tenantInfo}
+                    condicoesExecucao={condicoesExecucao}
+                />
+            </div>
 
             <style jsx global>{`
                 @media print {
-                    body {
-                        margin: 0;
-                        padding: 0;
+                    @page {
+                        margin: 5mm 5mm 1mm 5mm;
+                        size: auto;
                     }
-                    
+
+                    body * {
+                        visibility: hidden;
+                    }
+
+                    #print-area, #print-area * {
+                        visibility: visible;
+                    }
+
+                    #print-area {
+                        position: fixed;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        height: 100%;
+                        z-index: 9999;
+                        background: white;
+                    }
+
                     .no-print {
                         display: none !important;
                     }
