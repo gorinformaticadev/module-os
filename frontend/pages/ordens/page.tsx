@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../../types/ordem-servico.types';
 import { OrdemViewModal } from '../../components/OrdemViewModal';
+import { PrintModal } from '../../components/PrintModal';
 
 // Cliente API customizado para o módulo raiz
 const api = {
@@ -171,7 +172,26 @@ export default function OrdensPage() {
   const [reopenOrder, setReopenOrder] = useState<OrdemServico | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewOrder, setViewOrder] = useState<OrdemServico | null>(null);
+  const [printFormat, setPrintFormat] = useState<'a4' | 'thermal'>('a4');
+  const [printOrdemId, setPrintOrdemId] = useState<string | null>(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [printMenuOpen, setPrintMenuOpen] = useState<string | null>(null);
+  const printMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePrintMenuEnter = useCallback((id: string) => {
+    if (printMenuTimeoutRef.current) {
+      clearTimeout(printMenuTimeoutRef.current);
+      printMenuTimeoutRef.current = null;
+    }
+    setPrintMenuOpen(id);
+  }, []);
+
+  const handlePrintMenuLeave = useCallback(() => {
+    printMenuTimeoutRef.current = setTimeout(() => {
+      setPrintMenuOpen(null);
+      printMenuTimeoutRef.current = null;
+    }, 500); // 500ms de tolerância para evitar piscadeiras
+  }, []);
 
   // Carregar ordens de serviço
   const loadOrdens = async () => {
@@ -270,13 +290,16 @@ export default function OrdensPage() {
   };
 
   const handlePrintA4 = (ordem: OrdemServico) => {
-    // Abrir página de preview na aba atual
-    router.push(`/modules/ordem_servico/pages/ordens/print?id=${ordem.id}`);
+    setPrintOrdemId(ordem.id);
+    setPrintFormat('a4');
+    setIsPrintModalOpen(true);
     setPrintMenuOpen(null);
   };
 
   const handlePrintThermal = (ordem: OrdemServico) => {
-    router.push(`/modules/ordem_servico/pages/ordens/print?id=${ordem.id}&format=thermal`);
+    setPrintOrdemId(ordem.id);
+    setPrintFormat('thermal');
+    setIsPrintModalOpen(true);
     setPrintMenuOpen(null);
   };
 
@@ -370,7 +393,7 @@ export default function OrdensPage() {
                 <Input
                   placeholder="Número, cliente ou descrição..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -378,7 +401,7 @@ export default function OrdensPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
-              <Select value={statusFilter.toString()} onValueChange={(value) => setStatusFilter(value === 'all' ? 'all' : parseInt(value) as StatusOS)}>
+              <Select value={statusFilter.toString()} onValueChange={(value: string) => setStatusFilter(value === 'all' ? 'all' : parseInt(value) as StatusOS)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
@@ -395,7 +418,7 @@ export default function OrdensPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Origem</label>
-              <Select value={origemFilter.toString()} onValueChange={(value) => setOrigemFilter(value === 'all' ? 'all' : value as OrigemSolicitacao)}>
+              <Select value={origemFilter.toString()} onValueChange={(value: string) => setOrigemFilter(value === 'all' ? 'all' : value as OrigemSolicitacao)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as origens" />
                 </SelectTrigger>
@@ -495,37 +518,61 @@ export default function OrdensPage() {
                             </Button>
                           )}
 
-                          <div className="relative">
+                          <div
+                            className="relative"
+                            onMouseEnter={() => handlePrintMenuEnter(ordem.id)}
+                            onMouseLeave={handlePrintMenuLeave}
+                          >
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setPrintMenuOpen(printMenuOpen === ordem.id ? null : ordem.id)}
-                              onMouseEnter={() => setPrintMenuOpen(ordem.id)}
-                              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                if (printMenuOpen === ordem.id) {
+                                  setPrintMenuOpen(null);
+                                } else {
+                                  handlePrintMenuEnter(ordem.id);
+                                }
+                              }}
+                              className={`
+                                text-gray-600 hover:text-gray-700 hover:bg-gray-50 relative z-30 flex items-center gap-0.5
+                                ${printMenuOpen === ordem.id ? 'bg-gray-50' : ''}
+                              `}
                             >
                               <Printer className="h-4 w-4" />
-                              <ChevronDown className="h-3 w-3 ml-0.5" />
+                              <ChevronDown className={`h-3 w-3 opacity-50 transition-transform ${printMenuOpen === ordem.id ? 'rotate-180' : ''}`} />
                             </Button>
 
                             {printMenuOpen === ordem.id && (
                               <div
-                                className="absolute left-0 top-full mt-1 bg-background border border-border rounded-md shadow-lg z-50 min-w-[180px]"
-                                onMouseLeave={() => setPrintMenuOpen(null)}
+                                className="absolute left-0 top-full -mt-2 pt-2 z-50 min-w-[180px]"
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                               >
-                                <button
-                                  onClick={() => handlePrintA4(ordem)}
-                                  className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-b border-border transition-colors"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                  <span>Impressão A4</span>
-                                </button>
-                                <button
-                                  onClick={() => handlePrintThermal(ordem)}
-                                  className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors"
-                                >
-                                  <Receipt className="h-4 w-4" />
-                                  <span>Impressão 50/80mm</span>
-                                </button>
+                                {/* Transparent bridge to maintain hover between button and menu */}
+                                <div className="absolute top-0 left-0 w-full h-2 pointer-events-auto" />
+
+                                <div className="bg-background border border-border shadow-xl rounded-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                                  <button
+                                    onClick={() => {
+                                      handlePrintA4(ordem);
+                                      setPrintMenuOpen(null);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-b border-border transition-colors"
+                                  >
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <span>Impressão A4</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handlePrintThermal(ordem);
+                                      setPrintMenuOpen(null);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors"
+                                  >
+                                    <Receipt className="h-4 w-4 text-muted-foreground" />
+                                    <span>Impressão 50/80mm</span>
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -575,7 +622,7 @@ export default function OrdensPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!reopenOrder} onOpenChange={(open) => !open && setReopenOrder(null)}>
+      <Dialog open={!!reopenOrder} onOpenChange={(open: boolean) => !open && setReopenOrder(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reabrir Ordem de Serviço</DialogTitle>
@@ -599,7 +646,24 @@ export default function OrdensPage() {
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
         ordem={viewOrder}
+        onPrintA4={handlePrintA4}
+        onPrintThermal={handlePrintThermal}
       />
+      {/* Modal de Impressão */}
+      <PrintModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        ordemId={printOrdemId}
+        format={printFormat}
+      />
+
+      <style>{`
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

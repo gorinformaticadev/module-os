@@ -23,7 +23,9 @@ import {
     Wrench,
     Search,
     Package,
-    Eye
+    Eye,
+    Printer,
+    Receipt
 } from 'lucide-react';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS } from '../types/ordem-servico.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,9 +35,11 @@ interface OrdemViewModalProps {
     isOpen: boolean;
     onClose: () => void;
     ordem: OrdemServico | null;
+    onPrintA4?: (ordem: OrdemServico) => void;
+    onPrintThermal?: (ordem: OrdemServico) => void;
 }
 
-export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose, ordem }) => {
+export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose, ordem, onPrintA4, onPrintThermal }) => {
     if (!ordem) return null;
 
     const formatDate = (dateString?: string) => {
@@ -98,6 +102,30 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                                     <Clock className="h-4 w-4" />
                                     <span>Previsão: {formatDate(ordem.data_previsao)}</span>
                                 </div>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 pr-12">
+                            {onPrintA4 && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onPrintA4(ordem)}
+                                    className="h-8 gap-1 hidden md:flex"
+                                >
+                                    <Printer className="h-3.5 w-3.5" />
+                                    <span className="text-xs">A4</span>
+                                </Button>
+                            )}
+                            {onPrintThermal && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onPrintThermal(ordem)}
+                                    className="h-8 gap-1 hidden md:flex"
+                                >
+                                    <Receipt className="h-3.5 w-3.5" />
+                                    <span className="text-xs">80mm</span>
+                                </Button>
                             )}
                         </div>
                     </div>
