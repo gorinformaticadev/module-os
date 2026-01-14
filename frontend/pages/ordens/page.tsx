@@ -553,21 +553,23 @@ export default function OrdensPage() {
 
                                 <div className="bg-background border border-border shadow-xl rounded-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       handlePrintA4(ordem);
                                       setPrintMenuOpen(null);
                                     }}
-                                    className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-b border-border transition-colors"
+                                    className="w-full px-4 py-2.5 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-b border-border transition-colors cursor-pointer"
                                   >
                                     <FileText className="h-4 w-4 text-muted-foreground" />
                                     <span>Impressão A4</span>
                                   </button>
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       handlePrintThermal(ordem);
                                       setPrintMenuOpen(null);
                                     }}
-                                    className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors"
+                                    className="w-full px-4 py-2.5 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors cursor-pointer"
                                   >
                                     <Receipt className="h-4 w-4 text-muted-foreground" />
                                     <span>Impressão 50/80mm</span>

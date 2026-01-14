@@ -7,6 +7,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2, Download, X } from 'lucide-react';
@@ -55,21 +56,9 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
             const condicoesConfig = configRes.data.find((c: { config_key: string, config_value: string }) => c.config_key === 'condicoes_execucao');
             const condicoesExecucao = condicoesConfig ? condicoesConfig.config_value : '';
 
-            let logoUrl = undefined;
-            if (user?.tenant?.logoUrl) {
-                const originalUrl = `${API_URL}/uploads/logos/${user.tenant.logoUrl}`;
-                try {
-                    const response = await fetch(originalUrl);
-                    const blob = await response.blob();
-                    logoUrl = await new Promise<string>((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result as string);
-                        reader.readAsDataURL(blob);
-                    });
-                } catch (e) {
-                    logoUrl = originalUrl;
-                }
-            }
+            const logoUrl = user?.tenant?.logoUrl
+                ? `${API_URL}/uploads/logos/${user.tenant.logoUrl}`
+                : undefined;
 
             const tenantInfo = {
                 name: user?.tenant?.nomeFantasia || 'Empresa',
@@ -160,6 +149,9 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
                     <DialogTitle className="text-lg font-bold">
                         Prévia de Impressão ({format === 'thermal' ? '80mm' : 'A4'})
                     </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Visualize a ordem de serviço antes de imprimir ou gerar o PDF.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-4 bg-gray-100 flex justify-center">
@@ -197,34 +189,32 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
                     ) : null}
                 </div>
 
-                <DialogFooter className="p-4 border-t flex flex-row items-center justify-between gap-2 no-print bg-muted/20">
+                <DialogFooter className="p-2 border-t flex flex-row items-center justify-between gap-2 no-print bg-muted/5">
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         onClick={onClose}
                         disabled={loading}
-                        className="hover:bg-red-50 hover:text-red-600 transition-colors"
+                        className="flex-1 h-8 text-[10px] border-red-200 text-red-500 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all font-medium px-1"
                     >
-                        Cancelar
+                        CANCELAR
                     </Button>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="secondary"
-                            onClick={handleDownloadPDF}
-                            disabled={loading || !data}
-                            className="gap-2 shadow-sm"
-                        >
-                            <Download className="h-4 w-4" />
-                            Gerar PDF
-                        </Button>
-                        <Button
-                            onClick={handlePrint}
-                            disabled={loading || !data}
-                            className="gap-2 shadow-md bg-primary hover:bg-primary/90"
-                        >
-                            <Printer className="h-4 w-4" />
-                            Imprimir agora
-                        </Button>
-                    </div>
+                    <Button
+                        variant="secondary"
+                        onClick={handleDownloadPDF}
+                        disabled={loading || !data}
+                        className="flex-1 h-8 gap-1 shadow-sm text-[10px] px-1"
+                    >
+                        <Download className="h-3 w-3" />
+                        PDF
+                    </Button>
+                    <Button
+                        onClick={handlePrint}
+                        disabled={loading || !data}
+                        className="flex-1 h-8 gap-1 shadow-md bg-primary hover:bg-primary/90 text-[10px] px-1"
+                    >
+                        <Printer className="h-3 w-3" />
+                        IMPRIMIR
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

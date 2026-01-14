@@ -6,6 +6,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -86,6 +87,9 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                             </div>
                             <div>
                                 <DialogTitle className="text-xl">OS #{ordem.numero}</DialogTitle>
+                                <DialogDescription className="sr-only">
+                                    Visualização detalhada da ordem de serviço.
+                                </DialogDescription>
                                 <div className="flex items-center gap-2 mt-1">
                                     {getStatusBadge(ordem.status)}
                                     {getPrioridadeBadge(ordem.prioridade)}
