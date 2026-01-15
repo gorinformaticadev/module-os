@@ -35,6 +35,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao, ORIGEM_LABELS } from '../../types/ordem-servico.types';
 import { OrdemViewModal } from '../../components/OrdemViewModal';
 import { PrintModal } from '../../components/PrintModal';
+import { WhatsAppModal } from '../../components/WhatsAppModal';
 
 // Cliente API customizado para o módulo raiz
 const api = {
@@ -178,6 +179,10 @@ export default function OrdensPage() {
   const [printMenuOpen, setPrintMenuOpen] = useState<string | null>(null);
   const printMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // WhatsApp Modal State
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+  const [whatsAppOrder, setWhatsAppOrder] = useState<OrdemServico | null>(null);
+
   const handlePrintMenuEnter = useCallback((id: string) => {
     if (printMenuTimeoutRef.current) {
       clearTimeout(printMenuTimeoutRef.current);
@@ -305,9 +310,8 @@ export default function OrdensPage() {
 
   const handleWhatsApp = (ordem: OrdemServico) => {
     if (ordem.cliente?.phone_primary) {
-      const message = `Olá! Sobre a OS #${ordem.numero} - ${ordem.descricao}`;
-      const url = `https://wa.me/55${ordem.cliente.phone_primary.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      window.open(url, '_blank');
+      setWhatsAppOrder(ordem);
+      setIsWhatsAppModalOpen(true);
     } else {
       toast({
         title: "Erro",
@@ -657,6 +661,12 @@ export default function OrdensPage() {
         onClose={() => setIsPrintModalOpen(false)}
         ordemId={printOrdemId}
         format={printFormat}
+      />
+
+      <WhatsAppModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        ordem={whatsAppOrder}
       />
 
       <style>{`
