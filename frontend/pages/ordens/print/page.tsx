@@ -45,6 +45,8 @@ interface TenantInfo {
     logo_url?: string;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default function PrintPreviewPage() {
     const searchParams = useSearchParams();
     const router = useRouter();

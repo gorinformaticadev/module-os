@@ -58,6 +58,8 @@ import { RichTextEditor } from '../../../components/ui/rich-text-editor';
 import { useAI } from '../../../hooks/useAI';
 import { Brain } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 interface Client {
     id: string;
     name: string;
@@ -160,7 +162,7 @@ export default function NewOrdemRefactoredPage() {
     const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
     // Refs for keyboard navigation
-    const descriptionInputRef = React.useRef<HTMLInputElement>(null);
+    const descriptionInputRef = React.useRef<HTMLTextAreaElement>(null);
     const valueInputRef = React.useRef<HTMLInputElement>(null);
     const quantityInputRef = React.useRef<HTMLInputElement>(null);
     const clientSearchInputRef = React.useRef<HTMLInputElement>(null);
