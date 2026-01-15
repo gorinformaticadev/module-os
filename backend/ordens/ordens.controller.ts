@@ -28,6 +28,8 @@ export class OrdensController {
     private readonly logger = new Logger(OrdensController.name);
 
     constructor(private readonly ordensService: OrdensService) {
+        const fs = require('fs');
+        fs.appendFileSync('d:/github/Projeto-menu-multitenant-seguro/module_loading_debug.log', `[${new Date().toISOString()}] 🔩 OrdensController instanciado!\n`);
         console.log('✅✅✅ ORDENS CONTROLLER INSTANCIADO (STANDALONE)!!! ✅✅✅');
     }
 
