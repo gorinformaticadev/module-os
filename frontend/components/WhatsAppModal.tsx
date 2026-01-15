@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { OrdemServico } from '../../types/ordem-servico.types';
+import { OrdemServico } from '../types/ordem-servico.types';
 import {
     Bold,
     Italic,
@@ -184,7 +184,7 @@ export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
 
                     <div className="space-y-3 pt-2">
                         <Label>Enviar via</Label>
-                        <RadioGroup value={method} onValueChange={(v) => setMethod(v as SendMethod)} className="flex gap-4">
+                        <RadioGroup value={method} onValueChange={(v: string) => setMethod(v as SendMethod)} className="flex gap-4">
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="api" id="r-api" />
                                 <Label htmlFor="r-api" className="cursor-pointer">App Desktop (API)</Label>

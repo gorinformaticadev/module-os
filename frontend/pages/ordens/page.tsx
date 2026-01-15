@@ -161,6 +161,8 @@ const useToast = () => ({
   }
 });
 
+export const dynamic = 'force-dynamic';
+
 export default function OrdensPage() {
   const router = useRouter();
   const { toast } = useToast();
