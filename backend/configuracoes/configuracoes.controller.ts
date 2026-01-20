@@ -9,8 +9,6 @@ export class ConfiguracoesController {
     private readonly logger = new Logger(ConfiguracoesController.name);
 
     constructor(private readonly service: ConfiguracoesService) {
-        const fs = require('fs');
-        fs.appendFileSync('d:/github/Projeto-menu-multitenant-seguro/module_loading_debug.log', `[${new Date().toISOString()}] 🔩 ConfiguracoesController instanciado!\n`);
     }
 
     @Get('users')
