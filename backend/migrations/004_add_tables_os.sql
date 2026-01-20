@@ -5,21 +5,20 @@
 
 -- 1. Criar tabela de Staff (Técnicos) que estava ausente no Banco 2
 CREATE TABLE IF NOT EXISTS public.mod_ordem_servico_staff (
-    id TEXT NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT NOT NULL,
     is_technician BOOLEAN DEFAULT true NOT NULL,
     created_at TIMESTAMP(3) WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP(3) WITHOUT TIME ZONE NOT NULL,
-    
-    CONSTRAINT mod_ordem_servico_staff_pkey PRIMARY KEY (id),
+
     CONSTRAINT mod_ordem_servico_staff_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 -- 2. Criar tabela de Agendamento de Notificações que estava ausente no Banco 2
 CREATE TABLE IF NOT EXISTS public.mod_ordemservico_notification_schedules (
-    id TEXT NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
-    ordem_id TEXT NOT NULL,
+    ordem_id UUID NOT NULL,
     type TEXT NOT NULL,
     scheduled_for TIMESTAMP(3) WITHOUT TIME ZONE NOT NULL,
     status TEXT DEFAULT 'pending'::text NOT NULL,
@@ -28,7 +27,6 @@ CREATE TABLE IF NOT EXISTS public.mod_ordemservico_notification_schedules (
     created_at TIMESTAMP(3) WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP(3) WITHOUT TIME ZONE NOT NULL,
 
-    CONSTRAINT mod_ordemservico_notification_schedules_pkey PRIMARY KEY (id),
     CONSTRAINT mod_ordemservico_notification_schedules_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT mod_ordemservico_notification_schedules_ordem_id_fkey FOREIGN KEY (ordem_id) REFERENCES public.mod_ordem_servico_ordens(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -65,17 +63,17 @@ BEGIN
 END $$;
 
 -- 6. Inserir configurações padrão de execução (conforme seu modelo 003)
-INSERT INTO mod_ordem_servico_configs (id, tenant_id, key, value, created_at, updated_at)
-SELECT 
-    gen_random_uuid()::text,
+INSERT INTO public.mod_ordem_servico_configs (id, tenant_id, key, value, created_at, updated_at)
+SELECT
+    gen_random_uuid(),
     t.id,
     'condicoes_execucao',
     'O serviço será executado conforme descrito acima. Eventuais alterações serão comunicadas ao cliente. A garantia cobre apenas defeitos relacionados ao serviço executado.',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-FROM tenants t
+FROM public.tenants t
 WHERE NOT EXISTS (
-    SELECT 1 FROM mod_ordem_servico_configs 
+    SELECT 1 FROM public.mod_ordem_servico_configs
     WHERE tenant_id = t.id AND key = 'condicoes_execucao'
 );
 
