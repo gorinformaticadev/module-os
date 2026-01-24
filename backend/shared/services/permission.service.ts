@@ -266,9 +266,9 @@ export class PermissionService implements IPermissionService {
   ): Promise<PermissionAudit[]> {
     try {
       let query = `
-        SELECT id, tenant_id, user_id, resource, action, old_value, new_value,
+        SELECT id, tenant_id, user_id, resource, action, old_value, new_value, 
                changed_by, changed_at, reason
-        FROM mod_ordem_servico_permission_audit
+        FROM mod_ordem_servico_permission_audit 
         WHERE tenant_id = $1
       `;
       const params: any[] = [tenantId];
@@ -307,97 +307,6 @@ export class PermissionService implements IPermissionService {
 
     } catch (error) {
       this.logger.error('❌ Erro ao buscar auditoria de permissões:', error);
-      throw error;
-    }
-  }
-
-  async getProfilePermissions(tenantId: string): Promise<Record<string, { admin: boolean; technician: boolean; attendant: boolean }>> {
-    try {
-      this.logger.log(`Buscando permissões de perfil para tenant ${tenantId}`);
-
-      const permissions = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT permission_id, profile, allowed
-         FROM mod_ordem_servico_profile_permissions
-         WHERE tenant_id = $1
-         ORDER BY permission_id, profile`,
-        tenantId
-      );
-
-      const result: Record<string, { admin: boolean; technician: boolean; attendant: boolean }> = {};
-
-      permissions.forEach(perm => {
-        if (!result[perm.permission_id]) {
-          result[perm.permission_id] = { admin: false, technician: false, attendant: false };
-        }
-        result[perm.permission_id][perm.profile as keyof typeof result[string]] = perm.allowed;
-      });
-
-      this.logger.log(`✅ ${Object.keys(result).length} permissões de perfil encontradas`);
-      return result;
-
-    } catch (error) {
-      this.logger.error('❌ Erro ao buscar permissões de perfil:', error);
-      throw error;
-    }
-  }
-
-  async updateProfilePermissions(
-    tenantId: string,
-    permissions: Record<string, { admin: boolean; technician: boolean; attendant: boolean }>,
-    changedBy: string
-  ): Promise<void> {
-    try {
-      this.logger.log(`Atualizando ${Object.keys(permissions).length} permissões de perfil para tenant ${tenantId}`);
-
-      for (const [permissionId, profilePerms] of Object.entries(permissions)) {
-        for (const [profile, allowed] of Object.entries(profilePerms)) {
-          // Verificar se já existe
-          const existing = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT id, allowed FROM mod_ordem_servico_profile_permissions
-             WHERE tenant_id = $1 AND permission_id = $2 AND profile = $3`,
-            tenantId, permissionId, profile
-          );
-
-          if (existing.length > 0) {
-            // Se mudou, atualizar
-            if (existing[0].allowed !== allowed) {
-              await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordem_servico_profile_permissions
-                 SET allowed = $4, updated_at = NOW()
-                 WHERE tenant_id = $1 AND permission_id = $2 AND profile = $3`,
-                tenantId, permissionId, profile, allowed
-              );
-
-              // Registrar auditoria
-              await this.logPermissionChange(
-                tenantId, changedBy, permissionId, profile,
-                existing[0].allowed, allowed, changedBy,
-                'PROFILE_PERMISSION_UPDATE'
-              );
-            }
-          } else {
-            // Se não existe, criar
-            await this.prisma.$executeRawUnsafe(
-              `INSERT INTO mod_ordem_servico_profile_permissions
-               (tenant_id, permission_id, profile, allowed)
-               VALUES ($1, $2, $3, $4)`,
-              tenantId, permissionId, profile, allowed
-            );
-
-            // Registrar auditoria
-            await this.logPermissionChange(
-              tenantId, changedBy, permissionId, profile,
-              null, allowed, changedBy,
-              'PROFILE_PERMISSION_CREATE'
-            );
-          }
-        }
-      }
-
-      this.logger.log(`✅ Permissões de perfil atualizadas com sucesso`);
-
-    } catch (error) {
-      this.logger.error('❌ Erro ao atualizar permissões de perfil:', error);
       throw error;
     }
   }
