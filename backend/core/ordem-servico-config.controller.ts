@@ -240,8 +240,8 @@ export class OrdemServicoConfigController {
         await this.prisma.$queryRawUnsafe(
             `INSERT INTO mod_ordem_servico_user_roles (tenant_id, user_id, is_technician, is_attendant, is_admin)
              VALUES ($1, $2, $3, true, false)
-             ON CONFLICT (tenant_id, user_id) 
-             DO UPDATE SET 
+             ON CONFLICT (tenant_id, user_id)
+             DO UPDATE SET
                 is_technician = $3,
                 updated_at = CURRENT_TIMESTAMP`,
             req.user.tenantId,
@@ -250,5 +250,68 @@ export class OrdemServicoConfigController {
         );
 
         return { success: true, message: 'Configuração de técnico atualizada' };
+    }
+
+    // ==================== PERMISSÕES DE PERFIL ====================
+
+    @Get('profile-permissions')
+    async getProfilePermissions(@Req() req: ExpressRequest & { user: any }) {
+        const permissions = await this.prisma.$queryRawUnsafe<any[]>(
+            `SELECT permission_id, profile, allowed
+             FROM mod_ordem_servico_profile_permissions
+             WHERE tenant_id = $1
+             ORDER BY permission_id, profile`,
+            req.user.tenantId
+        );
+
+        const result: Record<string, { admin: boolean; technician: boolean; attendant: boolean }> = {};
+
+        permissions.forEach(perm => {
+            if (!result[perm.permission_id]) {
+                result[perm.permission_id] = { admin: false, technician: false, attendant: false };
+            }
+            result[perm.permission_id][perm.profile as keyof typeof result[string]] = perm.allowed;
+        });
+
+        return result;
+    }
+
+    @Post('profile-permissions')
+    async updateProfilePermissions(
+        @Req() req: ExpressRequest & { user: any },
+        @Body() body: { permissions: Record<string, { admin: boolean; technician: boolean; attendant: boolean }> }
+    ) {
+        for (const [permissionId, profilePerms] of Object.entries(body.permissions)) {
+            for (const [profile, allowed] of Object.entries(profilePerms)) {
+                // Verificar se já existe
+                const existing = await this.prisma.$queryRawUnsafe<any[]>(
+                    `SELECT id, allowed FROM mod_ordem_servico_profile_permissions
+                     WHERE tenant_id = $1 AND permission_id = $2 AND profile = $3`,
+                    req.user.tenantId, permissionId, profile
+                );
+
+                if (existing.length > 0) {
+                    // Se mudou, atualizar
+                    if (existing[0].allowed !== allowed) {
+                        await this.prisma.$executeRawUnsafe(
+                            `UPDATE mod_ordem_servico_profile_permissions
+                             SET allowed = $4, updated_at = NOW()
+                             WHERE tenant_id = $1 AND permission_id = $2 AND profile = $3`,
+                            req.user.tenantId, permissionId, profile, allowed
+                        );
+                    }
+                } else {
+                    // Se não existe, criar
+                    await this.prisma.$executeRawUnsafe(
+                        `INSERT INTO mod_ordem_servico_profile_permissions
+                         (tenant_id, permission_id, profile, allowed)
+                         VALUES ($1, $2, $3, $4)`,
+                        req.user.tenantId, permissionId, profile, allowed
+                    );
+                }
+            }
+        }
+
+        return { success: true };
     }
 }

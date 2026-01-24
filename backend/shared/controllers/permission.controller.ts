@@ -80,4 +80,34 @@ export class PermissionController {
             throw error;
         }
     }
+
+    @Get('config/profile-permissions')
+    async getProfilePermissions(@Req() req: ExpressRequest & { user: any }) {
+        try {
+            this.logger.log(`Buscando permissões de perfil. Tenant: ${req.user?.tenantId}`);
+            return await this.permissionService.getProfilePermissions(req.user.tenantId);
+        } catch (error) {
+            this.logger.error('❌ Erro ao buscar permissões de perfil:', error);
+            throw error;
+        }
+    }
+
+    @Post('config/profile-permissions')
+    async updateProfilePermissions(
+        @Req() req: ExpressRequest & { user: any },
+        @Body() body: { permissions: Record<string, { admin: boolean; technician: boolean; attendant: boolean }> }
+    ) {
+        try {
+            this.logger.log(`Atualizando permissões de perfil. Tenant: ${req.user?.tenantId}`);
+            await this.permissionService.updateProfilePermissions(
+                req.user.tenantId,
+                body.permissions,
+                req.user.id
+            );
+            return { success: true };
+        } catch (error) {
+            this.logger.error('❌ Erro ao atualizar permissões de perfil:', error);
+            throw error;
+        }
+    }
 }

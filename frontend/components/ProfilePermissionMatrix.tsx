@@ -408,7 +408,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
       setLoading(true);
       console.log('🔍 Carregando permissões de perfil...');
 
-      const response = await api.get('/modules/ordem_servico/config/profile-permissions');
+      const response = await api.get('/api/ordem_servico/config/profile-permissions');
       console.log('📦 Permissões carregadas:', response.data);
 
       // Inicializar permissões com valores padrão se não existirem
@@ -462,7 +462,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
       setSaving(true);
       console.log('💾 Salvando permissões de perfil...', permissions);
 
-      await api.post('/modules/ordem_servico/config/profile-permissions', {
+      await api.post('/api/ordem_servico/config/profile-permissions', {
         permissions
       });
 
