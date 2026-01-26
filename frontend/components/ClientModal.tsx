@@ -125,7 +125,7 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
     const fetchAddressByCEP = async (cep: string) => {
         const cleanCEP = cep.replace(/\D/g, '');
         console.log('🔍 Buscando CEP:', cleanCEP);
-        
+
         if (cleanCEP.length !== 8) {
             console.log('❌ CEP inválido - deve ter 8 dígitos');
             return;
@@ -135,9 +135,9 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
             console.log('📡 Fazendo requisição para endpoint interno...');
             const response = await api.get(`/api/ordem_servico/clientes/cep/${cleanCEP}`);
             const data = response.data;
-            
+
             console.log('📋 Resposta da API:', data);
-            
+
             if (data.success) {
                 console.log('✅ CEP encontrado, preenchendo campos...');
                 setFormData(prev => ({
@@ -147,7 +147,7 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
                     address_city: data.localidade || '',
                     address_state: data.uf || ''
                 }));
-                
+
                 toast({
                     title: 'CEP encontrado!',
                     description: `Endereço preenchido automaticamente: ${data.localidade}/${data.uf}`,
@@ -163,14 +163,14 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
             }
         } catch (error: any) {
             console.error('❌ Erro ao buscar CEP:', error);
-            
+
             let errorMessage = 'Não foi possível consultar o CEP.';
             if (error.response?.status === 404) {
                 errorMessage = 'CEP não encontrado.';
             } else if (error.response?.status === 400) {
                 errorMessage = 'CEP inválido.';
             }
-            
+
             toast({
                 title: 'Erro na consulta',
                 description: errorMessage,
@@ -180,6 +180,7 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
     };
 
     const validateDocument = (document: string) => {
+        if (!document) return '';
 
         const cleanDoc = document.replace(/\D/g, '');
 
@@ -346,12 +347,12 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
             setSaving(true);
             const response = await api.post('/api/ordem_servico/clientes', formData);
             toast({ title: 'Cliente cadastrado com sucesso!' });
-            
+
             // Chama callback se fornecido
             if (onClientCreated) {
                 onClientCreated(response.data);
             }
-            
+
             resetForm();
             onClose();
         } catch (error) {

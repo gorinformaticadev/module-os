@@ -674,7 +674,7 @@ export class OrdensService {
                 'equipamento_modelo', 'equipamento_serie', 'equipamento_acessorios',
                 'equipamento_estado', 'formatacao_so', 'formatacao_backup',
                 'formatacao_backup_descricao', 'formatacao_senha', 'equipamento_fotos', 'itens',
-                'laudo_tecnico', 'garantia_dias'
+                'laudo_tecnico', 'garantia_dias', 'origem_solicitacao'
             ];
 
             // Handle Status Update if present
