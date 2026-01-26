@@ -788,7 +788,9 @@ export class OrdensService {
             await this.registrarAlteracoesHistorico(tenantId, id, userId, ordemAtual, updateDto);
 
             // Se houve mudança de status, registrar no histórico de status
+            this.logger.log(`🔍 Verificando mudança de status: DTO.status=${updateDto.status}, Atual.status=${ordemAtual.status}`);
             if (updateDto.status !== undefined && updateDto.status !== ordemAtual.status) {
+                this.logger.log(`📝 Mudança de status detectada! Registrando histórico...`);
                 await this.registrarStatusHistorico(
                     tenantId,
                     id,
@@ -797,6 +799,8 @@ export class OrdensService {
                     updateDto.status,
                     'Alteração via edição da ordem'
                 );
+            } else {
+                this.logger.log(`ℹ️ Sem mudança de status (DTO=${updateDto.status}, Atual=${ordemAtual.status})`);
             }
 
             this.logger.log(`✅ Ordem de serviço ${id} atualizada`);
@@ -1226,8 +1230,8 @@ export class OrdensService {
                     u.name as usuario_nome,
                     u.email as usuario_email
                 FROM mod_ordem_servico_status_historico h
-                LEFT JOIN users u ON h.usuario_id::uuid = u.id
-                WHERE h.ordem_servico_id = $1::uuid AND h.tenant_id = $2
+                LEFT JOIN users u ON h.usuario_id = u.id::text
+                WHERE h.ordem_servico_id = $1::uuid AND h.tenant_id = $2::text
                 ORDER BY h.data_alteracao DESC
             `;
 
@@ -1256,7 +1260,10 @@ export class OrdensService {
         observacoes?: string
     ) {
         try {
-            await this.prisma.$executeRawUnsafe(
+            this.logger.log(`📝 Registrando histórico de status: ${statusAnterior} → ${statusNovo} para ordem ${ordemId}`);
+            this.logger.log(`📝 Params: tenantId=${tenantId}, usuarioId=${usuarioId}, obs=${observacoes}`);
+            
+            const result = await this.prisma.$executeRawUnsafe(
                 `INSERT INTO mod_ordem_servico_status_historico 
                  (tenant_id, ordem_servico_id, usuario_id, status_anterior, status_novo, observacoes, data_alteracao)
                  VALUES ($1, $2::uuid, $3, $4, $5, $6, NOW())`,
@@ -1267,9 +1274,10 @@ export class OrdensService {
                 statusNovo,
                 observacoes || null
             );
-            this.logger.log(`✅ Histórico de status registrado: ${statusAnterior} → ${statusNovo}`);
-        } catch (error) {
-            this.logger.error(`❌ Erro ao registrar histórico de status:`, error);
+            this.logger.log(`✅ Histórico de status registrado: ${statusAnterior} → ${statusNovo}. Linhas afetadas: ${result}`);
+        } catch (error: any) {
+            this.logger.error(`❌ Erro ao registrar histórico de status:`, error?.message || error);
+            this.logger.error(`❌ Stack:`, error?.stack);
             // Não lançar erro para não interromper o fluxo principal
         }
     }
