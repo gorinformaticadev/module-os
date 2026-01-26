@@ -1,59 +1,242 @@
-# Módulo: Ordem de Serviços
+# Módulo Ordem de Serviço (module-os)
 
-Este é um módulo personalizado do Sistema Multitenant para gerenciamento de ordens de serviço.
+## 📋 Descrição
 
-## Estrutura
+Módulo completo para gestão de ordens de serviço, desenvolvido para o sistema multitenant. Inclui funcionalidades completas de gestão de clientes, produtos, ordens de serviço, permissões e relatórios.
 
+## 🚀 Funcionalidades
+
+### ✅ **Gestão Completa de Ordens de Serviço**
+- Criação e edição de ordens de serviço
+- Controle de status (Orçamento → Em Execução → Finalizada/Cancelada)
+- Histórico completo de alterações
+- Geração de PDFs para impressão
+- Integração com WhatsApp
+
+### ✅ **Gestão de Clientes**
+- Cadastro completo de clientes
+- Endereços detalhados
+- Controle de status (Ativo/Inativo)
+- Histórico de ordens por cliente
+
+### ✅ **Gestão de Produtos/Serviços**
+- Cadastro de produtos e serviços
+- Controle de preços e custos
+- Códigos únicos por tenant
+- Soft delete para segurança
+
+### ✅ **Sistema de Permissões Avançado**
+- Permissões por usuário individual
+- Perfis pré-definidos (Admin, Técnico, Atendente)
+- Auditoria completa de alterações
+- Controle granular de recursos
+
+### ✅ **Dashboard e Relatórios**
+- Dashboard com métricas em tempo real
+- Relatórios de performance
+- Gráficos e estatísticas
+- Exportação de dados
+
+### ✅ **Integrações**
+- WhatsApp para notificações
+- Sistema de templates para documentos
+- Upload de imagens e arquivos
+- Notificações em tempo real
+
+## 🏗️ **Arquitetura**
+
+### **Backend (NestJS)**
 ```
-ordem_servico/
-├── module.json           # Configuração do módulo
-├── README.md            # Documentação
-├── backend/             # Lógica do servidor
-│   ├── controllers/     # Controllers REST API
-│   ├── services/        # Serviços de negócio
+backend/
+├── migrations/           # Scripts SQL de migração
+├── seeds/               # Dados iniciais
+├── clientes/            # Gestão de clientes
+├── produtos/            # Gestão de produtos
+├── ordens/              # Ordens de serviço
+├── configuracoes/       # Configurações do módulo
+├── shared/              # Utilitários compartilhados
 │   ├── dto/            # Data Transfer Objects
-│   ├── migrations/     # Migrações do banco
-│   └── seeds/          # Dados iniciais
-└── frontend/           # Interface do usuário
-    ├── components/     # Componentes React
-    ├── pages/         # Páginas do módulo
-    └── services/      # Serviços do frontend
+│   ├── guards/         # Guards de permissão
+│   ├── services/       # Serviços compartilhados
+│   └── interfaces/     # Interfaces TypeScript
+└── core/               # Configurações centrais
 ```
 
-## Funcionalidades
+### **Frontend (Next.js + React)**
+```
+frontend/
+├── pages/              # Páginas do módulo
+│   ├── dashboard/     # Dashboard principal
+│   ├── ordens/        # Gestão de ordens
+│   ├── clientes/      # Gestão de clientes
+│   ├── produtos/      # Gestão de produtos
+│   └── configuracoes/ # Configurações
+├── components/         # Componentes React
+├── hooks/             # Hooks customizados
+├── services/          # Serviços de API
+└── types/             # Tipos TypeScript
+```
 
-- Dashboard com métricas
-- Gerenciamento de ordens de serviço
-- Cadastro de clientes
-- Cadastro de produtos/serviços
-- Configurações do módulo
+## 📦 **Instalação**
 
-## Banco de Dados
+### **Pré-requisitos**
+- PostgreSQL 15+
+- Node.js 18+
+- Sistema multitenant configurado
 
-O módulo cria as seguintes tabelas:
+### **Passos de Instalação**
 
-- `mod_ordem_servico_configs` - Configurações do módulo
+1. **Copiar arquivos para o sistema**
+   ```bash
+   # Copiar backend
+   cp -r module-os/backend/* apps/backend/src/modules/ordem_servico/
+
+   # Copiar frontend
+   cp -r module-os/frontend/* apps/frontend/src/app/modules/ordem_servico/
+   ```
+
+2. **Executar migração do banco**
+   ```bash
+   # Conectar ao banco PostgreSQL
+   psql "postgresql://user:password@localhost:5432/database"
+
+   # Executar o script de migração
+   \i module-os/migration_complete.sql
+   ```
+
+3. **Registrar módulo no sistema**
+   ```javascript
+   // Executar no backend
+   const { PrismaClient } = require('@prisma/client');
+   const prisma = new PrismaClient();
+
+   await prisma.module.create({
+     data: {
+       slug: 'ordem_servico',
+       name: 'Ordem de Serviços',
+       version: '1.0.1',
+       status: 'active',
+       hasBackend: true,
+       hasFrontend: true
+     }
+   });
+   ```
+
+4. **Reiniciar o backend**
+   ```bash
+   cd apps/backend
+   npm run start:dev
+   ```
+
+## 🔧 **Configuração**
+
+### **Variáveis de Ambiente**
+```env
+# Configurações específicas do módulo
+MODULE_OS_ENABLED=true
+MODULE_OS_MAX_FILE_SIZE=10485760
+MODULE_OS_ALLOWED_EXTENSIONS=jpg,jpeg,png,pdf
+```
+
+### **Permissões Padrão**
+
+O módulo cria automaticamente três perfis de permissão:
+
+- **Admin**: Acesso completo a todas as funcionalidades
+- **Técnico**: Acesso a ordens, clientes e produtos (somente leitura)
+- **Atendente**: Acesso básico a ordens e clientes
+
+## 📊 **Estrutura do Banco de Dados**
+
+### **Tabelas Principais**
+- `mod_ordem_servico_ordens` - Ordens de serviço
 - `mod_ordem_servico_clients` - Clientes
 - `mod_ordem_servico_products` - Produtos/Serviços
-- `mod_ordem_servico_notification_schedules` - Agendamentos de notificações
+- `mod_ordem_servico_historico` - Histórico de alterações
+- `mod_ordem_servico_user_roles` - Papéis dos usuários
+- `mod_ordem_servico_user_permissions` - Permissões individuais
+- `mod_ordem_servico_profile_permissions` - Permissões por perfil
 
-## Permissões
+### **Índices Otimizados**
+- Índices por tenant em todas as tabelas
+- Índices compostos para consultas frequentes
+- Índices únicos para integridade de dados
 
-- `ordem_servico.view` - Visualizar o módulo
-- `ordem_servico.create` - Criar registros
-- `ordem_servico.edit` - Editar registros
-- `ordem_servico.delete` - Excluir registros
-- `ordem_servico.admin` - Administrar o módulo
+## 🔐 **Sistema de Permissões**
 
-## Endpoints da API
+### **Recursos Disponíveis**
+- `dashboard_view` - Visualizar dashboard
+- `orders_view` - Visualizar ordens
+- `orders_create` - Criar ordens
+- `orders_edit` - Editar ordens
+- `orders_delete` - Excluir ordens
+- `clients_view` - Visualizar clientes
+- `clients_create` - Criar clientes
+- `clients_edit` - Editar clientes
+- `clients_delete` - Excluir clientes
+- `products_view` - Visualizar produtos
+- `products_create` - Criar produtos
+- `products_edit` - Editar produtos
+- `products_delete` - Excluir produtos
+- `config_view` - Visualizar configurações
+- `config_users` - Gerenciar usuários
+- `config_permissions` - Gerenciar permissões
+- `config_system` - Configurações do sistema
 
-- `GET /api/ordem_servico` - Lista registros
-- `GET /api/ordem_servico/stats` - Estatísticas do módulo
+## 📈 **Monitoramento**
 
-## Rotas do Frontend
+### **Logs Disponíveis**
+- Logs de carregamento do módulo
+- Logs de operações do banco
+- Logs de permissões e auditoria
+- Logs de integrações (WhatsApp)
 
-- `/modules/ordem_servico/pages/dashboard` - Dashboard principal
-- `/modules/ordem_servico/pages/ordens` - Lista de ordens
-- `/modules/ordem_servico/pages/clientes` - Cadastro de clientes
-- `/modules/ordem_servico/pages/produtos` - Cadastro de produtos
-- `/modules/ordem_servico/pages/configuracoes` - Configurações
+### **Métricas**
+- Número de ordens ativas
+- Tempo médio de resolução
+- Taxa de satisfação do cliente
+- Performance das consultas
+
+## 🐛 **Troubleshooting**
+
+### **Módulo não carrega**
+1. Verificar se o módulo está registrado no banco
+2. Verificar logs em `module_loading_debug.log`
+3. Reiniciar o backend
+
+### **Permissões não funcionam**
+1. Verificar se as tabelas de permissão foram criadas
+2. Executar seeds novamente
+3. Verificar configuração do tenant
+
+### **Erros de banco de dados**
+1. Verificar conexão com PostgreSQL
+2. Executar migração novamente
+3. Verificar logs do banco
+
+## 📝 **Logs Importantes**
+
+```
+✅ Módulo ordem_servico carregado com sucesso!
+✅ OrdensService executando queries no banco de dados
+🎯 [Controller] INÍCIO - Buscando ordens
+✅ Resultado retornado com sucesso
+```
+
+## 🤝 **Contribuição**
+
+Para contribuir com o desenvolvimento do módulo:
+
+1. Faça fork do repositório
+2. Crie uma branch para sua feature
+3. Commit suas alterações
+4. Push para a branch
+5. Abra um Pull Request
+
+## 📄 **Licença**
+
+Este módulo é parte do sistema multitenant e segue a mesma licença AGPL-3.0.
+
+## 📞 **Suporte**
+
+Para suporte técnico, entre em contato com a equipe de desenvolvimento ou abra uma issue no repositório.
