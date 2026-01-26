@@ -19,7 +19,18 @@ import {
     TechnicianResponseDTO,
     HistoricoResponseDTO,
     UploadResponseDTO,
-    DeleteResponseDTO
+    DeleteResponseDTO,
+    // Novos DTOs para retirada e abandono
+    RetiradaDTO,
+    PagamentoResponseDTO,
+    AlertaAbandonoDTO,
+    AnexoAbandonoDTO,
+    AlertaAbandonoResponseDTO,
+    MarcarAbandonadoDTO,
+    ConservacaoCalculoResponseDTO,
+    AtualizarConservacaoDTO,
+    StatusHistoricoResponseDTO,
+    AlertaRetiradaResponseDTO
 } from '../shared/dto/ordem-servico.dto';
 
 @Controller('api/ordem_servico/ordens')
@@ -94,6 +105,20 @@ export class OrdensController {
             return await this.ordensService.getTechnicians(req.user.tenantId);
         } catch (error) {
             this.logger.error(`Erro ao buscar técnicos:`, error);
+            throw error;
+        }
+    }
+
+    // IMPORTANTE: Rota estática DEVE vir antes de rotas com parâmetros (:id)
+    @Get('alertas-retirada')
+    async getAlertasRetirada(
+        @Req() req: ExpressRequest & { user: any }
+    ): Promise<AlertaRetiradaResponseDTO> {
+        try {
+            this.logger.log(`Buscando alertas de retirada. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.getAlertasRetirada(req.user.tenantId);
+        } catch (error) {
+            this.logger.error(`Erro ao buscar alertas de retirada:`, error);
             throw error;
         }
     }
@@ -195,8 +220,8 @@ export class OrdensController {
             }
 
             // Verificar se a ordem pode ser editada
-            if (ordem.status === 6 || ordem.status === 7) { // FINALIZADA ou CANCELADA
-                throw new ForbiddenException('Ordem de serviço finalizada ou cancelada não pode ser editada');
+            if (ordem.status === 6 || ordem.status === 7 || ordem.status === 8 || ordem.status === 9) { // FINALIZADA, CANCELADA, RETIRADO ou ABANDONADO
+                throw new ForbiddenException('Ordem de serviço finalizada, cancelada, retirada ou abandonada não pode ser editada');
             }
 
             return await this.ordensService.update(req.user.tenantId, req.user.id, id, updateDto);
@@ -372,6 +397,201 @@ export class OrdensController {
         } catch (error) {
             this.logger.error('Erro ao servir arquivo:', error);
             res.status(500).json({ message: 'Erro interno ao buscar imagem' });
+        }
+    }
+
+    // ============================================
+    // ENDPOINTS DE HISTÓRICO DE STATUS
+    // ============================================
+
+    @Get(':id/status-historico')
+    async getStatusHistorico(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string
+    ): Promise<StatusHistoricoResponseDTO[]> {
+        try {
+            this.logger.log(`Buscando histórico de status da ordem ${id}. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.getStatusHistorico(req.user.tenantId, id);
+        } catch (error) {
+            this.logger.error(`Erro ao buscar histórico de status da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    // ============================================
+    // ENDPOINTS DE CONSERVAÇÃO
+    // ============================================
+
+    @Get(':id/conservacao')
+    async getConservacao(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string
+    ): Promise<ConservacaoCalculoResponseDTO> {
+        try {
+            this.logger.log(`Calculando conservação da ordem ${id}. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.calcularConservacao(req.user.tenantId, id);
+        } catch (error) {
+            this.logger.error(`Erro ao calcular conservação da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    @Put(':id/conservacao')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
+    async atualizarConservacao(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
+        @Body() body: AtualizarConservacaoDTO
+    ) {
+        try {
+            this.logger.log(`Atualizando conservação da ordem ${id}. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.atualizarConservacao(
+                req.user.tenantId,
+                req.user.id,
+                id,
+                body.valor_conservacao || 0,
+                body.justificativa_conservacao
+            );
+        } catch (error) {
+            this.logger.error(`Erro ao atualizar conservação da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    // ============================================
+    // ENDPOINTS DE RETIRADA E PAGAMENTOS
+    // ============================================
+
+    @Get(':id/pagamentos')
+    async getPagamentos(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string
+    ): Promise<PagamentoResponseDTO[]> {
+        try {
+            this.logger.log(`Buscando pagamentos da ordem ${id}. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.getPagamentos(req.user.tenantId, id);
+        } catch (error) {
+            this.logger.error(`Erro ao buscar pagamentos da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    @Post(':id/retirada')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
+    async registrarRetirada(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
+        @Body() body: RetiradaDTO
+    ): Promise<OrdemServicoResponseDTO> {
+        try {
+            this.logger.log(`Registrando retirada da ordem ${id}. Tenant: ${req.user?.tenantId}`);
+
+            // Verificar se a ordem existe
+            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            if (!ordem) {
+                throw new NotFoundException('Ordem de serviço não encontrada');
+            }
+
+            // Verificar se a ordem está finalizada
+            if (ordem.status !== 6) {
+                throw new BadRequestException('Só é possível registrar retirada de ordens finalizadas');
+            }
+
+            return await this.ordensService.registrarRetirada(req.user.tenantId, req.user.id, id, body);
+        } catch (error) {
+            this.logger.error(`Erro ao registrar retirada da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    // ============================================
+    // ENDPOINTS DE ALERTAS DE ABANDONO
+    // ============================================
+
+    @Get(':id/alertas-abandono')
+    async getAlertasAbandono(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string
+    ): Promise<AlertaAbandonoResponseDTO[]> {
+        try {
+            this.logger.log(`Buscando alertas de abandono da ordem ${id}. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.getAlertasAbandono(req.user.tenantId, id);
+        } catch (error) {
+            this.logger.error(`Erro ao buscar alertas de abandono da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    @Post(':id/alertas-abandono')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
+    async registrarAlertaAbandono(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
+        @Body() body: AlertaAbandonoDTO
+    ): Promise<AlertaAbandonoResponseDTO> {
+        try {
+            this.logger.log(`Registrando alerta de abandono para ordem ${id}. Tenant: ${req.user?.tenantId}`);
+
+            // Verificar se a ordem existe
+            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            if (!ordem) {
+                throw new NotFoundException('Ordem de serviço não encontrada');
+            }
+
+            // Verificar se a ordem está finalizada
+            if (ordem.status !== 6) {
+                throw new BadRequestException('Só é possível registrar alertas para ordens finalizadas');
+            }
+
+            return await this.ordensService.registrarAlertaAbandono(req.user.tenantId, req.user.id, id, body);
+        } catch (error) {
+            this.logger.error(`Erro ao registrar alerta de abandono da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    @Post(':id/alertas-abandono/:alertaId/anexos')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
+    async registrarAnexoAlerta(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
+        @Param('alertaId') alertaId: string,
+        @Body() body: AnexoAbandonoDTO
+    ) {
+        try {
+            this.logger.log(`Registrando anexo para alerta ${alertaId}. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.registrarAnexoAlerta(req.user.tenantId, req.user.id, alertaId, body);
+        } catch (error) {
+            this.logger.error(`Erro ao registrar anexo do alerta ${alertaId}:`, error);
+            throw error;
+        }
+    }
+
+    @Post(':id/marcar-abandonado')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
+    async marcarComoAbandonado(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
+        @Body() body: MarcarAbandonadoDTO
+    ): Promise<OrdemServicoResponseDTO> {
+        try {
+            this.logger.log(`Marcando ordem ${id} como abandonada. Tenant: ${req.user?.tenantId}`);
+
+            // Verificar se a ordem existe
+            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            if (!ordem) {
+                throw new NotFoundException('Ordem de serviço não encontrada');
+            }
+
+            // Verificar se a ordem está finalizada
+            if (ordem.status !== 6) {
+                throw new BadRequestException('Só é possível marcar como abandonado ordens finalizadas');
+            }
+
+            return await this.ordensService.marcarComoAbandonado(req.user.tenantId, req.user.id, id, body.observacoes);
+        } catch (error) {
+            this.logger.error(`Erro ao marcar ordem ${id} como abandonada:`, error);
+            throw error;
         }
     }
 }

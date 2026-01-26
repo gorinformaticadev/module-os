@@ -30,12 +30,22 @@ import {
     Sparkles,
     Loader2,
     Brain,
-    Wrench
+    Wrench,
+    Clock,
+    Package,
+    AlertTriangle,
+    History
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
 import { RichTextEditor } from '../../../components/ui/rich-text-editor';
 import { useAI } from '../../../hooks/useAI';
+
+// Componentes de Retirada/Abandono
+import { StatusTimeline } from '../../../components/StatusTimeline';
+import { ConservacaoCard } from '../../../components/ConservacaoCard';
+import { PagamentosModal } from '../../../components/PagamentosModal';
+import { AlertasAbandonoModal } from '../../../components/AlertasAbandonoModal';
 
 // Tipos locais
 interface OrdemServico {
@@ -107,7 +117,9 @@ enum StatusOS {
     AGUARDANDO_PECAS = 4,
     EM_EXECUCAO = 5,
     FINALIZADA = 6,
-    CANCELADA = 7
+    CANCELADA = 7,
+    RETIRADO = 8,
+    ABANDONADO = 9
 }
 
 enum OrigemSolicitacao {
@@ -124,7 +136,9 @@ const STATUS_LABELS: Record<StatusOS, string> = {
     [StatusOS.AGUARDANDO_PECAS]: 'Aguardando Peças',
     [StatusOS.EM_EXECUCAO]: 'Em Execução',
     [StatusOS.FINALIZADA]: 'Finalizada',
-    [StatusOS.CANCELADA]: 'Cancelada'
+    [StatusOS.CANCELADA]: 'Cancelada',
+    [StatusOS.RETIRADO]: 'Retirado',
+    [StatusOS.ABANDONADO]: 'Abandonado'
 };
 
 const ORIGEM_LABELS: Record<OrigemSolicitacao, string> = {
@@ -140,8 +154,10 @@ const TRANSICOES_PERMITIDAS: Record<StatusOS, StatusOS[]> = {
     [StatusOS.AGUARDANDO_CLIENTE]: [StatusOS.EM_ANALISE, StatusOS.EM_EXECUCAO, StatusOS.AGUARDANDO_PECAS, StatusOS.CANCELADA],
     [StatusOS.AGUARDANDO_PECAS]: [StatusOS.EM_EXECUCAO, StatusOS.AGUARDANDO_CLIENTE, StatusOS.CANCELADA],
     [StatusOS.EM_EXECUCAO]: [StatusOS.FINALIZADA, StatusOS.AGUARDANDO_CLIENTE, StatusOS.AGUARDANDO_PECAS, StatusOS.CANCELADA],
-    [StatusOS.FINALIZADA]: [],
-    [StatusOS.CANCELADA]: []
+    [StatusOS.FINALIZADA]: [StatusOS.RETIRADO, StatusOS.ABANDONADO],
+    [StatusOS.CANCELADA]: [],
+    [StatusOS.RETIRADO]: [],
+    [StatusOS.ABANDONADO]: []
 };
 
 interface Technician {
@@ -184,6 +200,10 @@ export default function EditOrdemPage() {
     };
     const [loading, setLoading] = useState(false);
     const [loadingOrdem, setLoadingOrdem] = useState(true);
+
+    // Estados dos modais de Retirada/Abandono
+    const [isRetiradaModalOpen, setIsRetiradaModalOpen] = useState(false);
+    const [isAbandonoModalOpen, setIsAbandonoModalOpen] = useState(false);
 
     const ordemId = searchParams.get('id');
 
@@ -752,6 +772,95 @@ export default function EditOrdemPage() {
             </div>
 
             <div className="space-y-6">
+
+                {/* Alerta: Status Terminal (Somente Leitura) */}
+                {(ordem.status === StatusOS.RETIRADO || ordem.status === StatusOS.ABANDONADO || ordem.status === StatusOS.CANCELADA) && (
+                    <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 flex items-center gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                        <div>
+                            <p className="font-medium text-amber-800">
+                                Esta ordem está com status {STATUS_LABELS[ordem.status]} (somente leitura)
+                            </p>
+                            <p className="text-sm text-amber-600">
+                                Ordens com status terminal não podem ser editadas.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Seção: Ações de Finalização (quando status = FINALIZADA) */}
+                {ordem.status === StatusOS.FINALIZADA && (
+                    <Card className="shadow-sm border-2 border-emerald-200 bg-emerald-50/30">
+                        <CardHeader className="bg-emerald-100/50 pb-4">
+                            <div className="flex items-center gap-2">
+                                <Package className="h-5 w-5 text-emerald-600" />
+                                <CardTitle className="text-lg text-emerald-800">Ações de Finalização</CardTitle>
+                            </div>
+                            <CardDescription>A ordem está finalizada. Registre a retirada pelo cliente ou inicie o processo de abandono.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Conservação Card */}
+                                <ConservacaoCard 
+                                    ordemId={ordemId!} 
+                                    valorServico={parseFloat(formData.valor_servico) || 0} 
+                                />
+                                
+                                {/* Botões de Ação */}
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-3">
+                                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                            Registrar Retirada
+                                        </h4>
+                                        <p className="text-xs text-muted-foreground">
+                                            O cliente compareceu para retirar o equipamento. Registre os pagamentos e finalize a entrega.
+                                        </p>
+                                        <Button 
+                                            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+                                            onClick={() => setIsRetiradaModalOpen(true)}
+                                        >
+                                            <Package className="h-4 w-4" />
+                                            Registrar Retirada
+                                        </Button>
+                                    </div>
+                                    
+                                    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-3">
+                                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                                            <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                            Processo de Abandono
+                                        </h4>
+                                        <p className="text-xs text-muted-foreground">
+                                            O cliente não compareceu? Inicie o processo de abandono com 3 tentativas de contato.
+                                        </p>
+                                        <Button 
+                                            variant="outline"
+                                            className="w-full gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                            onClick={() => setIsAbandonoModalOpen(true)}
+                                        >
+                                            <Clock className="h-4 w-4" />
+                                            Alertas de Abandono
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Histórico de Status */}
+                <Card className="shadow-sm border-2">
+                    <CardHeader className="bg-muted/20 pb-4">
+                        <div className="flex items-center gap-2">
+                            <History className="h-5 w-5 text-primary" />
+                            <CardTitle className="text-lg">Histórico de Status</CardTitle>
+                        </div>
+                        <CardDescription>Linha do tempo com todas as alterações de status desta ordem</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <StatusTimeline ordemId={ordemId!} />
+                    </CardContent>
+                </Card>
 
                 {/* Section 1: CLIENTE (FIXO) - FULL WIDTH */}
                 <Card className="shadow-sm border-2 w-full">
@@ -1699,6 +1808,37 @@ export default function EditOrdemPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Modais de Retirada e Abandono */}
+            {ordem && (
+                <>
+                    <PagamentosModal
+                        isOpen={isRetiradaModalOpen}
+                        onClose={() => setIsRetiradaModalOpen(false)}
+                        ordem={{
+                            id: ordem.id,
+                            numero: ordem.numero,
+                            valor_servico: parseFloat(formData.valor_servico) || 0,
+                            valor_conservacao: (ordem as any).valor_conservacao,
+                            dias_atraso: (ordem as any).dias_atraso
+                        }}
+                        onSuccess={() => {
+                            setIsRetiradaModalOpen(false);
+                            loadOrdem();
+                        }}
+                    />
+                    <AlertasAbandonoModal
+                        isOpen={isAbandonoModalOpen}
+                        onClose={() => setIsAbandonoModalOpen(false)}
+                        ordemId={ordem.id}
+                        ordemNumero={ordem.numero}
+                        onSuccess={() => {
+                            setIsAbandonoModalOpen(false);
+                            loadOrdem();
+                        }}
+                    />
+                </>
             )}
         </div>
     );

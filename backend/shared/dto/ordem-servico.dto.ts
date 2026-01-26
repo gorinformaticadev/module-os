@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString, IsInt, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString, IsInt, Min, Max, ArrayMinSize, ArrayMaxSize, ValidateNested, IsNotEmpty } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum OrigemSolicitacao {
     WHATSAPP = 'WHATSAPP',
@@ -14,7 +15,9 @@ export enum StatusOS {
     AGUARDANDO_PECAS = 4,
     EM_EXECUCAO = 5,
     FINALIZADA = 6,
-    CANCELADA = 7
+    CANCELADA = 7,
+    RETIRADO = 8,
+    ABANDONADO = 9
 }
 
 export class ItemOrdem {
@@ -346,6 +349,12 @@ export class OrdemServicoResponseDTO {
     cliente: ClienteResponseDTO;
     responsavel: ResponsavelResponseDTO;
     itens?: ItemOrdem[];
+    // Novos campos de conservação e retirada
+    valor_conservacao?: number;
+    dias_atraso?: number;
+    justificativa_conservacao?: string;
+    data_limite_retirada?: string;
+    data_retirada?: string;
 }
 
 export class OrdemServicoListResponseDTO {
@@ -398,4 +407,214 @@ export class UploadResponseDTO {
 
 export class DeleteResponseDTO {
     success: boolean;
+}
+
+// ============================================
+// DTOs PARA RETIRADA E PAGAMENTOS
+// ============================================
+
+export enum FormaPagamento {
+    PIX = 'PIX',
+    DINHEIRO = 'DINHEIRO',
+    CARTAO_CREDITO = 'CARTAO_CREDITO',
+    CARTAO_DEBITO = 'CARTAO_DEBITO',
+    TRANSFERENCIA = 'TRANSFERENCIA',
+    CHEQUE = 'CHEQUE',
+    BOLETO = 'BOLETO'
+}
+
+export class PagamentoDTO {
+    @IsString()
+    @IsNotEmpty()
+    @IsEnum(FormaPagamento)
+    forma_pagamento: FormaPagamento;
+
+    @IsNumber()
+    @Min(0.01)
+    valor: number;
+
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(12)
+    parcelas?: number;
+
+    @IsOptional()
+    @IsString()
+    observacoes?: string;
+}
+
+export class RetiradaDTO {
+    @IsArray()
+    @ArrayMinSize(1)
+    @ArrayMaxSize(5)
+    @ValidateNested({ each: true })
+    @Type(() => PagamentoDTO)
+    pagamentos: PagamentoDTO[];
+
+    @IsOptional()
+    @IsString()
+    observacoes?: string;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    valor_conservacao?: number;
+
+    @IsOptional()
+    @IsString()
+    justificativa_conservacao?: string;
+}
+
+export class PagamentoResponseDTO {
+    id: string;
+    ordem_servico_id: string;
+    forma_pagamento: string;
+    valor: number;
+    parcelas: number;
+    observacoes: string;
+    created_at: string;
+    created_by: string;
+}
+
+// ============================================
+// DTOs PARA ALERTAS DE ABANDONO
+// ============================================
+
+export enum MeioComunicacao {
+    WHATSAPP = 'WHATSAPP',
+    EMAIL = 'EMAIL',
+    SMS = 'SMS',
+    CARTA = 'CARTA',
+    TELEFONE = 'TELEFONE'
+}
+
+export class AlertaAbandonoDTO {
+    @IsInt()
+    @Min(1)
+    @Max(3)
+    numero_alerta: number;
+
+    @IsDateString()
+    data_envio: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @IsEnum(MeioComunicacao)
+    meio_comunicacao: MeioComunicacao;
+
+    @IsOptional()
+    @IsString()
+    mensagem?: string;
+
+    @IsOptional()
+    @IsString()
+    observacoes?: string;
+}
+
+export class AnexoAbandonoDTO {
+    @IsString()
+    @IsNotEmpty()
+    nome_arquivo: string;
+
+    @IsString()
+    @IsNotEmpty()
+    url_arquivo: string;
+
+    @IsOptional()
+    @IsString()
+    tipo_arquivo?: string;
+
+    @IsOptional()
+    @IsInt()
+    tamanho_bytes?: number;
+
+    @IsOptional()
+    @IsString()
+    descricao?: string;
+}
+
+export class AlertaAbandonoResponseDTO {
+    id: string;
+    ordem_servico_id: string;
+    numero_alerta: number;
+    data_envio: string;
+    meio_comunicacao: string;
+    enviado_por: string;
+    mensagem: string;
+    observacoes: string;
+    created_at: string;
+    anexos?: AnexoAbandonoResponseDTO[];
+}
+
+export class AnexoAbandonoResponseDTO {
+    id: string;
+    alerta_id: string;
+    nome_arquivo: string;
+    tipo_arquivo: string;
+    tamanho_bytes: number;
+    url_arquivo: string;
+    descricao: string;
+    created_at: string;
+    uploaded_by: string;
+}
+
+export class MarcarAbandonadoDTO {
+    @IsOptional()
+    @IsString()
+    observacoes?: string;
+}
+
+// ============================================
+// DTOs PARA CONSERVAÇÃO
+// ============================================
+
+export class ConservacaoCalculoResponseDTO {
+    diasAtraso: number;
+    valorConservacao: number;
+    emAtraso: boolean;
+    dataLimite: string;
+    prazoRetiradaDias: number;
+    valorDiario: number;
+    conservacaoHabilitada: boolean;
+}
+
+export class AtualizarConservacaoDTO {
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    valor_conservacao?: number;
+
+    @IsOptional()
+    @IsString()
+    justificativa_conservacao?: string;
+}
+
+// ============================================
+// DTOs PARA HISTÓRICO DE STATUS
+// ============================================
+
+export class StatusHistoricoResponseDTO {
+    id: string;
+    ordem_servico_id: string;
+    status_anterior: number;
+    status_novo: number;
+    usuario_id: string;
+    usuario_nome: string;
+    usuario_email: string;
+    data_alteracao: string;
+    observacoes: string;
+    created_at: string;
+}
+
+// ============================================
+// DTOs PARA ALERTAS DE RETIRADA (BADGES)
+// ============================================
+
+export class AlertaRetiradaResponseDTO {
+    total_pendentes: number;
+    urgentes: number;
+    atencao: number;
+    normal: number;
+    cobranca_ativa: number;
 }

@@ -36,6 +36,7 @@ import { OrdemServico, StatusOS, STATUS_LABELS, STATUS_COLORS, OrigemSolicitacao
 import { OrdemViewModal } from '../../components/OrdemViewModal';
 import { PrintModal } from '../../components/PrintModal';
 import { WhatsAppModal } from '../../components/WhatsAppModal';
+import { AlertaRetiradaBadge } from '../../components/AlertaRetiradaBadge';
 
 // Cliente API customizado para o módulo raiz
 const api = {
@@ -376,10 +377,13 @@ export default function OrdensPage() {
           <h1 className="text-3xl font-bold">Ordens de Serviço</h1>
           <p className="text-muted-foreground">Gerencie todas as ordens de serviço</p>
         </div>
-        <Button onClick={() => window.location.href = '/modules/ordem_servico/pages/ordens/new'} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Nova Ordem
-        </Button>
+        <div className="flex items-center gap-3">
+          <AlertaRetiradaBadge variant="badge" />
+          <Button onClick={() => window.location.href = '/modules/ordem_servico/pages/ordens/new'} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Nova Ordem
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}

@@ -17,6 +17,9 @@ import {
   XCircle
 } from 'lucide-react';
 
+// Componente de Alerta de Retirada
+import { AlertaRetiradaBadge } from '../../components/AlertaRetiradaBadge';
+
 // Componentes UI customizados para o módulo raiz
 const Card = React.forwardRef<
   HTMLDivElement,
@@ -377,6 +380,11 @@ export default function OrdemServicoDashboardPage() {
           color="bg-gradient-to-r from-pink-500 to-pink-600"
           onClick={() => handleShortcut('ordens')}
         />
+      </div>
+
+      {/* Alertas de Equipamentos para Retirada */}
+      <div className="mb-8">
+        <AlertaRetiradaBadge variant="card" />
       </div>
 
       {/* Cards de Ordens */}

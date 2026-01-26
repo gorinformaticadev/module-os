@@ -40,6 +40,13 @@ export interface OrdemServico {
   created_at: string;
   updated_at: string;
 
+  // Novos campos de conservação e retirada
+  valor_conservacao?: number;
+  dias_atraso?: number;
+  justificativa_conservacao?: string;
+  data_limite_retirada?: string;
+  data_retirada?: string;
+
   // Relacionamentos
   cliente?: Cliente;
   usuario_responsavel?: Usuario;
@@ -93,7 +100,9 @@ export enum StatusOS {
   AGUARDANDO_PECAS = 4,
   EM_EXECUCAO = 5,
   FINALIZADA = 6,
-  CANCELADA = 7
+  CANCELADA = 7,
+  RETIRADO = 8,
+  ABANDONADO = 9
 }
 
 export enum OrigemSolicitacao {
@@ -121,7 +130,9 @@ export const STATUS_LABELS: Record<StatusOS, string> = {
   [StatusOS.AGUARDANDO_PECAS]: 'Aguardando Peças',
   [StatusOS.EM_EXECUCAO]: 'Em Execução',
   [StatusOS.FINALIZADA]: 'Finalizada',
-  [StatusOS.CANCELADA]: 'Cancelada'
+  [StatusOS.CANCELADA]: 'Cancelada',
+  [StatusOS.RETIRADO]: 'Retirado',
+  [StatusOS.ABANDONADO]: 'Abandonado'
 };
 
 export const STATUS_COLORS: Record<StatusOS, string> = {
@@ -132,7 +143,9 @@ export const STATUS_COLORS: Record<StatusOS, string> = {
   [StatusOS.AGUARDANDO_PECAS]: 'bg-purple-500',
   [StatusOS.EM_EXECUCAO]: 'bg-indigo-500',
   [StatusOS.FINALIZADA]: 'bg-gray-500',
-  [StatusOS.CANCELADA]: 'bg-red-500'
+  [StatusOS.CANCELADA]: 'bg-red-500',
+  [StatusOS.RETIRADO]: 'bg-teal-500',
+  [StatusOS.ABANDONADO]: 'bg-stone-500'
 };
 
 export const ORIGEM_LABELS: Record<OrigemSolicitacao, string> = {
@@ -159,8 +172,10 @@ export const TRANSICOES_PERMITIDAS: Record<StatusOS, StatusOS[]> = {
   [StatusOS.AGUARDANDO_CLIENTE]: [StatusOS.EM_ANALISE, StatusOS.EM_EXECUCAO, StatusOS.AGUARDANDO_PECAS, StatusOS.CANCELADA],
   [StatusOS.AGUARDANDO_PECAS]: [StatusOS.EM_EXECUCAO, StatusOS.AGUARDANDO_CLIENTE, StatusOS.CANCELADA],
   [StatusOS.EM_EXECUCAO]: [StatusOS.FINALIZADA, StatusOS.AGUARDANDO_CLIENTE, StatusOS.AGUARDANDO_PECAS, StatusOS.CANCELADA],
-  [StatusOS.FINALIZADA]: [StatusOS.EM_EXECUCAO],
-  [StatusOS.CANCELADA]: [StatusOS.EM_EXECUCAO]
+  [StatusOS.FINALIZADA]: [StatusOS.EM_EXECUCAO, StatusOS.RETIRADO, StatusOS.ABANDONADO],
+  [StatusOS.CANCELADA]: [StatusOS.EM_EXECUCAO],
+  [StatusOS.RETIRADO]: [], // Estado final
+  [StatusOS.ABANDONADO]: [] // Estado final
 };
 
 export interface CreateOrdemServicoDTO {
@@ -232,4 +247,136 @@ export interface OrdemServicoFilters {
   data_fim?: string;
   origem_solicitacao?: OrigemSolicitacao;
   tipo_servico?: string;
+}
+
+// ============================================
+// TIPOS PARA PAGAMENTOS E RETIRADA
+// ============================================
+
+export enum FormaPagamento {
+  PIX = 'PIX',
+  DINHEIRO = 'DINHEIRO',
+  CARTAO_CREDITO = 'CARTAO_CREDITO',
+  CARTAO_DEBITO = 'CARTAO_DEBITO',
+  TRANSFERENCIA = 'TRANSFERENCIA',
+  CHEQUE = 'CHEQUE',
+  BOLETO = 'BOLETO'
+}
+
+export const FORMA_PAGAMENTO_LABELS: Record<FormaPagamento, string> = {
+  [FormaPagamento.PIX]: 'PIX',
+  [FormaPagamento.DINHEIRO]: 'Dinheiro',
+  [FormaPagamento.CARTAO_CREDITO]: 'Cartão de Crédito',
+  [FormaPagamento.CARTAO_DEBITO]: 'Cartão de Débito',
+  [FormaPagamento.TRANSFERENCIA]: 'Transferência',
+  [FormaPagamento.CHEQUE]: 'Cheque',
+  [FormaPagamento.BOLETO]: 'Boleto'
+};
+
+export interface Pagamento {
+  id?: string;
+  ordem_servico_id?: string;
+  forma_pagamento: FormaPagamento;
+  valor: number;
+  parcelas?: number;
+  observacoes?: string;
+  created_at?: string;
+  created_by?: string;
+  created_by_nome?: string;
+}
+
+export interface RetiradaDTO {
+  pagamentos: Pagamento[];
+  observacoes?: string;
+  valor_conservacao?: number;
+  justificativa_conservacao?: string;
+}
+
+// ============================================
+// TIPOS PARA ALERTAS DE ABANDONO
+// ============================================
+
+export enum MeioComunicacao {
+  WHATSAPP = 'WHATSAPP',
+  EMAIL = 'EMAIL',
+  SMS = 'SMS',
+  CARTA = 'CARTA',
+  TELEFONE = 'TELEFONE'
+}
+
+export const MEIO_COMUNICACAO_LABELS: Record<MeioComunicacao, string> = {
+  [MeioComunicacao.WHATSAPP]: 'WhatsApp',
+  [MeioComunicacao.EMAIL]: 'E-mail',
+  [MeioComunicacao.SMS]: 'SMS',
+  [MeioComunicacao.CARTA]: 'Carta',
+  [MeioComunicacao.TELEFONE]: 'Telefone'
+};
+
+export interface AlertaAbandono {
+  id?: string;
+  ordem_servico_id?: string;
+  numero_alerta: number;
+  data_envio: string;
+  meio_comunicacao: MeioComunicacao;
+  enviado_por?: string;
+  enviado_por_nome?: string;
+  mensagem?: string;
+  observacoes?: string;
+  created_at?: string;
+  anexos?: AnexoAbandono[];
+}
+
+export interface AnexoAbandono {
+  id?: string;
+  alerta_id?: string;
+  nome_arquivo: string;
+  tipo_arquivo?: string;
+  tamanho_bytes?: number;
+  url_arquivo: string;
+  descricao?: string;
+  created_at?: string;
+  uploaded_by?: string;
+}
+
+// ============================================
+// TIPOS PARA CONSERVAÇÃO
+// ============================================
+
+export interface ConservacaoCalculo {
+  diasAtraso: number;
+  valorConservacao: number;
+  emAtraso: boolean;
+  dataLimite: string | null;
+  prazoRetiradaDias: number;
+  valorDiario: number;
+  conservacaoHabilitada: boolean;
+}
+
+// ============================================
+// TIPOS PARA HISTÓRICO DE STATUS
+// ============================================
+
+export interface StatusHistorico {
+  id: string;
+  ordem_servico_id: string;
+  status_anterior: number;
+  status_novo: number;
+  usuario_id: string;
+  usuario_nome?: string;
+  usuario_email?: string;
+  data_alteracao: string;
+  observacoes?: string;
+  created_at: string;
+}
+
+// ============================================
+// TIPOS PARA ALERTAS DE RETIRADA (BADGES)
+// ============================================
+
+export interface AlertaRetirada {
+  total_pendentes: number;
+  urgentes: number;
+  atencao: number;
+  normal: number;
+  cobranca_ativa: number;
 }

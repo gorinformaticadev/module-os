@@ -1,6 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
-import { CreateOrdemServicoDTO, UpdateOrdemServicoDTO, OrdemServicoFilters } from '../shared/dto/ordem-servico.dto';
+import { 
+    CreateOrdemServicoDTO, 
+    UpdateOrdemServicoDTO, 
+    OrdemServicoFilters,
+    RetiradaDTO,
+    AlertaAbandonoDTO,
+    AnexoAbandonoDTO,
+    PagamentoDTO
+} from '../shared/dto/ordem-servico.dto';
 import * as puppeteer from 'puppeteer';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -130,8 +138,10 @@ export class OrdensService {
         3: [2, 5, 4, 7], // AGUARDANDO_CLIENTE -> EM_ANALISE, EM_EXECUCAO, AGUARDANDO_PECAS, CANCELADA
         4: [5, 3, 7], // AGUARDANDO_PECAS -> EM_EXECUCAO, AGUARDANDO_CLIENTE, CANCELADA
         5: [6, 3, 4, 7], // EM_EXECUCAO -> FINALIZADA, AGUARDANDO_CLIENTE, AGUARDANDO_PECAS, CANCELADA
-        6: [5], // FINALIZADA -> EM_EXECUCAO
-        7: [5] // CANCELADA -> EM_EXECUCAO
+        6: [5, 8, 9], // FINALIZADA -> EM_EXECUCAO, RETIRADO, ABANDONADO
+        7: [5], // CANCELADA -> EM_EXECUCAO
+        8: [], // RETIRADO -> estado final (imutável)
+        9: [] // ABANDONADO -> estado final (imutável)
     };
 
     async findAll(tenantId: string, filters: OrdemServicoFilters) {
@@ -170,7 +180,7 @@ export class OrdensService {
             if (filters.status && Array.isArray(filters.status)) {
                 validatedStatus = filters.status
                     .map(s => parseInt(String(s), 10))
-                    .filter(s => !isNaN(s) && s >= 0 && s <= 7); // StatusOS válidos: 0-7
+                    .filter(s => !isNaN(s) && s >= 0 && s <= 9); // StatusOS válidos: 0-9
 
                 if (validatedStatus.length === 0) {
                     validatedStatus = undefined; // Ignorar se nenhum status válido
@@ -1081,7 +1091,9 @@ export class OrdensService {
             4: 'Aguardando Peças',
             5: 'Em Execução',
             6: 'Finalizada',
-            7: 'Cancelada'
+            7: 'Cancelada',
+            8: 'Retirado',
+            9: 'Abandonado'
         };
         return labels[status] || 'Desconhecido';
     }
@@ -1142,6 +1154,610 @@ export class OrdensService {
         } catch (error) {
             this.logger.error(`❌ Erro ao buscar técnicos:`, error);
             throw error;
+        }
+    }
+
+    // ============================================
+    // MÉTODOS DE HISTÓRICO DE STATUS
+    // ============================================
+
+    async getStatusHistorico(tenantId: string, ordemId: string) {
+        try {
+            this.logger.log(`Buscando histórico de status da ordem ${ordemId}. Tenant: ${tenantId}`);
+
+            const query = `
+                SELECT 
+                    h.*,
+                    u.name as usuario_nome,
+                    u.email as usuario_email
+                FROM mod_ordem_servico_status_historico h
+                LEFT JOIN users u ON h.usuario_id::uuid = u.id
+                WHERE h.ordem_servico_id = $1::uuid AND h.tenant_id = $2
+                ORDER BY h.data_alteracao DESC
+            `;
+
+            const historico = await this.prisma.$queryRawUnsafe(query, ordemId, tenantId) as any[];
+
+            this.logger.log(`✅ ${historico.length} registros de histórico de status encontrados`);
+            return historico;
+        } catch (error: any) {
+            // Se a tabela não existir, retorna array vazio (migration não executada)
+            if (error?.message?.includes('does not exist') || error?.code === '42P01') {
+                this.logger.warn('⚠️ Tabela mod_ordem_servico_status_historico não existe. Execute a migration.');
+                return [];
+            }
+            this.logger.error(`❌ Erro ao buscar histórico de status:`, error);
+            // Retornar array vazio em caso de erro para não quebrar a UI
+            return [];
+        }
+    }
+
+    private async registrarStatusHistorico(
+        tenantId: string,
+        ordemId: string,
+        usuarioId: string,
+        statusAnterior: number,
+        statusNovo: number,
+        observacoes?: string
+    ) {
+        try {
+            await this.prisma.$executeRawUnsafe(
+                `INSERT INTO mod_ordem_servico_status_historico 
+                 (tenant_id, ordem_servico_id, usuario_id, status_anterior, status_novo, observacoes, data_alteracao)
+                 VALUES ($1, $2::uuid, $3, $4, $5, $6, NOW())`,
+                tenantId,
+                ordemId,
+                usuarioId,
+                statusAnterior,
+                statusNovo,
+                observacoes || null
+            );
+            this.logger.log(`✅ Histórico de status registrado: ${statusAnterior} → ${statusNovo}`);
+        } catch (error) {
+            this.logger.error(`❌ Erro ao registrar histórico de status:`, error);
+            // Não lançar erro para não interromper o fluxo principal
+        }
+    }
+
+    // ============================================
+    // MÉTODOS DE CONSERVAÇÃO
+    // ============================================
+
+    async getConfig(tenantId: string, key: string): Promise<string | null> {
+        try {
+            const result = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT value FROM mod_ordem_servico_configs WHERE tenant_id = $1 AND key = $2`,
+                tenantId,
+                key
+            );
+            return result.length > 0 ? result[0].value : null;
+        } catch (error: any) {
+            // Se a tabela não existir, retorna null (migration não executada)
+            if (error?.message?.includes('does not exist') || error?.code === '42P01') {
+                this.logger.warn(`⚠️ Tabela mod_ordem_servico_configs não existe. Usando valor padrão para ${key}.`);
+            } else {
+                this.logger.error(`❌ Erro ao buscar configuração ${key}:`, error);
+            }
+            return null;
+        }
+    }
+
+    async calcularConservacao(tenantId: string, ordemId: string) {
+        try {
+            this.logger.log(`Calculando conservação para ordem ${ordemId}. Tenant: ${tenantId}`);
+
+            const ordem = await this.findOne(tenantId, ordemId);
+            if (!ordem) {
+                throw new Error('Ordem de serviço não encontrada');
+            }
+
+            if (ordem.status !== 6) { // Só calcula para FINALIZADA
+                return {
+                    diasAtraso: 0,
+                    valorConservacao: 0,
+                    emAtraso: false,
+                    dataLimite: null,
+                    prazoRetiradaDias: 0,
+                    valorDiario: 0,
+                    conservacaoHabilitada: false
+                };
+            }
+
+            // Buscar configurações
+            const prazoRetiradaDias = parseInt(await this.getConfig(tenantId, 'prazo_retirada_dias') || '30');
+            const valorDiario = parseFloat(await this.getConfig(tenantId, 'valor_conservacao_diario') || '5.00');
+            const conservacaoHabilitada = (await this.getConfig(tenantId, 'conservacao_habilitada')) === 'true';
+
+            if (!ordem.data_conclusao) {
+                return {
+                    diasAtraso: 0,
+                    valorConservacao: 0,
+                    emAtraso: false,
+                    dataLimite: null,
+                    prazoRetiradaDias,
+                    valorDiario,
+                    conservacaoHabilitada
+                };
+            }
+
+            // Calcular data limite
+            const dataFinalizacao = new Date(ordem.data_conclusao);
+            const dataLimite = new Date(dataFinalizacao);
+            dataLimite.setDate(dataLimite.getDate() + prazoRetiradaDias);
+
+            // Verificar atraso
+            const hoje = new Date();
+            if (hoje <= dataLimite || !conservacaoHabilitada) {
+                return {
+                    diasAtraso: 0,
+                    valorConservacao: 0,
+                    emAtraso: false,
+                    dataLimite: dataLimite.toISOString(),
+                    prazoRetiradaDias,
+                    valorDiario,
+                    conservacaoHabilitada
+                };
+            }
+
+            // Calcular dias e valor
+            const diffTime = Math.abs(hoje.getTime() - dataLimite.getTime());
+            const diasAtraso = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const valorConservacao = diasAtraso * valorDiario;
+
+            this.logger.log(`✅ Conservação calculada: ${diasAtraso} dias, R$ ${valorConservacao}`);
+            return {
+                diasAtraso,
+                valorConservacao,
+                emAtraso: true,
+                dataLimite: dataLimite.toISOString(),
+                prazoRetiradaDias,
+                valorDiario,
+                conservacaoHabilitada
+            };
+        } catch (error) {
+            this.logger.error(`❌ Erro ao calcular conservação:`, error);
+            throw error;
+        }
+    }
+
+    async atualizarConservacao(tenantId: string, userId: string, ordemId: string, valorConservacao: number, justificativa?: string) {
+        try {
+            this.logger.log(`Atualizando conservação da ordem ${ordemId}. Tenant: ${tenantId}`);
+
+            const query = `
+                UPDATE mod_ordem_servico_ordens 
+                SET valor_conservacao = $1,
+                    justificativa_conservacao = $2,
+                    updated_at = NOW()
+                WHERE id = $3::uuid AND tenant_id = $4
+                RETURNING *
+            `;
+
+            const result = await this.prisma.$queryRawUnsafe(query, valorConservacao, justificativa || null, ordemId, tenantId) as any[];
+
+            if (result.length === 0) {
+                throw new Error('Ordem não encontrada');
+            }
+
+            this.logger.log(`✅ Conservação atualizada: R$ ${valorConservacao}`);
+            return result[0];
+        } catch (error) {
+            this.logger.error(`❌ Erro ao atualizar conservação:`, error);
+            throw error;
+        }
+    }
+
+    // ============================================
+    // MÉTODOS DE RETIRADA E PAGAMENTOS
+    // ============================================
+
+    async validarRetirada(tenantId: string, ordemId: string, pagamentos: PagamentoDTO[]) {
+        this.logger.log(`Validando retirada da ordem ${ordemId}. Tenant: ${tenantId}`);
+
+        const ordem = await this.findOne(tenantId, ordemId);
+        if (!ordem) {
+            throw new Error('Ordem de serviço não encontrada');
+        }
+
+        if (ordem.status !== 6) { // FINALIZADA
+            throw new Error('Só é possível registrar retirada de ordens finalizadas');
+        }
+
+        // Validar quantidade de formas de pagamento
+        if (pagamentos.length === 0) {
+            throw new Error('Informe ao menos uma forma de pagamento');
+        }
+
+        if (pagamentos.length > 5) {
+            throw new Error('Máximo de 5 formas de pagamento permitidas');
+        }
+
+        // Calcular conservação atual
+        const conservacao = await this.calcularConservacao(tenantId, ordemId);
+
+        // Calcular totais
+        const totalPagamentos = pagamentos.reduce((sum, p) => sum + p.valor, 0);
+        const valorServico = parseFloat(ordem.valor_servico) || 0;
+        const valorConservacao = conservacao.emAtraso ? conservacao.valorConservacao : (ordem.valor_conservacao || 0);
+        const totalOS = valorServico + valorConservacao;
+
+        // Validar soma (com tolerância de R$ 0.01)
+        if (Math.abs(totalPagamentos - totalOS) > 0.01) {
+            throw new Error(
+                `Soma dos pagamentos (R$ ${totalPagamentos.toFixed(2)}) deve ser igual ao total da OS ` +
+                `(R$ ${totalOS.toFixed(2)} = serviço R$ ${valorServico.toFixed(2)} + conservação R$ ${valorConservacao.toFixed(2)})`
+            );
+        }
+
+        this.logger.log(`✅ Validação de retirada OK`);
+        return { ordem, conservacao, totalOS };
+    }
+
+    async getPagamentos(tenantId: string, ordemId: string) {
+        try {
+            this.logger.log(`Buscando pagamentos da ordem ${ordemId}. Tenant: ${tenantId}`);
+
+            const query = `
+                SELECT p.*, u.name as created_by_nome
+                FROM mod_ordem_servico_pagamentos p
+                LEFT JOIN users u ON p.created_by::uuid = u.id
+                WHERE p.ordem_servico_id = $1::uuid AND p.tenant_id = $2
+                ORDER BY p.created_at ASC
+            `;
+
+            const pagamentos = await this.prisma.$queryRawUnsafe(query, ordemId, tenantId) as any[];
+
+            this.logger.log(`✅ ${pagamentos.length} pagamentos encontrados`);
+            return pagamentos;
+        } catch (error) {
+            this.logger.error(`❌ Erro ao buscar pagamentos:`, error);
+            throw error;
+        }
+    }
+
+    async registrarRetirada(tenantId: string, userId: string, ordemId: string, retiradaDTO: RetiradaDTO) {
+        try {
+            this.logger.log(`Registrando retirada da ordem ${ordemId}. Tenant: ${tenantId}`);
+
+            // Validar retirada
+            const { ordem, conservacao, totalOS } = await this.validarRetirada(tenantId, ordemId, retiradaDTO.pagamentos);
+
+            // Determinar valor de conservação a usar
+            const valorConservacaoFinal = retiradaDTO.valor_conservacao !== undefined 
+                ? retiradaDTO.valor_conservacao 
+                : (conservacao.emAtraso ? conservacao.valorConservacao : 0);
+
+            // Inserir pagamentos
+            for (const pagamento of retiradaDTO.pagamentos) {
+                await this.prisma.$executeRawUnsafe(
+                    `INSERT INTO mod_ordem_servico_pagamentos 
+                     (tenant_id, ordem_servico_id, forma_pagamento, valor, parcelas, observacoes, created_by)
+                     VALUES ($1, $2::uuid, $3, $4, $5, $6, $7)`,
+                    tenantId,
+                    ordemId,
+                    pagamento.forma_pagamento,
+                    pagamento.valor,
+                    pagamento.parcelas || 1,
+                    pagamento.observacoes || null,
+                    userId
+                );
+            }
+
+            // Atualizar ordem para RETIRADO
+            const statusAnterior = ordem.status;
+            const query = `
+                UPDATE mod_ordem_servico_ordens 
+                SET status = 8,
+                    data_retirada = NOW(),
+                    valor_conservacao = $1,
+                    dias_atraso = $2,
+                    justificativa_conservacao = $3,
+                    updated_at = NOW()
+                WHERE id = $4::uuid AND tenant_id = $5
+                RETURNING *
+            `;
+
+            const result = await this.prisma.$queryRawUnsafe(
+                query,
+                valorConservacaoFinal,
+                conservacao.diasAtraso,
+                retiradaDTO.justificativa_conservacao || null,
+                ordemId,
+                tenantId
+            ) as any[];
+
+            // Registrar no histórico de status
+            await this.registrarStatusHistorico(
+                tenantId,
+                ordemId,
+                userId,
+                statusAnterior,
+                8, // RETIRADO
+                retiradaDTO.observacoes || 'Equipamento retirado pelo cliente'
+            );
+
+            // Registrar no histórico geral
+            await this.registrarHistorico(
+                tenantId,
+                ordemId,
+                userId,
+                'RETIRADA',
+                null,
+                `Equipamento retirado. Total: R$ ${totalOS.toFixed(2)}. Pagamentos: ${retiradaDTO.pagamentos.length} forma(s)`,
+                retiradaDTO.observacoes
+            );
+
+            this.logger.log(`✅ Retirada registrada com sucesso`);
+            return result[0];
+        } catch (error) {
+            this.logger.error(`❌ Erro ao registrar retirada:`, error);
+            throw error;
+        }
+    }
+
+    // ============================================
+    // MÉTODOS DE ALERTAS DE ABANDONO
+    // ============================================
+
+    async getAlertasAbandono(tenantId: string, ordemId: string) {
+        try {
+            this.logger.log(`Buscando alertas de abandono da ordem ${ordemId}. Tenant: ${tenantId}`);
+
+            // Buscar alertas
+            const alertasQuery = `
+                SELECT 
+                    a.*,
+                    u.name as enviado_por_nome
+                FROM mod_ordem_servico_alertas_abandono a
+                LEFT JOIN users u ON a.enviado_por::uuid = u.id
+                WHERE a.ordem_servico_id = $1::uuid AND a.tenant_id = $2
+                ORDER BY a.numero_alerta ASC
+            `;
+
+            const alertas = await this.prisma.$queryRawUnsafe(alertasQuery, ordemId, tenantId) as any[];
+
+            // Buscar anexos para cada alerta
+            for (const alerta of alertas) {
+                const anexosQuery = `
+                    SELECT * FROM mod_ordem_servico_anexos_abandono
+                    WHERE alerta_id = $1::uuid AND tenant_id = $2
+                    ORDER BY created_at ASC
+                `;
+                alerta.anexos = await this.prisma.$queryRawUnsafe(anexosQuery, alerta.id, tenantId) as any[];
+            }
+
+            this.logger.log(`✅ ${alertas.length} alertas de abandono encontrados`);
+            return alertas;
+        } catch (error) {
+            this.logger.error(`❌ Erro ao buscar alertas de abandono:`, error);
+            throw error;
+        }
+    }
+
+    async registrarAlertaAbandono(tenantId: string, userId: string, ordemId: string, alertaDTO: AlertaAbandonoDTO) {
+        try {
+            this.logger.log(`Registrando alerta de abandono ${alertaDTO.numero_alerta} para ordem ${ordemId}. Tenant: ${tenantId}`);
+
+            const ordem = await this.findOne(tenantId, ordemId);
+            if (!ordem) {
+                throw new Error('Ordem de serviço não encontrada');
+            }
+
+            if (ordem.status !== 6) { // FINALIZADA
+                throw new Error('Só é possível registrar alertas para ordens finalizadas');
+            }
+
+            // Verificar sequência de alertas
+            const alertasExistentes = await this.getAlertasAbandono(tenantId, ordemId);
+            const numeroEsperado = alertasExistentes.length + 1;
+
+            if (alertaDTO.numero_alerta !== numeroEsperado) {
+                throw new Error(`Alerta ${alertaDTO.numero_alerta} não pode ser registrado. O próximo alerta esperado é o ${numeroEsperado}`);
+            }
+
+            // Inserir alerta
+            const query = `
+                INSERT INTO mod_ordem_servico_alertas_abandono 
+                (tenant_id, ordem_servico_id, numero_alerta, data_envio, meio_comunicacao, enviado_por, mensagem, observacoes)
+                VALUES ($1, $2::uuid, $3, $4::timestamp, $5, $6, $7, $8)
+                RETURNING *
+            `;
+
+            const result = await this.prisma.$queryRawUnsafe(
+                query,
+                tenantId,
+                ordemId,
+                alertaDTO.numero_alerta,
+                alertaDTO.data_envio,
+                alertaDTO.meio_comunicacao,
+                userId,
+                alertaDTO.mensagem || null,
+                alertaDTO.observacoes || null
+            ) as any[];
+
+            // Registrar no histórico geral
+            await this.registrarHistorico(
+                tenantId,
+                ordemId,
+                userId,
+                'ALERTA_ABANDONO',
+                null,
+                `Alerta ${alertaDTO.numero_alerta}/3 enviado via ${alertaDTO.meio_comunicacao}`,
+                alertaDTO.observacoes
+            );
+
+            this.logger.log(`✅ Alerta de abandono ${alertaDTO.numero_alerta} registrado`);
+            return result[0];
+        } catch (error) {
+            this.logger.error(`❌ Erro ao registrar alerta de abandono:`, error);
+            throw error;
+        }
+    }
+
+    async registrarAnexoAlerta(tenantId: string, userId: string, alertaId: string, anexoDTO: AnexoAbandonoDTO) {
+        try {
+            this.logger.log(`Registrando anexo para alerta ${alertaId}. Tenant: ${tenantId}`);
+
+            // Verificar se alerta existe
+            const alertaQuery = `SELECT * FROM mod_ordem_servico_alertas_abandono WHERE id = $1::uuid AND tenant_id = $2`;
+            const alertaResult = await this.prisma.$queryRawUnsafe(alertaQuery, alertaId, tenantId) as any[];
+
+            if (alertaResult.length === 0) {
+                throw new Error('Alerta não encontrado');
+            }
+
+            // Inserir anexo
+            const query = `
+                INSERT INTO mod_ordem_servico_anexos_abandono 
+                (tenant_id, alerta_id, nome_arquivo, tipo_arquivo, tamanho_bytes, url_arquivo, descricao, uploaded_by)
+                VALUES ($1, $2::uuid, $3, $4, $5, $6, $7, $8)
+                RETURNING *
+            `;
+
+            const result = await this.prisma.$queryRawUnsafe(
+                query,
+                tenantId,
+                alertaId,
+                anexoDTO.nome_arquivo,
+                anexoDTO.tipo_arquivo || 'application/octet-stream',
+                anexoDTO.tamanho_bytes || null,
+                anexoDTO.url_arquivo,
+                anexoDTO.descricao || null,
+                userId
+            ) as any[];
+
+            this.logger.log(`✅ Anexo registrado para alerta ${alertaId}`);
+            return result[0];
+        } catch (error) {
+            this.logger.error(`❌ Erro ao registrar anexo:`, error);
+            throw error;
+        }
+    }
+
+    async validarAbandono(tenantId: string, ordemId: string) {
+        this.logger.log(`Validando abandono da ordem ${ordemId}. Tenant: ${tenantId}`);
+
+        const ordem = await this.findOne(tenantId, ordemId);
+        if (!ordem) {
+            throw new Error('Ordem de serviço não encontrada');
+        }
+
+        if (ordem.status !== 6) { // FINALIZADA
+            throw new Error('Só é possível marcar como abandonado ordens finalizadas');
+        }
+
+        const alertas = await this.getAlertasAbandono(tenantId, ordemId);
+
+        if (alertas.length < 3) {
+            throw new Error(
+                `São necessários 3 alertas registrados para marcar como abandonado. ` +
+                `Alertas registrados: ${alertas.length}/3`
+            );
+        }
+
+        // Verificar se todos os alertas têm data de envio
+        const alertasSemEnvio = alertas.filter(a => !a.data_envio);
+        if (alertasSemEnvio.length > 0) {
+            throw new Error('Todos os alertas devem ter data de envio registrada');
+        }
+
+        this.logger.log(`✅ Validação de abandono OK`);
+        return { ordem, alertas };
+    }
+
+    async marcarComoAbandonado(tenantId: string, userId: string, ordemId: string, observacoes?: string) {
+        try {
+            this.logger.log(`Marcando ordem ${ordemId} como abandonada. Tenant: ${tenantId}`);
+
+            // Validar abandono
+            const { ordem } = await this.validarAbandono(tenantId, ordemId);
+
+            const statusAnterior = ordem.status;
+
+            // Atualizar ordem para ABANDONADO
+            const query = `
+                UPDATE mod_ordem_servico_ordens 
+                SET status = 9,
+                    updated_at = NOW()
+                WHERE id = $1::uuid AND tenant_id = $2
+                RETURNING *
+            `;
+
+            const result = await this.prisma.$queryRawUnsafe(query, ordemId, tenantId) as any[];
+
+            // Registrar no histórico de status
+            await this.registrarStatusHistorico(
+                tenantId,
+                ordemId,
+                userId,
+                statusAnterior,
+                9, // ABANDONADO
+                observacoes || 'Equipamento marcado como abandonado após 3 tentativas de contato'
+            );
+
+            // Registrar no histórico geral
+            await this.registrarHistorico(
+                tenantId,
+                ordemId,
+                userId,
+                'ABANDONO',
+                null,
+                'Equipamento marcado como abandonado após 3 tentativas de contato sem sucesso',
+                observacoes
+            );
+
+            this.logger.log(`✅ Ordem marcada como abandonada`);
+            return result[0];
+        } catch (error) {
+            this.logger.error(`❌ Erro ao marcar como abandonado:`, error);
+            throw error;
+        }
+    }
+
+    // ============================================
+    // MÉTODOS DE ALERTAS DE RETIRADA (BADGES)
+    // ============================================
+
+    async getAlertasRetirada(tenantId: string) {
+        try {
+            this.logger.log(`Buscando alertas de retirada. Tenant: ${tenantId}`);
+
+            // Query simplificada que funciona mesmo sem a tabela de configs
+            const query = `
+                SELECT 
+                    COUNT(*)::int as total_pendentes,
+                    COUNT(*) FILTER (WHERE EXTRACT(DAY FROM (NOW() - data_conclusao))::int > 30)::int as urgentes,
+                    COUNT(*) FILTER (WHERE EXTRACT(DAY FROM (NOW() - data_conclusao))::int BETWEEN 15 AND 30)::int as atencao,
+                    COUNT(*) FILTER (WHERE EXTRACT(DAY FROM (NOW() - data_conclusao))::int < 15)::int as normal,
+                    0::int as cobranca_ativa
+                FROM mod_ordem_servico_ordens
+                WHERE tenant_id = $1
+                AND status = 6
+                AND data_conclusao IS NOT NULL
+            `;
+
+            const result = await this.prisma.$queryRawUnsafe(query, tenantId) as any[];
+
+            const alertas = result[0] || {
+                total_pendentes: 0,
+                urgentes: 0,
+                atencao: 0,
+                normal: 0,
+                cobranca_ativa: 0
+            };
+
+            this.logger.log(`✅ Alertas de retirada: ${alertas.total_pendentes} pendentes`);
+            return alertas;
+        } catch (error) {
+            this.logger.error(`❌ Erro ao buscar alertas de retirada:`, error);
+            // Retornar valores padrão em caso de erro (ex: tabela não existe)
+            return {
+                total_pendentes: 0,
+                urgentes: 0,
+                atencao: 0,
+                normal: 0,
+                cobranca_ativa: 0
+            };
         }
     }
 }
