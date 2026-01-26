@@ -640,6 +640,7 @@ export class OrdensService {
 
             // Registrar no histórico (with error handling)
             try {
+                // Registrar no histórico geral
                 await this.registrarHistorico(
                     tenantId,
                     novaOrdem.id,
@@ -699,7 +700,14 @@ export class OrdensService {
                     if (ordemAtual.status !== 5) { // EM_EXECUCAO
                         throw new Error('Só é possível finalizar ordens em execução');
                     }
-                    if ((!updateDto.valor_servico && !ordemAtual.valor_servico) || (updateDto.valor_servico || ordemAtual.valor_servico) <= 0) {
+                    // Converter valores para número e verificar
+                    const valorDto = updateDto.valor_servico ? parseFloat(String(updateDto.valor_servico)) : 0;
+                    const valorAtual = ordemAtual.valor_servico ? parseFloat(String(ordemAtual.valor_servico)) : 0;
+                    const valorFinal = valorDto || valorAtual;
+                    
+                    this.logger.log(`📊 Validação valor: DTO=${valorDto}, Atual=${valorAtual}, Final=${valorFinal}`);
+                    
+                    if (!valorFinal || valorFinal <= 0) {
                         throw new Error('Valor do serviço deve estar definido para finalizar');
                     }
                     updateFields.push(`data_conclusao = NOW()`);
@@ -746,7 +754,15 @@ export class OrdensService {
                 RETURNING *
             `;
 
+            this.logger.log(`📝 Query de update: ${query}`);
+            this.logger.log(`📝 Params: ${JSON.stringify(params)}`);
+
             const result = await this.prisma.$queryRawUnsafe(query, ...params) as any[];
+            
+            if (!result || result.length === 0) {
+                throw new Error('Ordem não foi atualizada - resultado vazio');
+            }
+            
             const ordemAtualizada = result[0];
             if (ordemAtualizada.equipamento_fotos) {
                 try {
@@ -771,6 +787,18 @@ export class OrdensService {
             // Registrar alterações no histórico
             await this.registrarAlteracoesHistorico(tenantId, id, userId, ordemAtual, updateDto);
 
+            // Se houve mudança de status, registrar no histórico de status
+            if (updateDto.status !== undefined && updateDto.status !== ordemAtual.status) {
+                await this.registrarStatusHistorico(
+                    tenantId,
+                    id,
+                    userId,
+                    ordemAtual.status,
+                    updateDto.status,
+                    'Alteração via edição da ordem'
+                );
+            }
+
             this.logger.log(`✅ Ordem de serviço ${id} atualizada`);
             return ordemAtualizada;
         } catch (error) {
@@ -782,6 +810,13 @@ export class OrdensService {
     async updateStatus(tenantId: string, userId: string, id: string, novoStatus: number, motivoCancelamento?: string, observacoes?: string) {
         try {
             this.logger.log(`Atualizando status da ordem ${id} para ${novoStatus}. Tenant: ${tenantId}`);
+
+            // Buscar ordem atual para obter status anterior
+            const ordemAtual = await this.findOne(tenantId, id);
+            if (!ordemAtual) {
+                throw new Error('Ordem de serviço não encontrada');
+            }
+            const statusAnterior = ordemAtual.status;
 
             const updateFields = ['status = $1', 'updated_at = NOW()'];
             const params: any[] = [novoStatus];
@@ -808,7 +843,17 @@ export class OrdensService {
             const result = await this.prisma.$queryRawUnsafe(query, ...params) as any[];
             const ordemAtualizada = result[0];
 
-            // Registrar no histórico
+            // Registrar no histórico de status (nova tabela)
+            await this.registrarStatusHistorico(
+                tenantId,
+                id,
+                userId,
+                statusAnterior,
+                novoStatus,
+                observacoes || motivoCancelamento
+            );
+
+            // Registrar no histórico geral (tabela existente)
             let acao = 'MUDANCA_STATUS';
             let descricao = `Status alterado para: ${this.getStatusLabel(novoStatus)}`;
 
@@ -880,7 +925,17 @@ export class OrdensService {
                 throw new Error('Orçamento não encontrado ou já aprovado');
             }
 
-            // Registrar no histórico
+            // Registrar no histórico de status (nova tabela)
+            await this.registrarStatusHistorico(
+                tenantId,
+                id,
+                userId,
+                0, // ORCAMENTO
+                1, // ABERTA
+                'Orçamento aprovado pelo cliente'
+            );
+
+            // Registrar no histórico geral
             await this.registrarHistorico(
                 tenantId,
                 id,
