@@ -95,58 +95,20 @@ fi
 log "📝 Registrando módulo no sistema..."
 cd apps/backend
 
-# Criar script temporário para registrar o módulo
-cat > register_module_temp.js << 'EOF'
-const { PrismaClient } = require('@prisma/client');
+# Executar o script de instalação do módulo (agora incluído nos arquivos do backend)
+MODULE_INSTALL_SCRIPT="src/modules/ordem_servico/install.js"
 
-async function registerModule() {
-  const prisma = new PrismaClient();
-
-  try {
-    // Verificar se já existe
-    const existing = await prisma.module.findUnique({
-      where: { slug: 'ordem_servico' }
-    });
-
-    if (existing) {
-      console.log('✅ Módulo ordem_servico já está registrado');
-      return;
-    }
-
-    // Registrar o módulo
-    const module = await prisma.module.create({
-      data: {
-        slug: 'ordem_servico',
-        name: 'Ordem de Serviços',
-        version: '1.0.1',
-        description: 'Módulo completo para gestão de ordens de serviço',
-        status: 'active',
-        hasBackend: true,
-        hasFrontend: true,
-        installedAt: new Date()
-      }
-    });
-
-    console.log('✅ Módulo ordem_servico registrado com sucesso:', module.id);
-
-  } catch (error) {
-    console.error('❌ Erro ao registrar módulo:', error.message);
-    process.exit(1);
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-registerModule();
-EOF
-
-if node register_module_temp.js; then
-    log "✅ Módulo registrado com sucesso!"
-    rm register_module_temp.js
+if [ -f "$MODULE_INSTALL_SCRIPT" ]; then
+    log "⚙️ Executando script de registro do módulo: $MODULE_INSTALL_SCRIPT"
+    if node "$MODULE_INSTALL_SCRIPT"; then
+        log "✅ Módulo registrado com sucesso!"
+    else
+        error "❌ Falha ao registrar o módulo via script."
+        # Não falha a instalação inteira, mas avisa
+    fi
 else
-    warn "Não foi possível registrar o módulo automaticamente."
-    info "Execute manualmente no backend:"
-    echo "node register_module_temp.js"
+    warn "⚠️ Script de instalação não encontrado em: $MODULE_INSTALL_SCRIPT"
+    warn "O módulo pode não ter sido registrado corretamente."
 fi
 
 cd ../..

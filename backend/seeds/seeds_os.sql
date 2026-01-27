@@ -51,19 +51,23 @@ WHERE NOT EXISTS (
 );
 */
 
--- 3. Definição Inicial de Staff (Exemplo para o Admin)
+-- 3. Definição Inicial de Staff (Atualizado para user_roles na V3 schema)
 -- Torna o usuário administrador um técnico por padrão para testes
-INSERT INTO public.mod_ordem_servico_staff (id, user_id, is_technician, created_at, updated_at)
+INSERT INTO public.mod_ordem_servico_user_roles (id, tenant_id, user_id, is_technician, is_attendant, is_admin, created_at, updated_at)
 SELECT
     gen_random_uuid(),
+    u."tenantId",
     u.id,
-    true,
+    true,   -- is_technician
+    true,   -- is_attendant (Admins também são atendentes)
+    true,   -- is_admin
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 FROM public.users u
-WHERE u.role = 'ADMIN' -- Ou o critério que você usa para identificar o admin
-AND NOT EXISTS (
-    SELECT 1 FROM public.mod_ordem_servico_staff s WHERE s.user_id = u.id
-);
+WHERE u.role IN ('ADMIN', 'SUPER_ADMIN') AND u."tenantId" IS NOT NULL
+ON CONFLICT (tenant_id, user_id) DO UPDATE SET
+    is_technician = true,
+    is_admin = true;
 
-COMMIT;
+-- COMMIT is handled by the executor usually, but good for SQL scripts
+-- COMMIT;
