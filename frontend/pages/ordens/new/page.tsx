@@ -40,7 +40,9 @@ import {
     Loader2,
     Edit,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Printer,
+    Receipt
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -471,6 +473,48 @@ export default function NewOrdemRefactoredPage() {
         }
     };
 
+    // Refs for handlers to avoid stale closures in useEffect
+    const handleSaveRef = React.useRef(handleSave);
+
+    // Update ref whenever handleSave changes
+    useEffect(() => {
+        handleSaveRef.current = handleSave;
+    }, [handleSave]);
+
+    const handlePrintA4 = () => {
+        toast({ title: 'Atenção', description: 'Salve a ordem de serviço antes de imprimir.', variant: 'warning' });
+    };
+
+    const handlePrint80mm = () => {
+        toast({ title: 'Atenção', description: 'Salve a ordem de serviço antes de imprimir.', variant: 'warning' });
+    };
+
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Save: Ctrl + S or Cmd + S
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                handleSaveRef.current();
+            }
+
+            // Print A4: Ctrl + P or Cmd + P
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'p') {
+                e.preventDefault();
+                handlePrintA4();
+            }
+
+            // Print 80mm: Ctrl + Shift + P or Cmd + Shift + P
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                handlePrint80mm();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     return (
         <div className="p-4 md:p-8 w-full mx-auto space-y-6">
             {/* Header */}
@@ -485,10 +529,18 @@ export default function NewOrdemRefactoredPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" disabled title="Imprimir em A4 (Disponível após salvar)">
+                        <Printer className="h-4 w-4 mr-2" />
+                        A4
+                    </Button>
+                    <Button variant="outline" disabled title="Imprimir em 80mm (Disponível após salvar)">
+                        <Receipt className="h-4 w-4 mr-2" />
+                        80mm
+                    </Button>
                     <Button variant="outline" onClick={() => window.history.back()} disabled={loading}>
                         Cancelar
                     </Button>
-                    <Button onClick={handleSave} disabled={loading} className="gap-2 bg-primary hover:bg-primary/90">
+                    <Button onClick={handleSave} disabled={loading} className="gap-2 bg-primary hover:bg-primary/90" title="Salvar (Ctrl+S)">
                         {loading ? 'Processando...' : <><Save className="h-4 w-4" /> Salvar Ordem de Serviço</>}
                     </Button>
                 </div>

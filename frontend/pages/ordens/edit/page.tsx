@@ -35,7 +35,9 @@ import {
     Clock,
     Package,
     AlertTriangle,
-    History
+    History,
+    Printer,
+    Receipt
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -47,6 +49,7 @@ import { StatusTimeline } from '../../../components/StatusTimeline';
 import { ConservacaoCard } from '../../../components/ConservacaoCard';
 import { PagamentosModal } from '../../../components/PagamentosModal';
 import { AlertasAbandonoModal } from '../../../components/AlertasAbandonoModal';
+import { PrintModal } from '../../../components/PrintModal';
 
 // Tipos locais
 interface OrdemServico {
@@ -205,6 +208,10 @@ export default function EditOrdemPage() {
     // Estados dos modais de Retirada/Abandono
     const [isRetiradaModalOpen, setIsRetiradaModalOpen] = useState(false);
     const [isAbandonoModalOpen, setIsAbandonoModalOpen] = useState(false);
+
+    // Print Modal State
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+    const [printFormat, setPrintFormat] = useState<'a4' | 'thermal'>('a4');
 
     const ordemId = searchParams.get('id');
 
@@ -708,6 +715,52 @@ export default function EditOrdemPage() {
         }
     };
 
+    // Refs for handlers to avoid stale closures in useEffect
+    const handleSaveRef = React.useRef(handleSave);
+
+    // Update ref whenever handleSave changes
+    useEffect(() => {
+        handleSaveRef.current = handleSave;
+    }, [handleSave]);
+
+    const handlePrintA4 = () => {
+        if (!ordemId) return;
+        setPrintFormat('a4');
+        setIsPrintModalOpen(true);
+    };
+
+    const handlePrint80mm = () => {
+        if (!ordemId) return;
+        setPrintFormat('thermal');
+        setIsPrintModalOpen(true);
+    };
+
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Save: Ctrl + S or Cmd + S
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                handleSaveRef.current();
+            }
+
+            // Print A4: Ctrl + P or Cmd + P
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'p') {
+                e.preventDefault();
+                handlePrintA4();
+            }
+
+            // Print 80mm: Ctrl + Shift + P or Cmd + Shift + P
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                handlePrint80mm();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     if (loadingOrdem) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
@@ -755,6 +808,14 @@ export default function EditOrdemPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => handlePrintA4()} title="Imprimir em A4 (Ctrl+P)">
+                        <Printer className="h-4 w-4 mr-2" />
+                        A4
+                    </Button>
+                    <Button variant="outline" onClick={() => handlePrint80mm()} title="Imprimir em 80mm (Ctrl+Shift+P)">
+                        <Receipt className="h-4 w-4 mr-2" />
+                        80mm
+                    </Button>
                     <Button
                         variant="outline"
                         onClick={() => router.push('/modules/ordem_servico/pages/ordens')}
@@ -766,6 +827,7 @@ export default function EditOrdemPage() {
                         onClick={handleSave}
                         disabled={loading}
                         className="gap-2 bg-primary hover:bg-primary/90"
+                        title="Salvar (Ctrl+S)"
                     >
                         {loading ? 'Salvando...' : <><Save className="h-4 w-4" /> Salvar Alterações</>}
                     </Button>
@@ -1779,6 +1841,14 @@ export default function EditOrdemPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="pt-6">
+                        {/* Print Modal */}
+                        <PrintModal
+                            isOpen={isPrintModalOpen}
+                            onClose={() => setIsPrintModalOpen(false)}
+                            ordemId={ordemId}
+                            format={printFormat}
+                        />
+
                         <StatusTimeline ordemId={ordemId!} />
                     </CardContent>
                 </Card>
@@ -1907,6 +1977,13 @@ export default function EditOrdemPage() {
                     />
                 </>
             )}
+
+            <PrintModal
+                isOpen={isPrintModalOpen}
+                onClose={() => setIsPrintModalOpen(false)}
+                ordemId={ordemId || ''}
+                format={printFormat}
+            />
         </div>
     );
 }
