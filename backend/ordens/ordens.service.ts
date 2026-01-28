@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '@core/prisma/prisma.service';
-import { 
-    CreateOrdemServicoDTO, 
-    UpdateOrdemServicoDTO, 
+import {
+    CreateOrdemServicoDTO,
+    UpdateOrdemServicoDTO,
     OrdemServicoFilters,
     RetiradaDTO,
     AlertaAbandonoDTO,
@@ -18,7 +19,10 @@ import { generatePdfHtml } from './pdf-template.util';
 export class OrdensService {
     private readonly logger = new Logger(OrdensService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly eventEmitter: EventEmitter2
+    ) { }
 
     // Implementação de PDF com Puppeteer
     async generatePdf(tenantId: string, id: string): Promise<Buffer> {
@@ -656,6 +660,14 @@ export class OrdensService {
             }
 
             this.logger.log(`✅ Ordem de serviço criada: ${novaOrdem.id}`);
+
+            // Emitir evento para notificações
+            this.eventEmitter.emit('os.created', {
+                tenantId,
+                osId: novaOrdem.id,
+                data: novaOrdem
+            });
+
             return novaOrdem;
         } catch (error) {
             this.logger.error(`❌ Erro ao criar ordem de serviço:`, error);
@@ -704,9 +716,9 @@ export class OrdensService {
                     const valorDto = updateDto.valor_servico ? parseFloat(String(updateDto.valor_servico)) : 0;
                     const valorAtual = ordemAtual.valor_servico ? parseFloat(String(ordemAtual.valor_servico)) : 0;
                     const valorFinal = valorDto || valorAtual;
-                    
+
                     this.logger.log(`📊 Validação valor: DTO=${valorDto}, Atual=${valorAtual}, Final=${valorFinal}`);
-                    
+
                     if (!valorFinal || valorFinal <= 0) {
                         throw new Error('Valor do serviço deve estar definido para finalizar');
                     }
@@ -758,11 +770,11 @@ export class OrdensService {
             this.logger.log(`📝 Params: ${JSON.stringify(params)}`);
 
             const result = await this.prisma.$queryRawUnsafe(query, ...params) as any[];
-            
+
             if (!result || result.length === 0) {
                 throw new Error('Ordem não foi atualizada - resultado vazio');
             }
-            
+
             const ordemAtualizada = result[0];
             if (ordemAtualizada.equipamento_fotos) {
                 try {
@@ -804,6 +816,18 @@ export class OrdensService {
             }
 
             this.logger.log(`✅ Ordem de serviço ${id} atualizada`);
+
+            // Emitir evento para notificações
+            if (updateDto.status !== undefined && updateDto.status !== ordemAtual.status) {
+                this.eventEmitter.emit('os.status_changed', {
+                    tenantId,
+                    osId: id,
+                    oldStatus: ordemAtual.status,
+                    newStatus: updateDto.status,
+                    data: { ...ordemAtual, ...updateDto }
+                });
+            }
+
             return ordemAtualizada;
         } catch (error) {
             this.logger.error(`❌ Erro ao atualizar ordem de serviço ${id}:`, error);
@@ -880,6 +904,16 @@ export class OrdensService {
             );
 
             this.logger.log(`✅ Status da ordem ${id} atualizado para ${novoStatus}`);
+
+            // Emitir evento para notificações
+            this.eventEmitter.emit('os.status_changed', {
+                tenantId,
+                osId: id,
+                oldStatus: statusAnterior,
+                newStatus: novoStatus,
+                data: ordemAtualizada
+            });
+
             return ordemAtualizada;
         } catch (error) {
             this.logger.error(`❌ Erro ao atualizar status da ordem ${id}:`, error);
@@ -1262,7 +1296,7 @@ export class OrdensService {
         try {
             this.logger.log(`📝 Registrando histórico de status: ${statusAnterior} → ${statusNovo} para ordem ${ordemId}`);
             this.logger.log(`📝 Params: tenantId=${tenantId}, usuarioId=${usuarioId}, obs=${observacoes}`);
-            
+
             const result = await this.prisma.$executeRawUnsafe(
                 `INSERT INTO mod_ordem_servico_status_historico 
                  (tenant_id, ordem_servico_id, usuario_id, status_anterior, status_novo, observacoes, data_alteracao)
@@ -1486,8 +1520,8 @@ export class OrdensService {
             const { ordem, conservacao, totalOS } = await this.validarRetirada(tenantId, ordemId, retiradaDTO.pagamentos);
 
             // Determinar valor de conservação a usar
-            const valorConservacaoFinal = retiradaDTO.valor_conservacao !== undefined 
-                ? retiradaDTO.valor_conservacao 
+            const valorConservacaoFinal = retiradaDTO.valor_conservacao !== undefined
+                ? retiradaDTO.valor_conservacao
                 : (conservacao.emAtraso ? conservacao.valorConservacao : 0);
 
             // Inserir pagamentos

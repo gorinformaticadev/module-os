@@ -10,4 +10,4 @@ import { SharedModule } from '../shared/shared.module';
     providers: [OrdensService],
     exports: [OrdensService],
 })
-export class OrdensModule {}
+export class OrdensModule { }
