@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Clock, ArrowRight, User } from 'lucide-react';
+import { ArrowRight, User } from 'lucide-react';
 import { StatusHistorico, STATUS_LABELS, STATUS_COLORS, StatusOS } from '../types/ordem-servico.types';
 
 interface StatusTimelineProps {
@@ -47,10 +47,10 @@ function formatRelativeTime(dateString: string): string {
     if (diffMins < 60) return `Há ${diffMins} minuto${diffMins > 1 ? 's' : ''}`;
     if (diffHours < 24) return `Há ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
     if (diffDays < 7) return `Há ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
-    
-    return date.toLocaleDateString('pt-BR', { 
-        day: '2-digit', 
-        month: '2-digit', 
+
+    return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
@@ -72,7 +72,7 @@ export function StatusTimeline({ ordemId, onLoad }: StatusTimelineProps) {
 
     useEffect(() => {
         if (!ordemId) return;
-        
+
         const fetchHistorico = async () => {
             try {
                 setLoading(true);
@@ -119,49 +119,43 @@ export function StatusTimeline({ ordemId, onLoad }: StatusTimelineProps) {
 
     return (
         <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Histórico de Status
-            </h4>
-            
             <div className="relative">
-                {/* Linha vertical */}
-                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
-                
-                <div className="space-y-4">
+                {/* Linha vertical (mais discreta e próxima da borda) */}
+                <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-border/50" />
+
+                <div className="space-y-3">
                     {historico.map((item, index) => (
-                        <div key={item.id} className="relative pl-10">
+                        <div key={item.id} className="relative pl-6 group">
                             {/* Ponto na timeline */}
-                            <div className={`absolute left-2 w-4 h-4 rounded-full border-2 border-background ${getStatusColor(item.status_novo)}`} />
-                            
-                            <div className="bg-card rounded-lg border p-3 shadow-sm">
-                                {/* Transição de status */}
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white ${getStatusColor(item.status_anterior)}`}>
-                                        {getStatusLabel(item.status_anterior)}
-                                    </span>
-                                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white ${getStatusColor(item.status_novo)}`}>
-                                        {getStatusLabel(item.status_novo)}
-                                    </span>
-                                </div>
-                                
-                                {/* Usuário e data */}
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                        <User className="h-3 w-3" />
+                            <div className={`absolute left-1 top-1.5 w-2.5 h-2.5 rounded-full border border-background ring-2 ring-background ${getStatusColor(item.status_novo)}`} />
+
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
+                                {/* Linha Principal: Quem mudou + Status */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1.5 text-foreground font-medium">
+                                        <User className="h-3.5 w-3.5 text-muted-foreground" />
                                         <span>{item.usuario_nome || 'Sistema'}</span>
                                     </div>
-                                    <span>{formatRelativeTime(item.data_alteracao)}</span>
+
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <span>alterou para</span>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider text-white shadow-sm ${getStatusColor(item.status_novo)}`}>
+                                            {getStatusLabel(item.status_novo)}
+                                        </span>
+                                    </div>
+
+                                    <div className="text-xs text-muted-foreground ml-auto sm:ml-0">
+                                        {formatRelativeTime(item.data_alteracao)}
+                                    </div>
                                 </div>
-                                
-                                {/* Observações */}
-                                {item.observacoes && (
-                                    <p className="mt-2 text-xs text-muted-foreground bg-muted/50 rounded p-2">
-                                        {item.observacoes}
-                                    </p>
-                                )}
                             </div>
+
+                            {/* Detalhes / Observações (Compacto) */}
+                            {item.observacoes && (
+                                <p className="mt-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1 border border-muted/50">
+                                    {item.observacoes}
+                                </p>
+                            )}
                         </div>
                     ))}
                 </div>

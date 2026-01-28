@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     Save,
     ArrowLeft,
@@ -795,17 +796,33 @@ export default function EditOrdemPage() {
                             <div className="flex items-center gap-2">
                                 <Package className="h-5 w-5 text-emerald-600" />
                                 <CardTitle className="text-lg text-emerald-800">Ações de Finalização</CardTitle>
+                                <TooltipProvider>
+                                    <Popover>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <PopoverTrigger asChild>
+                                                    <Info className="h-4 w-4 text-emerald-600/70 cursor-pointer hover:text-emerald-800 transition-colors" />
+                                                </PopoverTrigger>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>A ordem está finalizada. Registre a retirada pelo cliente ou inicie o processo de abandono.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <PopoverContent className="w-80 p-3 text-sm">
+                                            <p>A ordem está finalizada. Registre a retirada pelo cliente ou inicie o processo de abandono.</p>
+                                        </PopoverContent>
+                                    </Popover>
+                                </TooltipProvider>
                             </div>
-                            <CardDescription>A ordem está finalizada. Registre a retirada pelo cliente ou inicie o processo de abandono.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Conservação Card */}
-                                <ConservacaoCard 
-                                    ordemId={ordemId!} 
-                                    valorServico={parseFloat(formData.valor_servico) || 0} 
+                                <ConservacaoCard
+                                    ordemId={ordemId!}
+                                    valorServico={parseFloat(formData.valor_servico) || 0}
                                 />
-                                
+
                                 {/* Botões de Ação */}
                                 <div className="space-y-4">
                                     <div className="p-4 bg-white rounded-lg border shadow-sm space-y-3">
@@ -816,7 +833,7 @@ export default function EditOrdemPage() {
                                         <p className="text-xs text-muted-foreground">
                                             O cliente compareceu para retirar o equipamento. Registre os pagamentos e finalize a entrega.
                                         </p>
-                                        <Button 
+                                        <Button
                                             className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
                                             onClick={() => setIsRetiradaModalOpen(true)}
                                         >
@@ -824,7 +841,7 @@ export default function EditOrdemPage() {
                                             Registrar Retirada
                                         </Button>
                                     </div>
-                                    
+
                                     <div className="p-4 bg-white rounded-lg border shadow-sm space-y-3">
                                         <h4 className="font-semibold text-sm flex items-center gap-2">
                                             <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -833,7 +850,7 @@ export default function EditOrdemPage() {
                                         <p className="text-xs text-muted-foreground">
                                             O cliente não compareceu? Inicie o processo de abandono com 3 tentativas de contato.
                                         </p>
-                                        <Button 
+                                        <Button
                                             variant="outline"
                                             className="w-full gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
                                             onClick={() => setIsAbandonoModalOpen(true)}
@@ -848,19 +865,7 @@ export default function EditOrdemPage() {
                     </Card>
                 )}
 
-                {/* Histórico de Status */}
-                <Card className="shadow-sm border-2">
-                    <CardHeader className="bg-muted/20 pb-4">
-                        <div className="flex items-center gap-2">
-                            <History className="h-5 w-5 text-primary" />
-                            <CardTitle className="text-lg">Histórico de Status</CardTitle>
-                        </div>
-                        <CardDescription>Linha do tempo com todas as alterações de status desta ordem</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                        <StatusTimeline ordemId={ordemId!} />
-                    </CardContent>
-                </Card>
+
 
                 {/* Section 1: CLIENTE (FIXO) - FULL WIDTH */}
                 <Card className="shadow-sm border-2 w-full">
@@ -868,8 +873,24 @@ export default function EditOrdemPage() {
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
                             <CardTitle className="text-lg">Cliente</CardTitle>
+                            <TooltipProvider>
+                                <Popover>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <PopoverTrigger asChild>
+                                                <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" />
+                                            </PopoverTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Informações do cliente (não editável)</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <PopoverContent className="w-80 p-3 text-sm">
+                                        <p>Informações do cliente (não editável)</p>
+                                    </PopoverContent>
+                                </Popover>
+                            </TooltipProvider>
                         </div>
-                        <CardDescription>Informações do cliente (não editável)</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-6">
                         {ordem.cliente && (
@@ -1396,8 +1417,24 @@ export default function EditOrdemPage() {
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
                             <CardTitle className="text-lg">Laudo Técnico</CardTitle>
+                            <TooltipProvider>
+                                <Popover>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <PopoverTrigger asChild>
+                                                <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" />
+                                            </PopoverTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Diagnóstico e observações técnicas</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <PopoverContent className="w-80 p-3 text-sm">
+                                        <p>Diagnóstico e observações técnicas</p>
+                                    </PopoverContent>
+                                </Popover>
+                            </TooltipProvider>
                         </div>
-                        <CardDescription>Diagnóstico e observações técnicas</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-6">
                         <div className="space-y-4">
@@ -1715,6 +1752,36 @@ export default function EditOrdemPage() {
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Histórico de Status */}
+                <Card className="shadow-sm border-2">
+                    <CardHeader className="bg-muted/20 pb-4">
+                        <div className="flex items-center gap-2">
+                            <History className="h-5 w-5 text-primary" />
+                            <CardTitle className="text-lg">Histórico de Status</CardTitle>
+                            <TooltipProvider>
+                                <Popover>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <PopoverTrigger asChild>
+                                                <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" />
+                                            </PopoverTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Linha do tempo com todas as alterações de status desta ordem</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <PopoverContent className="w-80 p-3 text-sm">
+                                        <p>Linha do tempo com todas as alterações de status desta ordem</p>
+                                    </PopoverContent>
+                                </Popover>
+                            </TooltipProvider>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <StatusTimeline ordemId={ordemId!} />
+                    </CardContent>
+                </Card>
 
                 {/* Section 7: AÇÕES */}
                 <div className="flex flex-col md:flex-row gap-4 pt-4 pb-12">
