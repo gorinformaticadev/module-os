@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield, Brain, Loader2 } from 'lucide-react';
+import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield, Brain, Loader2, MessageCircle } from 'lucide-react';
 import { PermissionManagement } from '../../components/PermissionManagement';
 import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatrix';
 import { TiposServicoManager } from '../../components/TiposServicoManager';
 import { TiposEquipamentoManager } from '../../components/TiposEquipamentoManager';
 import { RichTextEditor } from '../../components/ui/rich-text-editor';
+import { WhatsAppEditor } from '../../components/WhatsAppEditor';
 
 // Cliente API customizado para o módulo raiz (sem autenticação automática)
 const api = {
   get: async (url: string) => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
 
     // Função auxiliar para obter o token de forma segura (Cookie ou SessionStorage)
     const getToken = () => {
@@ -393,6 +395,36 @@ export default function OrdemServicoConfiguracoesPage() {
   const [loadingCondicoes, setLoadingCondicoes] = useState(false);
   const [savingCondicoes, setSavingCondicoes] = useState(false);
 
+  // Estado para Template de WhatsApp
+  const [whatsappTemplate, setWhatsappTemplate] = useState('');
+  const [savingWhatsapp, setSavingWhatsapp] = useState(false);
+
+  const insertWhatsappVariable = (variable: string) => {
+    setWhatsappTemplate(prev => prev + variable);
+  };
+
+  const saveWhatsappTemplate = async () => {
+    try {
+      setSavingWhatsapp(true);
+      await api.post('/api/ordem_servico/config/settings', {
+        config_key: 'whatsapp_message_template',
+        config_value: whatsappTemplate
+      });
+      toast({
+        title: 'Sucesso',
+        description: 'Mensagem de WhatsApp salva com sucesso!',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Falha ao salvar mensagem de WhatsApp.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingWhatsapp(false);
+    }
+  };
+
   const getFrequencyType = (cron: string) => {
     if (!cron) return 'daily';
     if (cron.startsWith('*/')) return 'interval';
@@ -474,7 +506,7 @@ export default function OrdemServicoConfiguracoesPage() {
   const fetchAiConfig = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/ordem_servico/config/ai');
+      const response = await api.get('/api/ordem_servico/config/ia');
       if (response.data) {
         setAiConfig(prev => ({ ...prev, ...response.data }));
       }
@@ -488,7 +520,7 @@ export default function OrdemServicoConfiguracoesPage() {
   const saveAiConfig = async () => {
     try {
       setSaving(true);
-      await api.post('/api/ordem_servico/config/ai', aiConfig);
+      await api.post('/api/ordem_servico/config/ia', aiConfig);
       toast({
         title: 'Sucesso',
         description: 'Configurações de IA salvas com sucesso!',
@@ -511,7 +543,7 @@ export default function OrdemServicoConfiguracoesPage() {
       setTestingAi(true);
       setTestResponse(null);
 
-      const response = await api.post('/api/ordem_servico/config/ai/test', aiConfig);
+      const response = await api.post('/api/ordem_servico/config/ia/test', aiConfig);
 
       if (response.data.success) {
         setTestResponse(response.data.response);
@@ -629,15 +661,24 @@ export default function OrdemServicoConfiguracoesPage() {
     try {
       setLoadingCondicoes(true);
       const response = await api.get('/api/ordem_servico/config/settings');
+
       const condicoesConfig = response.data.find((c: any) => c.config_key === 'condicoes_execucao');
       if (condicoesConfig) {
         setCondicoesExecucao(condicoesConfig.config_value || '');
       }
+
+      const whatsappConfig = response.data.find((c: any) => c.config_key === 'whatsapp_message_template');
+      if (whatsappConfig) {
+        setWhatsappTemplate(whatsappConfig.config_value || '');
+      } else {
+        // Default template if none exists
+        setWhatsappTemplate('Olá {{nomeCliente}}, referente a OS #{{numeroOS}} - {{descricaoOS}}. Status atual: {{statusOS}}.');
+      }
     } catch (error) {
-      console.error('Erro ao carregar condições de execução:', error);
+      console.error('Erro ao carregar configurações:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar as condições de execução.',
+        description: 'Não foi possível carregar as configurações.',
         variant: 'destructive'
       });
     } finally {
@@ -1057,6 +1098,64 @@ export default function OrdemServicoConfiguracoesPage() {
                       </Button>
                     </>
                   )}
+                </CardContent>
+              </Card>
+
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5 text-green-600" />
+                    Mensagem de WhatsApp (OS)
+                  </CardTitle>
+                  <CardDescription>
+                    Personalize a mensagem padrão enviada ao cliente
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Template da Mensagem</Label>
+                    <WhatsAppEditor
+                      value={whatsappTemplate}
+                      onChange={setWhatsappTemplate}
+                      variables={[
+                        'nomeCliente',
+                        'numeroOS',
+                        'dataCriacao',
+                        'descricaoOS',
+                        'statusOS',
+                        'valorTotal',
+                        'tipoEquipamento',
+                        'marcaEquipamento',
+                        'modeloEquipamento',
+                        'observacoesOs',
+                        'laudoTecnico',
+                        'listaItens',
+                        'telefoneEmpresa',
+                        'nomeFantasia'
+                      ]}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Configure o modelo de mensagem. As variáveis serão substituídas pelos dados reais da OS.
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={saveWhatsappTemplate}
+                    disabled={savingWhatsapp}
+                    className="w-full"
+                  >
+                    {savingWhatsapp ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Salvar Template WhatsApp
+                      </>
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
             </div>

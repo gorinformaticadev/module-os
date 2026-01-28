@@ -2009,7 +2009,17 @@ export default function EditOrdemPage() {
             <WhatsAppModal
                 isOpen={isWhatsAppModalOpen}
                 onClose={() => setIsWhatsAppModalOpen(false)}
-                ordem={ordem}
+                ordem={ordem ? {
+                    ...ordem,
+                    ...formData,
+                    // Garante que campos numéricos sejam passados corretamente
+                    valor_servico: typeof formData.valor_servico === 'string'
+                        ? parseFloat(formData.valor_servico.replace(',', '.') || '0')
+                        : formData.valor_servico,
+                    status: Number(formData.status),
+                    // Mantém o cliente original pois não está no formData de edição direta
+                    cliente: ordem.cliente
+                } as any : null}
             />
         </div>
     );

@@ -18,7 +18,9 @@ CROSS JOIN (
     ('condicoes_execucao', 'O serviço será executado conforme descrito acima. Eventuais alterações serão comunicadas ao cliente. A garantia cobre apenas defeitos relacionados ao serviço executado.'),
     ('termo_garantia', 'A garantia de hardware é de 90 dias. A garantia de software/formatação é de 7 dias contra defeitos de configuração.'),
     ('exibir_valor_total', 'true'),
-    ('notificar_whatsapp_status', 'true')
+    ('notificar_whatsapp_status', 'true'),
+    ('prazo_garantia_padrao', '90'),
+    ('whatsapp_template', 'Olá {{nomeCliente}}, a sua ordem de serviço #{{numeroOs}} no valor de R$ {{valorTotal}} foi atualizada para o status {{statusOs}}.')
 ) AS seed_data(key, value)
 WHERE NOT EXISTS (
     SELECT 1 FROM public.mod_ordem_servico_configs c

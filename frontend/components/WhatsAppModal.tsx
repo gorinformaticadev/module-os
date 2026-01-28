@@ -8,20 +8,13 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { OrdemServico } from '../types/ordem-servico.types';
-import {
-    Bold,
-    Italic,
-    Strikethrough,
-    Code,
-    List,
-    ListOrdered,
-    Quote,
-    MessageCircle
-} from 'lucide-react';
+import { OrdemServico, STATUS_LABELS } from '../types/ordem-servico.types';
+import { MessageCircle } from 'lucide-react';
+import api from '@/lib/api';
+import { WhatsAppEditor } from './WhatsAppEditor';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface WhatsAppModalProps {
     isOpen: boolean;
@@ -32,72 +25,76 @@ interface WhatsAppModalProps {
 type SendMethod = 'api' | 'web' | 'crm';
 
 export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
+    const { user } = useAuth();
     const [message, setMessage] = useState('');
     const [method, setMethod] = useState<SendMethod>('api');
 
     useEffect(() => {
-        if (isOpen && ordem) {
-            setMessage(`Olá! Sobre a OS #${ordem.numero} - ${ordem.descricao}`);
-            setMethod('api'); // Default
-        }
-    }, [isOpen, ordem]);
+        const fetchTemplateAndSetMessage = async () => {
+            if (isOpen && ordem) {
+                try {
+                    // Tentar obter o template salvo
+                    const response = await api.get('/api/ordem_servico/config/settings');
+                    const whatsappConfig = response.data.find((c: any) => c.config_key === 'whatsapp_message_template');
 
-    const insertFormat = (prefix: string, suffix: string = prefix) => {
-        const textarea = document.getElementById('whatsapp-message') as HTMLTextAreaElement;
-        if (!textarea) return;
+                    let template = whatsappConfig?.config_value;
 
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value;
+                    if (!template) {
+                        // Default template if none exists
+                        template = 'Olá {{nomeCliente}}, referente a OS #{{numeroOS}} - {{descricaoOS}}.';
+                    }
 
-        const before = text.substring(0, start);
-        const selection = text.substring(start, end);
-        const after = text.substring(end);
+                    // Helper to strip HTML tags
+                    const stripHtml = (html: string | undefined | null) => {
+                        if (!html) return '';
+                        const doc = new DOMParser().parseFromString(html, 'text/html');
+                        return doc.body.textContent || "";
+                    };
 
-        const newText = `${before}${prefix}${selection}${suffix}${after}`;
-        setMessage(newText);
+                    // Preparar variáveis
+                    const nomeFantasia = user?.tenant?.nomeFantasia || 'Nossa Empresa';
+                    const telefoneEmpresa = user?.tenant?.telefone || '';
+                    const dataCriacao = ordem.created_at ? new Date(ordem.created_at).toLocaleDateString() : '';
 
-        // Restore focus and selection
-        setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + prefix.length, end + prefix.length);
-        }, 0);
-    };
+                    // Lista de itens formatada
+                    let listaItens = '';
+                    if (ordem.itens && ordem.itens.length > 0) {
+                        listaItens = ordem.itens.map(item =>
+                            `- ${item.quantidade}x ${item.descricao} (R$ ${item.valor_total.toFixed(2)})`
+                        ).join('\n');
+                    } else {
+                        listaItens = '- Nenhum item listado.';
+                    }
 
-    const insertList = (ordered: boolean) => {
-        const textarea = document.getElementById('whatsapp-message') as HTMLTextAreaElement;
-        if (!textarea) return;
+                    // Replace variables
+                    const formattedMessage = template
+                        .replace(/{{nomeCliente}}/g, ordem.cliente?.name || 'Cliente')
+                        .replace(/{{numeroOS}}/g, ordem.numero?.toString() || '')
+                        .replace(/{{descricaoOS}}/g, stripHtml(ordem.descricao) || '')
+                        .replace(/{{statusOS}}/g, STATUS_LABELS[ordem.status] || '')
+                        .replace(/{{valorTotal}}/g, ordem.valor_servico ? `R$ ${ordem.valor_servico.toFixed(2)}` : 'R$ 0,00')
+                        .replace(/{{dataCriacao}}/g, dataCriacao)
+                        .replace(/{{tipoEquipamento}}/g, ordem.equipamento_tipo || '')
+                        .replace(/{{marcaEquipamento}}/g, ordem.equipamento_marca || '')
+                        .replace(/{{modeloEquipamento}}/g, ordem.equipamento_modelo || '')
+                        .replace(/{{observacoesOs}}/g, stripHtml(ordem.observacoes_internas) || 'Nenhuma observação.')
+                        .replace(/{{laudoTecnico}}/g, stripHtml(ordem.laudo_tecnico) || 'Sem laudo técnico.')
+                        .replace(/{{listaItens}}/g, listaItens)
+                        .replace(/{{telefoneEmpresa}}/g, telefoneEmpresa)
+                        .replace(/{{nomeFantasia}}/g, nomeFantasia);
 
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value;
+                    setMessage(formattedMessage);
+                } catch (error) {
+                    console.error('Erro ao carregar template de WhatsApp:', error);
+                    // Fallback em caso de erro
+                    setMessage(`Olá! Sobre a OS #${ordem.numero} - ${ordem.descricao}`);
+                }
+                setMethod('api'); // Default
+            }
+        };
 
-        const before = text.substring(0, start);
-        const selection = text.substring(start, end);
-        const after = text.substring(end);
-
-        let newSelection = selection;
-
-        // If there's a selection, apply to each line
-        if (selection.length > 0) {
-            const lines = selection.split('\n');
-            newSelection = lines.map((line, index) => {
-                const marker = ordered ? `${index + 1}. ` : '- ';
-                return `${marker}${line}`;
-            }).join('\n');
-        } else {
-            // If no selection, just insert one marker
-            newSelection = ordered ? '1. ' : '- ';
-        }
-
-        const newText = `${before}${newSelection}${after}`;
-        setMessage(newText);
-
-        setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + newSelection.length, start + newSelection.length);
-        }, 0);
-    }
+        fetchTemplateAndSetMessage();
+    }, [isOpen, ordem, user]);
 
     const handleSend = () => {
         if (!ordem?.cliente?.phone_primary) return;
@@ -109,7 +106,7 @@ export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
         if (method === 'api') {
             url = `https://wa.me/55${phone}?text=${encodedMessage}`;
         } else if (method === 'web') {
-            url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodedMessage}`;
+            url = `https://web.whatsapp.com/send?phone=55${phone}?text=${encodedMessage}`; // Fix URL query params
         } else {
             // CRM implementation pending
             return;
@@ -136,50 +133,11 @@ export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
 
                     <div className="space-y-2">
                         <Label>Mensagem</Label>
-
-                        {/* Toolbar */}
-                        <div className="flex flex-wrap gap-1 p-1 border rounded-t-md bg-muted/50 border-b-0">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertFormat('*')} title="Negrito">
-                                <Bold className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertFormat('_')} title="Itálico">
-                                <Italic className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertFormat('~')} title="Rasurado">
-                                <Strikethrough className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertFormat('```')} title="Monoespaçado">
-                                <Code className="h-4 w-4" />
-                            </Button>
-                            <div className="w-px h-6 bg-border mx-1 my-auto" />
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertList(false)} title="Lista com marcas">
-                                <List className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertList(true)} title="Lista numerada">
-                                <ListOrdered className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertFormat('> ', '')} title="Citação">
-                                <Quote className="h-4 w-4" />
-                            </Button>
-                        </div>
-
-                        <Textarea
-                            id="whatsapp-message"
+                        <WhatsAppEditor
                             value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            className="min-h-[150px] rounded-t-none mt-0 resize-none font-mono text-sm"
+                            onChange={setMessage}
                             placeholder="Digite sua mensagem..."
                         />
-                    </div>
-
-                    <div className="text-xs text-muted-foreground bg-muted p-2 rounded border">
-                        <p className="font-semibold mb-1">Dicas de formatação:</p>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                            <span>*negrito*</span>
-                            <span>_itálico_</span>
-                            <span>~rasurado~</span>
-                            <span>```mono```</span>
-                        </div>
                     </div>
 
                     <div className="space-y-3 pt-2">
