@@ -37,7 +37,8 @@ import {
     AlertTriangle,
     History,
     Printer,
-    Receipt
+    Receipt,
+    MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
@@ -50,6 +51,7 @@ import { ConservacaoCard } from '../../../components/ConservacaoCard';
 import { PagamentosModal } from '../../../components/PagamentosModal';
 import { AlertasAbandonoModal } from '../../../components/AlertasAbandonoModal';
 import { PrintModal } from '../../../components/PrintModal';
+import { WhatsAppModal } from '../../../components/WhatsAppModal';
 
 // Tipos locais
 interface OrdemServico {
@@ -212,6 +214,9 @@ export default function EditOrdemPage() {
     // Print Modal State
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
     const [printFormat, setPrintFormat] = useState<'a4' | 'thermal'>('a4');
+
+    // WhatsApp Modal State
+    const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
     const ordemId = searchParams.get('id');
 
@@ -735,6 +740,18 @@ export default function EditOrdemPage() {
         setIsPrintModalOpen(true);
     };
 
+    const handleWhatsApp = () => {
+        if (!ordem?.cliente?.phone_primary) {
+            toast({
+                title: 'Erro',
+                description: 'O cliente não possui um telefone principal cadastrado.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        setIsWhatsAppModalOpen(true);
+    };
+
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -808,6 +825,10 @@ export default function EditOrdemPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => handleWhatsApp()} title="Enviar WhatsApp" className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        WhatsApp
+                    </Button>
                     <Button variant="outline" onClick={() => handlePrintA4()} title="Imprimir em A4 (Ctrl+P)">
                         <Printer className="h-4 w-4 mr-2" />
                         A4
@@ -1983,6 +2004,12 @@ export default function EditOrdemPage() {
                 onClose={() => setIsPrintModalOpen(false)}
                 ordemId={ordemId || ''}
                 format={printFormat}
+            />
+
+            <WhatsAppModal
+                isOpen={isWhatsAppModalOpen}
+                onClose={() => setIsWhatsAppModalOpen(false)}
+                ordem={ordem}
             />
         </div>
     );
