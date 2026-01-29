@@ -9,31 +9,7 @@ interface StatusTimelineProps {
     onLoad?: (historico: StatusHistorico[]) => void;
 }
 
-// Cliente API
-const api = {
-    get: async (url: string) => {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-        const getToken = () => {
-            if (typeof window === 'undefined') return '';
-            const cookies = document.cookie.split(';');
-            const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
-            if (tokenCookie) return tokenCookie.split('=')[1];
-            const encrypted = sessionStorage.getItem("@App:token");
-            if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
-            return '';
-        };
-        const token = getToken();
-        const response = await fetch(`${baseUrl}${url}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return { data: await response.json() };
-    }
-};
+import api from '@/lib/api';
 
 function formatRelativeTime(dateString: string): string {
     const date = new Date(dateString);
@@ -118,48 +94,53 @@ export function StatusTimeline({ ordemId, onLoad }: StatusTimelineProps) {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="relative">
-                {/* Linha vertical (mais discreta e próxima da borda) */}
-                <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-border/50" />
+        <div className="relative">
+            {/* Linha vertical (agora mais discreta) */}
+            <div className="absolute left-2.5 top-2 bottom-2 w-px bg-border/50" />
 
-                <div className="space-y-3">
-                    {historico.map((item, index) => (
-                        <div key={item.id} className="relative pl-6 group">
-                            {/* Ponto na timeline */}
-                            <div className={`absolute left-1 top-1.5 w-2.5 h-2.5 rounded-full border border-background ring-2 ring-background ${getStatusColor(item.status_novo)}`} />
+            <div className="space-y-3">
+                {historico.map((item, index) => (
+                    <div key={item.id} className="relative pl-8 group">
+                        {/* Ponto na timeline */}
+                        <div className={`absolute left-1.5 top-1.5 w-2.5 h-2.5 rounded-full ${getStatusColor(item.status_novo)} ring-2 ring-background`} />
 
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-                                {/* Linha Principal: Quem mudou + Status */}
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <div className="flex items-center gap-1.5 text-foreground font-medium">
-                                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                                        <span>{item.usuario_nome || 'Sistema'}</span>
-                                    </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm gap-1">
+                            {/* Info Principal Linha Única */}
+                            <div className="flex flex-wrap items-center gap-x-2 text-muted-foreground">
+                                <div className="flex items-center gap-1 font-medium text-foreground">
+                                    <User className="h-3.5 w-3.5" />
+                                    <span>{item.usuario_nome || 'Sistema'}</span>
+                                </div>
 
-                                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                                        <span>alterou para</span>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider text-white shadow-sm ${getStatusColor(item.status_novo)}`}>
-                                            {getStatusLabel(item.status_novo)}
-                                        </span>
-                                    </div>
+                                <span className="text-muted-foreground/40 hidden sm:inline">•</span>
 
-                                    <div className="text-xs text-muted-foreground ml-auto sm:ml-0">
-                                        {formatRelativeTime(item.data_alteracao)}
-                                    </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${getStatusColor(item.status_anterior)}`}>
+                                        {getStatusLabel(item.status_anterior)}
+                                    </span>
+                                    <ArrowRight className="h-3 w-3 text-muted-foreground/60" />
+                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${getStatusColor(item.status_novo)}`}>
+                                        {getStatusLabel(item.status_novo)}
+                                    </span>
                                 </div>
                             </div>
 
-                            {/* Detalhes / Observações (Compacto) */}
-                            {item.observacoes && (
-                                <p className="mt-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1 border border-muted/50">
-                                    {item.observacoes}
-                                </p>
-                            )}
+                            {/* Data */}
+                            <div className="text-xs text-muted-foreground/70 whitespace-nowrap">
+                                {formatRelativeTime(item.data_alteracao)}
+                            </div>
                         </div>
-                    ))}
-                </div>
+
+                        {/* Observações (se houver, logo abaixo) */}
+                        {item.observacoes && (
+                            <p className="mt-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1 border border-border/50 inline-block">
+                                {item.observacoes}
+                            </p>
+                        )}
+                    </div>
+                ))}
             </div>
         </div>
+
     );
 }

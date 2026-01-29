@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Save, ArrowRight, CalendarClock, Calendar, Users, Settings, Shield, Brain, Loader2, MessageCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { PermissionManagement } from '../../components/PermissionManagement';
 import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatrix';
 import { TiposServicoManager } from '../../components/TiposServicoManager';
@@ -356,13 +357,8 @@ const AvatarFallback = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTM
 );
 AvatarFallback.displayName = "AvatarFallback";
 
-// Hook toast simples
-const useToast = () => ({
-  toast: ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
-    console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
-    // Em produção, isso seria substituído por uma biblioteca de toast real
-  }
-});
+// Hook toast simples (Removido o mock local para usar o real do sistema)
+
 
 export default function OrdemServicoConfiguracoesPage() {
   const { toast } = useToast();

@@ -240,6 +240,12 @@ export default function EditOrdemPage() {
     const valueInputRef = React.useRef<HTMLInputElement>(null);
     const quantityInputRef = React.useRef<HTMLInputElement>(null);
 
+
+
+
+
+
+
     // State for keyboard navigation selection
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [uploading, setUploading] = useState(false);
@@ -884,7 +890,7 @@ export default function EditOrdemPage() {
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <PopoverTrigger asChild>
-                                                    <Info className="h-4 w-4 text-emerald-600/70 cursor-pointer hover:text-emerald-800 transition-colors" />
+                                                    <Info className="h-4 w-4 text-emerald-600 cursor-pointer hover:text-emerald-700 transition-colors" />
                                                 </PopoverTrigger>
                                             </TooltipTrigger>
                                             <TooltipContent>

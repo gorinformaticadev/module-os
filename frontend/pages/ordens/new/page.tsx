@@ -169,6 +169,39 @@ export default function NewOrdemRefactoredPage() {
     const quantityInputRef = React.useRef<HTMLInputElement>(null);
     const clientSearchInputRef = React.useRef<HTMLInputElement>(null);
 
+    // Refs for handlers to avoid stale closures in useEffect
+
+
+
+
+
+
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Save: Ctrl + S or Cmd + S
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                handleSaveRef.current();
+            }
+
+            // Print A4: Ctrl + P or Cmd + P
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'p') {
+                e.preventDefault();
+                handlePrintA4();
+            }
+
+            // Print 80mm: Ctrl + Shift + P or Cmd + Shift + P
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                handlePrint80mm();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     // State for keyboard navigation selection
     const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -482,11 +515,11 @@ export default function NewOrdemRefactoredPage() {
     }, [handleSave]);
 
     const handlePrintA4 = () => {
-        toast({ title: 'Atenção', description: 'Salve a ordem de serviço antes de imprimir.', variant: 'warning' });
+        toast({ title: 'Atenção', description: 'Salve a ordem de serviço antes de imprimir.', variant: 'destructive' });
     };
 
     const handlePrint80mm = () => {
-        toast({ title: 'Atenção', description: 'Salve a ordem de serviço antes de imprimir.', variant: 'warning' });
+        toast({ title: 'Atenção', description: 'Salve a ordem de serviço antes de imprimir.', variant: 'destructive' });
     };
 
     // Keyboard Shortcuts
@@ -505,7 +538,7 @@ export default function NewOrdemRefactoredPage() {
             }
 
             // Print 80mm: Ctrl + Shift + P or Cmd + Shift + P
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'p') {
                 e.preventDefault();
                 handlePrint80mm();
             }
@@ -529,11 +562,11 @@ export default function NewOrdemRefactoredPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" disabled title="Imprimir em A4 (Disponível após salvar)">
+                    <Button variant="outline" onClick={() => handlePrintA4()} title="Imprimir em A4 (Ctrl+P)" disabled={true} className="opacity-50 cursor-not-allowed">
                         <Printer className="h-4 w-4 mr-2" />
                         A4
                     </Button>
-                    <Button variant="outline" disabled title="Imprimir em 80mm (Disponível após salvar)">
+                    <Button variant="outline" onClick={() => handlePrint80mm()} title="Imprimir em 80mm (Ctrl+Shift+P)" disabled={true} className="opacity-50 cursor-not-allowed">
                         <Receipt className="h-4 w-4 mr-2" />
                         80mm
                     </Button>
