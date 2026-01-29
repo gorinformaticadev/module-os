@@ -1,12 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { NotificationDispatcherService } from './dispatcher.service';
 import { NotificationRuleService } from './rules.service';
 import { NotificationStateService } from './state.service';
+import { CronService } from '../../../core/cron/cron.service';
 
 @Injectable()
-export class NotificationSchedulerService {
+export class NotificationSchedulerService implements OnModuleInit {
     private readonly logger = new Logger(NotificationSchedulerService.name);
     private isProcessing = false;
 
@@ -14,8 +15,27 @@ export class NotificationSchedulerService {
         private readonly prisma: PrismaService,
         private readonly rules: NotificationRuleService,
         private readonly dispatcher: NotificationDispatcherService,
-        private readonly states: NotificationStateService
+        private readonly states: NotificationStateService,
+        private readonly cronService: CronService
     ) { }
+
+    async onModuleInit() {
+        this.logger.log('Registrando Notification Worker no Core...');
+        try {
+            await this.cronService.register(
+                'ordem_servico.notification_worker',
+                '* * * * *',
+                () => this.handleCron(),
+                {
+                    name: 'Ordem de Serviço: Worker de Notificações',
+                    description: 'Busca OSs atrasadas ou que atingiram prazos configurados e realiza os disparos automáticos.',
+                    settingsUrl: '/modules/ordem_servico/pages/configuracoes'
+                }
+            );
+        } catch (e) {
+            this.logger.error('Falha ao registrar worker no CronService:', e);
+        }
+    }
 
     @Cron(CronExpression.EVERY_MINUTE)
     async handleCron() {
@@ -23,7 +43,7 @@ export class NotificationSchedulerService {
         this.isProcessing = true;
 
         try {
-            this.logger.log('Starting OS Notification Worker...');
+            // this.logger.log('Starting OS Notification Worker...');
 
             // 1. Get all active CRON/CONDITION rules
             const activeRules: any[] = await this.prisma.$queryRawUnsafe(
@@ -47,12 +67,10 @@ export class NotificationSchedulerService {
     }
 
     private async processRule(rule: any) {
-        this.logger.log(`Processing rule: ${rule.title} (${rule.id})`);
-
         if (rule.trigger_type === 'CONDITION') {
             await this.processConditionRule(rule);
         } else if (rule.trigger_type === 'CRON') {
-            // Basic CRON - not detailed here yet as focus is OS Fora do Prazo (Condition)
+            // Basic CRON
         } else if (rule.trigger_type === 'OFFSET') {
             await this.processOffsetRule(rule);
         }
@@ -60,11 +78,9 @@ export class NotificationSchedulerService {
 
     private formatInterval(duration: any): string {
         if (!duration) return '0 minutes';
-        // Handle legacy format { value, unit }
         if (duration.value && duration.unit) {
             return `${duration.value} ${duration.unit}`;
         }
-        // Handle new format { days, hours, minutes, seconds }
         const parts = [];
         if (duration.days) parts.push(`${duration.days} days`);
         if (duration.hours) parts.push(`${duration.hours} hours`);
@@ -87,21 +103,18 @@ export class NotificationSchedulerService {
         const operator = config.reference === 'BEFORE_DEADLINE' ? '-' : '+';
         const comparison = config.reference === 'BEFORE_DEADLINE' ? '<=' : '>=';
 
-        // Query genérica para buscar OSs no alvo temporal
         const query = `
             SELECT os.* FROM "mod_ordem_servico_ordens" os
             WHERE os.tenant_id = $1
             AND os.status NOT IN (3, 4, 6)
             AND os.data_previsao IS NOT NULL
             AND os.data_previsao ${operator} INTERVAL '${intervalStr}' ${comparison} CURRENT_TIMESTAMP
-            -- Para BEFORE_DEADLINE, evita pegar coisas muito antigas ou já vencidas há muito tempo se desejado
-            -- Para AFTER_DEADLINE, garante que já passou o tempo
         `;
 
         const targetOrders: any[] = await this.prisma.$queryRawUnsafe(query, rule.tenant_id);
 
         for (const os of targetOrders) {
-            const fingerprint = `offset-${rule.id}-${os.id}`; // Offset é evento único geralmente
+            const fingerprint = `offset-${rule.id}-${os.id}`;
             const alreadySent = await this.states.getState(rule.tenant_id, rule.id, os.id);
 
             if (!alreadySent) {
@@ -126,10 +139,10 @@ export class NotificationSchedulerService {
         }
     }
 
-    // Helper unificado para dispatch e contador
     private async dispatchNotification(rule: any, os: any, fingerprint: string): Promise<boolean> {
-        // Silence Window Check
         const config = typeof rule.trigger_config === 'string' ? JSON.parse(rule.trigger_config) : rule.trigger_config;
+
+        // Silence Window Check
         if (config.silence_window?.start && config.silence_window?.end) {
             const now = new Date();
             const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
@@ -140,40 +153,43 @@ export class NotificationSchedulerService {
             const startTotal = startH * 60 + startM;
             const endTotal = endH * 60 + endM;
 
-            // Lógica para janelas que cruzam a meia-noite (Ex: 22:00 as 06:00)
             const isSilenced = startTotal <= endTotal
                 ? (currentTotalMinutes >= startTotal && currentTotalMinutes <= endTotal)
                 : (currentTotalMinutes >= startTotal || currentTotalMinutes <= endTotal);
 
             if (isSilenced) {
-                this.logger.log(`Regra [${rule.title}] silenciada pela Janela de Silêncio (${config.silence_window.start}-${config.silence_window.end})`);
+                this.logger.log(`Regra [${rule.title}] silenciada pela Janela de Silêncio`);
                 return false;
             }
         }
 
-        const result = await this.dispatcher.dispatch({
-            tenantId: rule.tenant_id,
-            ruleId: rule.id,
-            ordemServicoId: os.id,
-            channel: rule.channel,
-            recipient: this.resolveRecipient(os, rule.recipients),
-            content: this.formatMessage(rule.message_template, os),
-            fingerprint: fingerprint
-        });
+        const recipientsList = await this.resolveRecipients(os, rule.recipients);
+        let atLeastOneSuccess = false;
 
-        if (result.success) {
-            // Incrementar contador da regra
+        for (const recipient of recipientsList) {
+            const result = await this.dispatcher.dispatch({
+                tenantId: rule.tenant_id,
+                ruleId: rule.id,
+                ordemServicoId: os.id,
+                channel: rule.channel,
+                recipient,
+                content: this.formatMessage(rule.message_template, os),
+                fingerprint: `${fingerprint}-${recipient}`
+            });
+            if (result.success) atLeastOneSuccess = true;
+        }
+
+        if (atLeastOneSuccess) {
             await this.prisma.$queryRawUnsafe(
                 `UPDATE mod_ordem_servico_notif_rules SET current_executions = current_executions + 1, last_execution_at = CURRENT_TIMESTAMP WHERE id = $1`,
                 rule.id
             );
         }
 
-        return result.success;
+        return atLeastOneSuccess;
     }
 
     private async processOverdueOS(rule: any, config: any) {
-        // Encontrar OS atrasadas
         const overdueOrders: any[] = await this.prisma.$queryRawUnsafe(
             `SELECT os.* FROM "mod_ordem_servico_ordens" os
              WHERE os.tenant_id = $1
@@ -184,34 +200,25 @@ export class NotificationSchedulerService {
 
         for (const os of overdueOrders) {
             const state = await this.states.getState(rule.tenant_id, rule.id, os.id);
-            const lastState = state?.last_state || {};
             const lastNotifiedAt = state?.updated_at ? new Date(state.updated_at) : null;
 
             let shouldNotify = false;
 
-            // 1. Notificar se nunca foi notificado
             if (!state) {
                 shouldNotify = true;
-            }
-            // 2. Notificar se houver Frequência de Repetição configurada
-            else if (config.frequency) {
-                const frequencyInterval = this.formatInterval(config.frequency);
-                // Check via DB query helper or simplistic date calc (DB is better for intervals)
-                // Simplistic JS calculation for MVP (converting interval to ms approx)
-                const ms = ((config.frequency.days || 0) * 86400 + (config.frequency.hours || 0) * 3600 + (config.frequency.minutes || 0) * 60) * 1000;
+            } else if (config.frequency) {
+                const ms = ((config.frequency.days || 0) * 86400 + (config.frequency.hours || 0) * 3600 + (config.frequency.minutes || 0) * 60 + (config.frequency.seconds || 0)) * 1000;
 
                 if (ms > 0 && lastNotifiedAt) {
-                    const nextNotify = new Date(lastNotifiedAt.getTime() + ms);
-                    if (new Date() >= nextNotify) {
+                    if (new Date().getTime() >= lastNotifiedAt.getTime() + ms) {
                         shouldNotify = true;
                     }
                 }
             }
 
             if (shouldNotify) {
-                this.logger.log(`OS Atrasada (com recorrência?) detectada: ${os.id}. frequency=${JSON.stringify(config.frequency)}`);
-
-                const success = await this.dispatchNotification(rule, os, `overdue-${os.id}-${Date.now()}`); // Fingerprint único por envio se recorrente
+                this.logger.log(`Processando OS Atrasada: ${os.id}`);
+                const success = await this.dispatchNotification(rule, os, `overdue-${os.id}-${Date.now()}`);
 
                 if (success) {
                     await this.states.saveState({
@@ -225,12 +232,44 @@ export class NotificationSchedulerService {
         }
     }
 
-    private resolveRecipient(os: any, recipients: any): string {
-        // Lógica para resolver telefone/email do técnico ou cliente
-        return 'destinatario@teste.com'; // Exemplo
+    private async resolveRecipients(os: any, recipients: any): Promise<string[]> {
+        const config = typeof recipients === 'string' ? JSON.parse(recipients) : recipients;
+        if (!Array.isArray(config)) return [];
+
+        const targets: string[] = [];
+        for (const r of config) {
+            if (r.type === 'CLIENT') {
+                if (os.cliente_email) targets.push(os.cliente_email);
+                else {
+                    // Busca profunda no banco se necessário
+                    const client = await this.prisma.$queryRawUnsafe<any[]>(
+                        `SELECT email FROM mod_ordem_servico_clients WHERE id = $1`, os.cliente_id
+                    );
+                    if (client[0]?.email) targets.push(client[0].email);
+                }
+            } else if (r.type === 'TECHNICIAN' && os.usuario_responsavel_id) {
+                const user = await this.prisma.user.findUnique({ where: { id: os.usuario_responsavel_id }, select: { email: true, id: true } });
+                if (user?.email) targets.push(user.email);
+            } else if (r.type === 'CUSTOM' && r.value) {
+                targets.push(r.value);
+            }
+        }
+        return targets;
     }
 
     private formatMessage(template: string, os: any): string {
-        return template.replace(/{{id}}/g, os.id).replace(/{{cliente}}/g, os.cliente_nome || 'Cliente');
+        let msg = template;
+        const map: any = {
+            '{{id}}': os.id,
+            '{{numero}}': os.numero || os.id.split('-')[0],
+            '{{cliente}}': os.cliente_nome || 'Cliente',
+            '{{status}}': os.status,
+            '{{data_previsao}}': os.data_previsao ? new Date(os.data_previsao).toLocaleDateString() : 'N/A'
+        };
+
+        for (const key in map) {
+            msg = msg.replace(new RegExp(key, 'g'), map[key]);
+        }
+        return msg;
     }
 }

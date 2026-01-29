@@ -2,7 +2,7 @@
 -- Registra o worker de notificações no sistema de cron do core (se existir a tabela)
 
 INSERT INTO cron_schedules (
-    id, origem, modulo, identificador, descricao, expressao, ativo, editavel, created_at, updated_at
+    id, origem, modulo, identificador, descricao, expressao, ativo, editavel, "createdAt", "updatedAt"
 ) 
 SELECT 
     gen_random_uuid(), 
