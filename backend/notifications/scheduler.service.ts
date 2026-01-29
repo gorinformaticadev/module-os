@@ -58,42 +58,54 @@ export class NotificationSchedulerService {
         }
     }
 
+    private formatInterval(duration: any): string {
+        if (!duration) return '0 minutes';
+        // Handle legacy format { value, unit }
+        if (duration.value && duration.unit) {
+            return `${duration.value} ${duration.unit}`;
+        }
+        // Handle new format { days, hours, minutes, seconds }
+        const parts = [];
+        if (duration.days) parts.push(`${duration.days} days`);
+        if (duration.hours) parts.push(`${duration.hours} hours`);
+        if (duration.minutes) parts.push(`${duration.minutes} minutes`);
+        if (duration.seconds) parts.push(`${duration.seconds} seconds`);
+
+        return parts.length > 0 ? parts.join(' ') : '0 minutes';
+    }
+
     private async processOffsetRule(rule: any) {
         const config = typeof rule.trigger_config === 'string' ? JSON.parse(rule.trigger_config) : rule.trigger_config;
 
-        // Ex: { value: 24, unit: 'HOURS', reference: 'BEFORE_DEADLINE' }
-        if (config.reference === 'BEFORE_DEADLINE') {
-            await this.processBeforeDeadline(rule, config);
+        if (config.reference === 'BEFORE_DEADLINE' || config.reference === 'AFTER_DEADLINE') {
+            await this.processRelativeDeadline(rule, config);
         }
     }
 
-    private async processBeforeDeadline(rule: any, config: any) {
-        // Calcular intervalo
-        const interval = `${config.value} ${config.unit || 'HOURS'}`; // Postgres interval syntax
+    private async processRelativeDeadline(rule: any, config: any) {
+        const intervalStr = this.formatInterval(config.offset_duration || { value: config.value, unit: config.unit });
+        const operator = config.reference === 'BEFORE_DEADLINE' ? '-' : '+';
+        const comparison = config.reference === 'BEFORE_DEADLINE' ? '<=' : '>=';
 
-        // Buscar OSs onde (data_previsao - interval) <= NOW e status != Finalizado
+        // Query genérica para buscar OSs no alvo temporal
         const query = `
             SELECT os.* FROM "mod_ordem_servico_ordens" os
             WHERE os.tenant_id = $1
-            AND os.status NOT IN (3, 4, 6) -- Não Finalizada/Cancelada/Retirada (Check numeric status map)
+            AND os.status NOT IN (3, 4, 6)
             AND os.data_previsao IS NOT NULL
-            AND os.data_previsao - INTERVAL '${config.value} ${config.unit || 'hours'}' <= CURRENT_TIMESTAMP
-            AND os.data_previsao > CURRENT_TIMESTAMP -- Ainda não venceu (opcional, depende do caso de uso)
+            AND os.data_previsao ${operator} INTERVAL '${intervalStr}' ${comparison} CURRENT_TIMESTAMP
+            -- Para BEFORE_DEADLINE, evita pegar coisas muito antigas ou já vencidas há muito tempo se desejado
+            -- Para AFTER_DEADLINE, garante que já passou o tempo
         `;
 
         const targetOrders: any[] = await this.prisma.$queryRawUnsafe(query, rule.tenant_id);
 
         for (const os of targetOrders) {
-            // Verifica se já notificou usando State ou History?
-            // History é mais seguro para "evento único" como Offset.
-            const fingerprint = `offset-${rule.id}-${os.id}`;
+            const fingerprint = `offset-${rule.id}-${os.id}`; // Offset é evento único geralmente
             const alreadySent = await this.states.getState(rule.tenant_id, rule.id, os.id);
 
             if (!alreadySent) {
-                this.logger.log(`Offset Trigger [${rule.title}] para OS ${os.id}`);
-
                 const success = await this.dispatchNotification(rule, os, fingerprint);
-
                 if (success) {
                     await this.states.saveState({
                         tenantId: rule.tenant_id,
@@ -161,7 +173,7 @@ export class NotificationSchedulerService {
     }
 
     private async processOverdueOS(rule: any, config: any) {
-        // Encontrar OS atrasadas que ainda não atingiram o limite desta regra
+        // Encontrar OS atrasadas
         const overdueOrders: any[] = await this.prisma.$queryRawUnsafe(
             `SELECT os.* FROM "mod_ordem_servico_ordens" os
              WHERE os.tenant_id = $1
@@ -173,22 +185,42 @@ export class NotificationSchedulerService {
         for (const os of overdueOrders) {
             const state = await this.states.getState(rule.tenant_id, rule.id, os.id);
             const lastState = state?.last_state || {};
+            const lastNotifiedAt = state?.updated_at ? new Date(state.updated_at) : null;
 
-            // Verifica se houve mudança subjetiva (data mudou ou status mudou) ou se é a primeira vez
-            const hasChanged = JSON.stringify({ status: os.status, data_prevista: os.data_prevista }) !== JSON.stringify(lastState);
-            const shouldNotify = !state || hasChanged; // Simplificação para o MVP
+            let shouldNotify = false;
+
+            // 1. Notificar se nunca foi notificado
+            if (!state) {
+                shouldNotify = true;
+            }
+            // 2. Notificar se houver Frequência de Repetição configurada
+            else if (config.frequency) {
+                const frequencyInterval = this.formatInterval(config.frequency);
+                // Check via DB query helper or simplistic date calc (DB is better for intervals)
+                // Simplistic JS calculation for MVP (converting interval to ms approx)
+                const ms = ((config.frequency.days || 0) * 86400 + (config.frequency.hours || 0) * 3600 + (config.frequency.minutes || 0) * 60) * 1000;
+
+                if (ms > 0 && lastNotifiedAt) {
+                    const nextNotify = new Date(lastNotifiedAt.getTime() + ms);
+                    if (new Date() >= nextNotify) {
+                        shouldNotify = true;
+                    }
+                }
+            }
 
             if (shouldNotify) {
-                this.logger.log(`OS Atrasada detectada: ${os.id}. Notificando...`);
+                this.logger.log(`OS Atrasada (com recorrência?) detectada: ${os.id}. frequency=${JSON.stringify(config.frequency)}`);
 
-                await this.dispatchNotification(rule, os, `overdue-${os.id}-${rule.id}`);
+                const success = await this.dispatchNotification(rule, os, `overdue-${os.id}-${Date.now()}`); // Fingerprint único por envio se recorrente
 
-                await this.states.saveState({
-                    tenantId: rule.tenant_id,
-                    ruleId: rule.id,
-                    ordemServicoId: os.id,
-                    lastState: { status: os.status, data_prevista: os.data_prevista }
-                });
+                if (success) {
+                    await this.states.saveState({
+                        tenantId: rule.tenant_id,
+                        ruleId: rule.id,
+                        ordemServicoId: os.id,
+                        lastState: { status: os.status, notified_at: new Date() }
+                    });
+                }
             }
         }
     }

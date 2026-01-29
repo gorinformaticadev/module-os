@@ -29,32 +29,42 @@ export class NotificationRuleService {
     }
 
     async create(tenantId: string, data: any) {
-        const {
-            title,
-            description,
-            enabled,
-            triggerType,
-            triggerConfig,
-            channel,
-            recipients,
-            messageTemplate,
-            maxExecutions,
-            expiresAt
-        } = data;
+        this.logger.log(`Creating rule for tenant ${tenantId}. Data payload keys: ${Object.keys(data).join(', ')}`);
 
-        const results = await this.prisma.$queryRawUnsafe(
-            `INSERT INTO mod_ordem_servico_notif_rules (
-                tenant_id, title, description, enabled, trigger_type, 
-                trigger_config, channel, recipients, message_template, 
-                max_executions, expires_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            RETURNING *`,
-            tenantId, title, description, enabled ?? true, triggerType,
-            JSON.stringify(triggerConfig), channel, JSON.stringify(recipients),
-            messageTemplate, maxExecutions, expiresAt
-        );
+        const title = data.title;
+        const description = data.description;
+        const enabled = data.enabled;
+        const triggerType = data.triggerType || data.trigger_type;
+        const triggerConfig = data.triggerConfig || data.trigger_config;
+        const channel = data.channel;
+        const recipients = data.recipients;
+        const messageTemplate = data.messageTemplate || data.message_template;
+        const maxExecutions = data.maxExecutions || data.max_executions;
+        const expiresAt = data.expiresAt || data.expires_at;
 
-        return (results as any[])[0];
+        // Ensure JSON fields are strings if they aren't already, or Objects if Prisma handles it (for raw, stringify is safer provided it's not double)
+        const outputConfig = typeof triggerConfig === 'string' ? triggerConfig : JSON.stringify(triggerConfig);
+        const outputRecipients = typeof recipients === 'string' ? recipients : JSON.stringify(recipients);
+
+        this.logger.log(`Parsed Values: triggerType=${triggerType}, config=${outputConfig}, recipients=${outputRecipients}`);
+
+        try {
+            const results = await this.prisma.$queryRawUnsafe(
+                `INSERT INTO mod_ordem_servico_notif_rules (
+                    tenant_id, title, description, enabled, trigger_type, 
+                    trigger_config, channel, recipients, message_template, 
+                    max_executions, expires_at
+                ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8::jsonb, $9, $10, $11)
+                RETURNING *`,
+                tenantId, title, description, enabled ?? true, triggerType,
+                outputConfig, channel, outputRecipients,
+                messageTemplate, maxExecutions, expiresAt
+            );
+            return (results as any[])[0];
+        } catch (error: any) {
+            this.logger.error(`Failed to create notification rule: ${error.message}`, error.stack);
+            throw error;
+        }
     }
 
     async update(tenantId: string, id: string, data: any) {
@@ -66,29 +76,39 @@ export class NotificationRuleService {
         let placeholderIndex = 1;
 
         // Dynamic update builder for raw SQL
-        const updatableFields = [
-            'title', 'description', 'enabled', 'triggerType',
-            'triggerConfig', 'channel', 'recipients', 'messageTemplate',
-            'maxExecutions', 'expiresAt'
-        ];
+        const dbMapping: any = {
+            title: 'title',
+            description: 'description',
+            enabled: 'enabled',
+            triggerType: 'trigger_type',
+            trigger_type: 'trigger_type',
+            triggerConfig: 'trigger_config',
+            trigger_config: 'trigger_config',
+            channel: 'channel',
+            recipients: 'recipients',
+            messageTemplate: 'message_template',
+            message_template: 'message_template',
+            maxExecutions: 'max_executions',
+            max_executions: 'max_executions',
+            expiresAt: 'expires_at',
+            expires_at: 'expires_at'
+        };
 
         values.push(tenantId, id);
         placeholderIndex = 3;
 
-        for (const field of updatableFields) {
-            if (data[field] !== undefined) {
-                const dbField = field === 'triggerType' ? 'trigger_type' :
-                    field === 'triggerConfig' ? 'trigger_config' :
-                        field === 'messageTemplate' ? 'message_template' :
-                            field === 'maxExecutions' ? 'max_executions' :
-                                field === 'expiresAt' ? 'expires_at' : field;
+        for (const key of Object.keys(data)) {
+            const dbField = dbMapping[key];
+            if (dbField) {
+                let value = data[key];
+
+                // Handle JSON fields
+                if (dbField === 'trigger_config' || dbField === 'recipients') {
+                    value = typeof value === 'string' ? value : JSON.stringify(value);
+                }
 
                 fields.push(`${dbField} = $${placeholderIndex++}`);
-                values.push(
-                    (field === 'triggerConfig' || field === 'recipients')
-                        ? JSON.stringify(data[field])
-                        : data[field]
-                );
+                values.push(value);
             }
         }
 

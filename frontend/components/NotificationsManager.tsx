@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DurationPicker from './DurationPicker';
 import {
     Bell,
     Calendar,
@@ -415,39 +416,33 @@ export function NotificationsManager({ api, toast }: any) {
                                     )}
 
                                     {currentRule?.trigger_type === 'OFFSET' && (
-                                        <div className="flex gap-4 items-end">
-                                            <div className="flex-1 space-y-2">
-                                                <label className="text-sm font-medium">Valor</label>
-                                                <input
-                                                    type="number"
-                                                    className="w-full bg-background border rounded-lg px-4 py-2"
-                                                    value={currentRule?.trigger_config?.value || 1}
-                                                    onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, value: parseInt(e.target.value) } })}
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <DurationPicker
+                                                    label="Tempo de Deslocamento"
+                                                    value={currentRule?.trigger_config?.offset_duration || { days: 0, hours: 0, minutes: 0, seconds: 0 }}
+                                                    onChange={(val) => setCurrentRule({
+                                                        ...currentRule,
+                                                        trigger_config: { ...currentRule.trigger_config, offset_duration: val }
+                                                    })}
                                                 />
-                                            </div>
-                                            <div className="flex-1 space-y-2">
-                                                <label className="text-sm font-medium">Unidade</label>
-                                                <select
-                                                    className="w-full bg-background border rounded-lg px-4 py-2"
-                                                    value={currentRule?.trigger_config?.unit || 'HOURS'}
-                                                    onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, unit: e.target.value } })}
-                                                >
-                                                    <option value="MINUTES">Minutos</option>
-                                                    <option value="HOURS">Horas</option>
-                                                    <option value="DAYS">Dias</option>
-                                                </select>
-                                            </div>
-                                            <div className="flex-[2] space-y-2">
-                                                <label className="text-sm font-medium">Referência</label>
-                                                <select
-                                                    className="w-full bg-background border rounded-lg px-4 py-2"
-                                                    value={currentRule?.trigger_config?.reference || 'BEFORE_DEADLINE'}
-                                                    onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, reference: e.target.value } })}
-                                                >
-                                                    <option value="BEFORE_DEADLINE">Antes do Prazo (Vencimento)</option>
-                                                    <option value="AFTER_DEADLINE">Depois do Prazo</option>
-                                                    <option value="AFTER_CREATED">Após Criação</option>
-                                                </select>
+                                                
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium flex items-center">
+                                                        Referência
+                                                        <InfoTooltip text="Quando este tempo deve ser contado?" />
+                                                    </label>
+                                                    <select
+                                                        className="w-full bg-background border rounded-lg px-4 py-2 h-[58px]"
+                                                        value={currentRule?.trigger_config?.reference || 'BEFORE_DEADLINE'}
+                                                        onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, reference: e.target.value } })}
+                                                    >
+                                                        <option value="BEFORE_DEADLINE">Antes do Prazo (Vencimento)</option>
+                                                        <option value="AFTER_DEADLINE">Depois do Prazo</option>
+                                                        <option value="AFTER_CREATED">Após Criação</option>
+                                                        <option value="AFTER_UPDATE">Após Última Atualização</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -469,51 +464,65 @@ export function NotificationsManager({ api, toast }: any) {
                                 </div>
 
                                 {/* Limits & Window */}
-                                <div className="col-span-2 grid grid-cols-2 gap-4 border-t pt-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center">
-                                            Limite de Execuções
-                                            <InfoTooltip text="Número máximo de vezes que esta regra pode ser acionada. Deixe vazio para infinito." />
-                                        </label>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-background border rounded-lg px-4 py-2"
-                                            placeholder="Infinito"
-                                            value={currentRule?.max_executions || ''}
-                                            onChange={(e) => setCurrentRule({ ...currentRule, max_executions: e.target.value ? parseInt(e.target.value) : null })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center">
-                                            Janela de Silêncio
-                                            <InfoTooltip text="Horário em que as notificações serão pausadas (ex: não enviar de madrugada)." />
-                                        </label>
-                                        <div className="flex gap-2">
+                                <div className="col-span-2 space-y-4 border-t pt-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center">
+                                                Limite de Execuções
+                                                <InfoTooltip text="Número máximo de vezes que esta regra pode ser acionada. Deixe vazio para infinito." />
+                                            </label>
                                             <input
-                                                type="time"
-                                                className="w-full bg-background border rounded-lg px-2 py-2"
-                                                value={currentRule?.trigger_config?.silence_window?.start || ''}
-                                                onChange={(e) => setCurrentRule({
-                                                    ...currentRule,
-                                                    trigger_config: {
-                                                        ...currentRule.trigger_config,
-                                                        silence_window: { ...currentRule.trigger_config?.silence_window, start: e.target.value }
-                                                    }
-                                                })}
-                                            />
-                                            <input
-                                                type="time"
-                                                className="w-full bg-background border rounded-lg px-2 py-2"
-                                                value={currentRule?.trigger_config?.silence_window?.end || ''}
-                                                onChange={(e) => setCurrentRule({
-                                                    ...currentRule,
-                                                    trigger_config: {
-                                                        ...currentRule.trigger_config,
-                                                        silence_window: { ...currentRule.trigger_config?.silence_window, end: e.target.value }
-                                                    }
-                                                })}
+                                                type="number"
+                                                className="w-full bg-background border rounded-lg px-4 py-2"
+                                                placeholder="Infinito"
+                                                value={currentRule?.max_executions || ''}
+                                                onChange={(e) => setCurrentRule({ ...currentRule, max_executions: e.target.value ? parseInt(e.target.value) : null })}
                                             />
                                         </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center">
+                                                Janela de Silêncio
+                                                <InfoTooltip text="Horário em que as notificações serão pausadas (ex: não enviar de madrugada)." />
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="time"
+                                                    className="w-full bg-background border rounded-lg px-2 py-2"
+                                                    value={currentRule?.trigger_config?.silence_window?.start || ''}
+                                                    onChange={(e) => setCurrentRule({
+                                                        ...currentRule,
+                                                        trigger_config: {
+                                                            ...currentRule.trigger_config,
+                                                            silence_window: { ...currentRule.trigger_config?.silence_window, start: e.target.value }
+                                                        }
+                                                    })}
+                                                />
+                                                <input
+                                                    type="time"
+                                                    className="w-full bg-background border rounded-lg px-2 py-2"
+                                                    value={currentRule?.trigger_config?.silence_window?.end || ''}
+                                                    onChange={(e) => setCurrentRule({
+                                                        ...currentRule,
+                                                        trigger_config: {
+                                                            ...currentRule.trigger_config,
+                                                            silence_window: { ...currentRule.trigger_config?.silence_window, end: e.target.value }
+                                                        }
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <DurationPicker
+                                            label="Frequência de Repetição (Recorrência)"
+                                            value={currentRule?.trigger_config?.frequency || { days: 0, hours: 0, minutes: 0, seconds: 0 }}
+                                            onChange={(val) => setCurrentRule({
+                                                ...currentRule,
+                                                trigger_config: { ...currentRule.trigger_config, frequency: val }
+                                            })}
+                                        />
+                                        <p className="text-[10px] text-muted-foreground mt-1 ml-1">* Deixe tudo zerado para executar apenas uma vez.</p>
                                     </div>
                                 </div>
                             </div>
@@ -547,9 +556,9 @@ export function NotificationsManager({ api, toast }: any) {
 
                                     const payload = {
                                         ...currentRule,
-                                        trigger_config: JSON.stringify(currentRule.trigger_config || {}), // Ensure JSON string format for backend
+                                        trigger_config: currentRule.trigger_config || {},
                                         max_executions: currentRule.max_executions || null,
-                                        recipients: currentRule.recipients || JSON.stringify([{ type: 'CLIENT' }]) // Default recipient
+                                        recipients: currentRule.recipients || [{ type: 'CLIENT' }]
                                     };
 
                                     await (api as any)[method](url, payload);
