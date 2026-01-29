@@ -283,75 +283,232 @@ export function NotificationsManager({ api, toast }: any) {
 
             {/* Extreme simplification of Rule Form Modal - Concept Only */}
             {isEditing && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-                    <Card className="w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b flex justify-between items-center bg-muted/10">
-                            <h3 className="text-xl font-bold">{currentRule?.id ? 'Editar Regra' : 'Nova Regra de Notificação'}</h3>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 overflow-y-auto">
+                    <Card className="w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 my-8">
+                        <div className="p-6 border-b flex justify-between items-center bg-background sticky top-0 backdrop-blur-md z-10">
+                            <div>
+                                <h3 className="text-xl font-bold">{currentRule?.id ? 'Editar Regra' : 'Nova Regra de Notificação'}</h3>
+                                <p className="text-sm text-muted-foreground">Configure quando e como as notificações serão enviadas.</p>
+                            </div>
                             <button onClick={() => setIsEditing(false)} className="text-muted-foreground hover:text-foreground">
                                 <XCircle className="h-6 w-6" />
                             </button>
                         </div>
 
-                        <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
-                            {/* Form fields here - truncated for brevity in this tool call but would be fully implemented */}
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="p-6 space-y-6">
+                            {!currentRule.id && (
+                                <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 mb-4">
+                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                        Comece com um Modelo
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { label: '🔔 Nova OS (Sistema)', config: { title: 'Nova OS Registrada', trigger_type: 'EVENT', trigger_config: { events: ['CREATED'] }, channel: 'SYSTEM', message_template: 'Nova OS #{{numero}} criada para {{cliente}}.' } },
+                                            { label: '⏰ Vence em 24h', config: { title: 'Alerta de Vencimento', trigger_type: 'OFFSET', trigger_config: { value: 24, unit: 'HOURS', reference: 'BEFORE_DEADLINE' }, channel: 'EMAIL', message_template: 'Sua OS #{{numero}} vence em 24 horas.' } },
+                                            { label: '⚠️ OS Atrasada', config: { title: 'OS Fora do Prazo', trigger_type: 'CONDITION', trigger_config: { condition: 'OVERDUE' }, channel: 'SYSTEM', message_template: 'Atenção: OS #{{numero}} está atrasada!' } },
+                                            { label: '✅ Finalizada (Zap)', config: { title: 'OS Concluída', trigger_type: 'EVENT', trigger_config: { events: ['STATUS_CHANGED'], status_to: 'CONCLUIDO' }, channel: 'WHATSAPP', message_template: 'Olá {{cliente}}, sua OS #{{numero}} foi finalizada!' } },
+                                        ].map((t, i) => (
+                                            <Button key={i} variant="outline" size="sm" onClick={() => setCurrentRule({ ...t.config, enabled: true })}>{t.label}</Button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="col-span-2 space-y-2">
                                     <label className="text-sm font-medium">Título da Regra</label>
                                     <input
-                                        className="w-full bg-background border rounded-lg px-4 py-2"
+                                        className="w-full bg-background border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                         value={currentRule?.title || ''}
                                         onChange={(e) => setCurrentRule({ ...currentRule, title: e.target.value })}
                                         placeholder="Ex: Alerta de OS Atrasada"
                                     />
                                 </div>
+
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Tipo de Gatilho</label>
                                     <select
                                         className="w-full bg-background border rounded-lg px-4 py-2"
                                         value={currentRule?.trigger_type || 'EVENT'}
-                                        onChange={(e) => setCurrentRule({ ...currentRule, trigger_type: e.target.value })}
+                                        onChange={(e) => setCurrentRule({ ...currentRule, trigger_type: e.target.value, trigger_config: {} })}
                                     >
-                                        <option value="EVENT">Evento (Criação/Status)</option>
-                                        <option value="CONDITION">Condição (Fora do Prazo)</option>
-                                        <option value="CRON">Agendamento Fixo</option>
+                                        <option value="EVENT">⚡ Evento (Imediato)</option>
+                                        <option value="OFFSET">🕒 Tempo Relativo (Offset)</option>
+                                        <option value="CONDITION">🔍 Condição (Estado)</option>
+                                        <option value="CRON">📅 Agendamento Fixo</option>
                                     </select>
                                 </div>
+
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Canal</label>
+                                    <label className="text-sm font-medium">Canal de Envio</label>
                                     <select
                                         className="w-full bg-background border rounded-lg px-4 py-2"
-                                        value={currentRule?.channel || 'EMAIL'}
+                                        value={currentRule?.channel || 'SYSTEM'}
                                         onChange={(e) => setCurrentRule({ ...currentRule, channel: e.target.value })}
                                     >
-                                        <option value="EMAIL">E-mail</option>
-                                        <option value="WHATSAPP">WhatsApp</option>
+                                        <option value="SYSTEM">🔔 Sistema (Notificação Interna)</option>
+                                        <option value="EMAIL">📧 E-mail</option>
+                                        <option value="WHATSAPP">📱 WhatsApp</option>
                                     </select>
+                                </div>
+
+                                {/* Dynamic Config Section */}
+                                <div className="col-span-2 border rounded-lg p-4 bg-muted/20 space-y-4">
+                                    <h5 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Configuração do Gatilho</h5>
+
+                                    {currentRule?.trigger_type === 'EVENT' && (
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Eventos Observados</label>
+                                            <div className="flex flex-wrap gap-4">
+                                                {['CREATED', 'STATUS_CHANGED', 'ASSIGNED', 'FINISHED'].map(evt => (
+                                                    <label key={evt} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border cursor-pointer hover:border-primary">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={currentRule?.trigger_config?.events?.includes(evt)}
+                                                            onChange={(e) => {
+                                                                const events = currentRule?.trigger_config?.events || [];
+                                                                const newEvents = e.target.checked
+                                                                    ? [...events, evt]
+                                                                    : events.filter((x: string) => x !== evt);
+                                                                setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, events: newEvents } });
+                                                            }}
+                                                        />
+                                                        <span className="text-sm">{evt}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {currentRule?.trigger_type === 'OFFSET' && (
+                                        <div className="flex gap-4 items-end">
+                                            <div className="flex-1 space-y-2">
+                                                <label className="text-sm font-medium">Valor</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full bg-background border rounded-lg px-4 py-2"
+                                                    value={currentRule?.trigger_config?.value || 1}
+                                                    onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, value: parseInt(e.target.value) } })}
+                                                />
+                                            </div>
+                                            <div className="flex-1 space-y-2">
+                                                <label className="text-sm font-medium">Unidade</label>
+                                                <select
+                                                    className="w-full bg-background border rounded-lg px-4 py-2"
+                                                    value={currentRule?.trigger_config?.unit || 'HOURS'}
+                                                    onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, unit: e.target.value } })}
+                                                >
+                                                    <option value="MINUTES">Minutos</option>
+                                                    <option value="HOURS">Horas</option>
+                                                    <option value="DAYS">Dias</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex-[2] space-y-2">
+                                                <label className="text-sm font-medium">Referência</label>
+                                                <select
+                                                    className="w-full bg-background border rounded-lg px-4 py-2"
+                                                    value={currentRule?.trigger_config?.reference || 'BEFORE_DEADLINE'}
+                                                    onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, reference: e.target.value } })}
+                                                >
+                                                    <option value="BEFORE_DEADLINE">Antes do Prazo (Vencimento)</option>
+                                                    <option value="AFTER_DEADLINE">Depois do Prazo</option>
+                                                    <option value="AFTER_CREATED">Após Criação</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {currentRule?.trigger_type === 'CONDITION' && (
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Condição</label>
+                                            <select
+                                                className="w-full bg-background border rounded-lg px-4 py-2"
+                                                value={currentRule?.trigger_config?.condition || 'OVERDUE'}
+                                                onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, condition: e.target.value } })}
+                                            >
+                                                <option value="OVERDUE">🚫 Está Atrasada (Fora do Prazo)</option>
+                                                <option value="NO_TECHNICIAN">👤 Sem Técnico por X tempo</option>
+                                                <option value="STUCK">🛑 Parada em Status (X dias)</option>
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Limits & Window */}
+                                <div className="col-span-2 grid grid-cols-2 gap-4 border-t pt-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase text-muted-foreground">Limite de Execuções</label>
+                                        <input
+                                            type="number"
+                                            className="w-full bg-background border rounded-lg px-4 py-2"
+                                            placeholder="Infinito"
+                                            value={currentRule?.max_executions || ''}
+                                            onChange={(e) => setCurrentRule({ ...currentRule, max_executions: e.target.value ? parseInt(e.target.value) : null })}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Deixe vazio para ilimitado.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase text-muted-foreground">Janela de Silêncio (Inicio - Fim)</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="time"
+                                                className="w-full bg-background border rounded-lg px-2 py-2"
+                                                value={currentRule?.trigger_config?.silence_window?.start || ''}
+                                                onChange={(e) => setCurrentRule({
+                                                    ...currentRule,
+                                                    trigger_config: {
+                                                        ...currentRule.trigger_config,
+                                                        silence_window: { ...currentRule.trigger_config?.silence_window, start: e.target.value }
+                                                    }
+                                                })}
+                                            />
+                                            <input
+                                                type="time"
+                                                className="w-full bg-background border rounded-lg px-2 py-2"
+                                                value={currentRule?.trigger_config?.silence_window?.end || ''}
+                                                onChange={(e) => setCurrentRule({
+                                                    ...currentRule,
+                                                    trigger_config: {
+                                                        ...currentRule.trigger_config,
+                                                        silence_window: { ...currentRule.trigger_config?.silence_window, end: e.target.value }
+                                                    }
+                                                })}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Template da Mensagem</label>
                                 <textarea
-                                    className="w-full bg-background border rounded-lg px-4 py-2 min-h-[120px]"
+                                    className="w-full bg-background border rounded-lg px-4 py-2 min-h-[100px] font-mono text-sm"
                                     value={currentRule?.message_template || ''}
                                     onChange={(e) => setCurrentRule({ ...currentRule, message_template: e.target.value })}
-                                    placeholder="Use {{id}}, {{cliente}}, etc."
+                                    placeholder="Ex: Olá {{cliente}}, sua OS #{{numero}} mudou para {{status}}."
                                 />
+                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => setCurrentRule({ ...currentRule, message_template: (currentRule.message_template || '') + ' {{cliente}}' })}>{'{{cliente}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => setCurrentRule({ ...currentRule, message_template: (currentRule.message_template || '') + ' {{numero}}' })}>{'{{numero}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => setCurrentRule({ ...currentRule, message_template: (currentRule.message_template || '') + ' {{status}}' })}>{'{{status}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => setCurrentRule({ ...currentRule, message_template: (currentRule.message_template || '') + ' {{data_previsao}}' })}>{'{{data_previsao}}'}</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="p-6 border-t bg-muted/5 flex justify-end gap-3">
+                        <div className="p-6 border-t bg-muted/5 flex justify-end gap-3 rounded-b-xl sticky bottom-0 backdrop-blur-md">
                             <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>
                             <Button onClick={async () => {
                                 try {
                                     const method = currentRule.id ? 'put' : 'post';
                                     const url = currentRule.id ? `/api/ordem_servico/notificacoes/regras/${currentRule.id}` : '/api/ordem_servico/notificacoes/regras';
 
-                                    // Small hack for demo: trigger_config and recipients mandatory in API
                                     const payload = {
                                         ...currentRule,
-                                        trigger_config: currentRule.trigger_config || (currentRule.trigger_type === 'CONDITION' ? { condition: 'OVERDUE' } : { events: ['STATUS_CHANGED'] }),
-                                        recipients: currentRule.recipients || { type: 'CLIENT' }
+                                        trigger_config: JSON.stringify(currentRule.trigger_config || {}), // Ensure JSON string format for backend
+                                        max_executions: currentRule.max_executions || null,
+                                        recipients: currentRule.recipients || JSON.stringify([{ type: 'CLIENT' }]) // Default recipient
                                     };
 
                                     await (api as any)[method](url, payload);
@@ -359,9 +516,12 @@ export function NotificationsManager({ api, toast }: any) {
                                     setIsEditing(false);
                                     fetchRules();
                                 } catch (err) {
+                                    console.error(err);
                                     toast({ title: 'Erro ao salvar', variant: 'destructive' });
                                 }
-                            }}>Salvar Regra</Button>
+                            }}>
+                                {currentRule.id ? 'Salvar Alterações' : 'Criar Regra'}
+                            </Button>
                         </div>
                     </Card>
                 </div>

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NotificationHistoryService } from './history.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PrismaService } from '../../../core/prisma/prisma.service';
 
 // Interfaces para as estratégias
 export interface NotificationStrategy {
@@ -10,6 +11,44 @@ export interface NotificationStrategy {
         content: string;
         metadata?: any;
     }): Promise<{ success: boolean; error?: string }>;
+}
+
+@Injectable()
+export class SystemStrategy implements NotificationStrategy {
+    private readonly logger = new Logger(SystemStrategy.name);
+
+    constructor(private readonly prisma: PrismaService) { }
+
+    async send(data: {
+        tenantId: string;
+        recipient: string;
+        content: string;
+        metadata?: any;
+    }) {
+        this.logger.log(`[System] Criando notificação interna para ${data.recipient}...`);
+
+        try {
+            await this.prisma.notification.create({
+                data: {
+                    tenantId: data.tenantId,
+                    userId: data.recipient,
+                    title: data.metadata?.title || 'Atualização OS',
+                    message: data.content,
+                    severity: 'info',
+                    audience: 'user',
+                    source: 'module',
+                    module: 'ordem_servico',
+                    context: data.metadata?.context || null,
+                    data: data.metadata || {},
+                    read: false
+                }
+            });
+            return { success: true };
+        } catch (error: any) {
+            this.logger.error(`Erro ao criar notificação interna: ${error.message}`);
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 @Injectable()
@@ -55,9 +94,11 @@ export class NotificationDispatcherService {
         private readonly history: NotificationHistoryService,
         private readonly emailStrategy: EmailStrategy,
         private readonly whatsappStrategy: WhatsAppStrategy,
+        private readonly systemStrategy: SystemStrategy,
     ) {
         this.strategies['EMAIL'] = emailStrategy;
         this.strategies['WHATSAPP'] = whatsappStrategy;
+        this.strategies['SYSTEM'] = systemStrategy;
     }
 
     async dispatch(params: {

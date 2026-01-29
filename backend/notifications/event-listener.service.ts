@@ -39,15 +39,19 @@ export class NotificationEventListenerService {
                 if (config.events && config.events.includes(eventType)) {
                     this.logger.log(`Regra [${rule.title}] disparada para evento ${eventType}`);
 
-                    await this.dispatcher.dispatch({
-                        tenantId: tenantId,
-                        ruleId: rule.id,
-                        ordemServicoId: osId,
-                        channel: rule.channel,
-                        recipient: this.resolveRecipient(osData, rule.recipients),
-                        content: this.formatMessage(rule.message_template, osData),
-                        fingerprint: `event-${eventType}-${osId}-${rule.id}`
-                    });
+                    const recipients = await this.resolveRecipient(osData, rule.recipients);
+
+                    for (const recipient of recipients) {
+                        await this.dispatcher.dispatch({
+                            tenantId: tenantId,
+                            ruleId: rule.id,
+                            ordemServicoId: osId,
+                            channel: rule.channel,
+                            recipient: recipient,
+                            content: this.formatMessage(rule.message_template, osData),
+                            fingerprint: `event-${eventType}-${osId}-${rule.id}-${recipient}`
+                        });
+                    }
                 }
             }
         } catch (error: any) {
@@ -55,12 +59,52 @@ export class NotificationEventListenerService {
         }
     }
 
-    private resolveRecipient(os: any, recipients: any): string {
-        // Implementar lógica real baseada no config de recipients
-        return 'destinatario@teste.com';
+    private async resolveRecipient(os: any, recipients: any[]): Promise<string[]> {
+        const targets: string[] = [];
+
+        if (!Array.isArray(recipients)) return targets;
+
+        for (const r of recipients) {
+            if (r.type === 'CLIENT') {
+                // Tenta buscar do payload ou banco
+                if (os.cliente_email) targets.push(os.cliente_email);
+                else if (os.cliente_id) {
+                    const client = await this.prisma.$queryRawUnsafe<any[]>(
+                        `SELECT email FROM mod_ordem_servico_clients WHERE id = $1`, os.cliente_id
+                    );
+                    if (client[0]?.email) targets.push(client[0].email);
+                }
+            } else if (r.type === 'TECHNICIAN') {
+                if (os.usuario_responsavel_id) {
+                    const user = await this.prisma.user.findUnique({
+                        where: { id: os.usuario_responsavel_id },
+                        select: { email: true, id: true }
+                    });
+                    // Se for canal SYSTEM, usa o ID. Se Email, usa o email.
+                    // O dispatcher deve saber lidar, mas aqui retornamos o identificador principal
+                    if (user?.id) targets.push(user.id);
+                }
+            } else if (r.type === 'CUSTOM') {
+                targets.push(r.value);
+            }
+        }
+        return targets;
     }
 
     private formatMessage(template: string, os: any): string {
-        return template.replace(/{{id}}/g, os.id).replace(/{{cliente}}/g, os.cliente_nome || 'Cliente');
+        let msg = template;
+        const map: any = {
+            '{{id}}': os.id,
+            '{{numero}}': os.numero || os.id.split('-')[0],
+            '{{cliente}}': os.cliente_nome || 'Cliente',
+            '{{status}}': os.status,
+            '{{data_previsao}}': os.data_previsao ? new Date(os.data_previsao).toLocaleDateString() : 'N/A',
+            '{{valor}}': os.valor_servico || '0,00'
+        };
+
+        for (const key in map) {
+            msg = msg.replace(new RegExp(key, 'g'), map[key]);
+        }
+        return msg;
     }
 }

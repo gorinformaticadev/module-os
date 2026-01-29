@@ -4,7 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationRuleService } from './rules.service';
 import { NotificationHistoryService } from './history.service';
 import { NotificationStateService } from './state.service';
-import { NotificationDispatcherService, EmailStrategy, WhatsAppStrategy } from './dispatcher.service';
+import { NotificationDispatcherService, EmailStrategy, WhatsAppStrategy, SystemStrategy } from './dispatcher.service';
 import { NotificationSchedulerService } from './scheduler.service';
 import { PrismaModule } from '../../../core/prisma/prisma.module';
 
@@ -25,6 +25,7 @@ import { NotificationRuleController } from './rules.controller';
         NotificationDispatcherService,
         EmailStrategy,
         WhatsAppStrategy,
+        SystemStrategy,
         NotificationSchedulerService,
         NotificationEventListenerService,
     ],
