@@ -15,7 +15,8 @@ import {
     MessageSquare,
     RefreshCw,
     Search,
-    Filter
+    HelpCircle,
+    Info
 } from 'lucide-react';
 
 // Reuse existing UI components if possible, or define local mini-components
@@ -31,6 +32,17 @@ const Button = ({ children, variant = 'default', className = '', ...props }: any
     };
     return <button className={`${base} ${(variants as any)[variant]} ${className}`} {...props}>{children}</button>;
 };
+
+// Simple Tooltip helper
+const InfoTooltip = ({ text }: { text: string }) => (
+    <div className="group relative inline-block ml-1.5 align-middle cursor-help">
+        <HelpCircle className="h-4 w-4 text-muted-foreground/70 hover:text-primary transition-colors" />
+        <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 bg-popover text-popover-foreground text-xs p-2 rounded-md shadow-md border z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+            {text}
+            <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-popover border-r border-b rotate-45" />
+        </div>
+    </div>
+);
 
 const Card = ({ children, className = '' }: any) => (
     <div className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm shadow-sm ${className}`}>
@@ -111,6 +123,10 @@ export function NotificationsManager({ api, toast }: any) {
         } catch (err) {
             toast({ title: 'Erro ao alternar status', variant: 'destructive' });
         }
+    };
+
+    const addToken = (token: string) => {
+        setCurrentRule({ ...currentRule, message_template: (currentRule?.message_template || '') + ` ${token}` });
     };
 
     return (
@@ -283,9 +299,9 @@ export function NotificationsManager({ api, toast }: any) {
 
             {/* Extreme simplification of Rule Form Modal - Concept Only */}
             {isEditing && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 overflow-y-auto">
-                    <Card className="w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 my-8">
-                        <div className="p-6 border-b flex justify-between items-center bg-background sticky top-0 backdrop-blur-md z-10">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+                    <Card className="w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        <div className="flex-none p-6 border-b flex justify-between items-center bg-background">
                             <div>
                                 <h3 className="text-xl font-bold">{currentRule?.id ? 'Editar Regra' : 'Nova Regra de Notificação'}</h3>
                                 <p className="text-sm text-muted-foreground">Configure quando e como as notificações serão enviadas.</p>
@@ -295,7 +311,7 @@ export function NotificationsManager({ api, toast }: any) {
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-6">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {!currentRule.id && (
                                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 mb-4">
                                     <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
@@ -317,7 +333,10 @@ export function NotificationsManager({ api, toast }: any) {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="col-span-2 space-y-2">
-                                    <label className="text-sm font-medium">Título da Regra</label>
+                                    <label className="text-sm font-medium flex items-center">
+                                        Título da Regra
+                                        <InfoTooltip text="Um nome interno para você identificar esta regra facilmente." />
+                                    </label>
                                     <input
                                         className="w-full bg-background border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                         value={currentRule?.title || ''}
@@ -327,7 +346,10 @@ export function NotificationsManager({ api, toast }: any) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Tipo de Gatilho</label>
+                                    <label className="text-sm font-medium flex items-center">
+                                        Tipo de Gatilho
+                                        <InfoTooltip text="O evento ou condição que dispara esta notificação." />
+                                    </label>
                                     <select
                                         className="w-full bg-background border rounded-lg px-4 py-2"
                                         value={currentRule?.trigger_type || 'EVENT'}
@@ -341,7 +363,10 @@ export function NotificationsManager({ api, toast }: any) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Canal de Envio</label>
+                                    <label className="text-sm font-medium flex items-center">
+                                        Canal de Envio
+                                        <InfoTooltip text="Por onde o destinatário receberá a mensagem." />
+                                    </label>
                                     <select
                                         className="w-full bg-background border rounded-lg px-4 py-2"
                                         value={currentRule?.channel || 'SYSTEM'}
@@ -355,13 +380,21 @@ export function NotificationsManager({ api, toast }: any) {
 
                                 {/* Dynamic Config Section */}
                                 <div className="col-span-2 border rounded-lg p-4 bg-muted/20 space-y-4">
-                                    <h5 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Configuração do Gatilho</h5>
+                                    <h5 className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center">
+                                        Configuração do Gatilho
+                                        <InfoTooltip text="Defina os detalhes específicos de quando a regra deve disparar." />
+                                    </h5>
 
                                     {currentRule?.trigger_type === 'EVENT' && (
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Eventos Observados</label>
                                             <div className="flex flex-wrap gap-4">
-                                                {['CREATED', 'STATUS_CHANGED', 'ASSIGNED', 'FINISHED'].map(evt => (
+                                                {Object.entries({
+                                                    'CREATED': '✨ Nova OS Criada',
+                                                    'STATUS_CHANGED': '🔄 Mudança de Status',
+                                                    'ASSIGNED': '👤 Técnico Atribuído',
+                                                    'FINISHED': '✅ OS Finalizada'
+                                                }).map(([evt, label]) => (
                                                     <label key={evt} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border cursor-pointer hover:border-primary">
                                                         <input
                                                             type="checkbox"
@@ -374,7 +407,7 @@ export function NotificationsManager({ api, toast }: any) {
                                                                 setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, events: newEvents } });
                                                             }}
                                                         />
-                                                        <span className="text-sm">{evt}</span>
+                                                        <span className="text-sm">{label}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -438,7 +471,10 @@ export function NotificationsManager({ api, toast }: any) {
                                 {/* Limits & Window */}
                                 <div className="col-span-2 grid grid-cols-2 gap-4 border-t pt-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-semibold uppercase text-muted-foreground">Limite de Execuções</label>
+                                        <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center">
+                                            Limite de Execuções
+                                            <InfoTooltip text="Número máximo de vezes que esta regra pode ser acionada. Deixe vazio para infinito." />
+                                        </label>
                                         <input
                                             type="number"
                                             className="w-full bg-background border rounded-lg px-4 py-2"
@@ -446,10 +482,12 @@ export function NotificationsManager({ api, toast }: any) {
                                             value={currentRule?.max_executions || ''}
                                             onChange={(e) => setCurrentRule({ ...currentRule, max_executions: e.target.value ? parseInt(e.target.value) : null })}
                                         />
-                                        <p className="text-xs text-muted-foreground">Deixe vazio para ilimitado.</p>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-semibold uppercase text-muted-foreground">Janela de Silêncio (Inicio - Fim)</label>
+                                        <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center">
+                                            Janela de Silêncio
+                                            <InfoTooltip text="Horário em que as notificações serão pausadas (ex: não enviar de madrugada)." />
+                                        </label>
                                         <div className="flex gap-2">
                                             <input
                                                 type="time"
@@ -481,7 +519,10 @@ export function NotificationsManager({ api, toast }: any) {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Template da Mensagem</label>
+                                <label className="text-sm font-medium flex items-center">
+                                    Template da Mensagem
+                                    <InfoTooltip text="Use as variáveis abaixo para personalizar a mensagem. Elas serão substituídas pelos dados reais da OS." />
+                                </label>
                                 <textarea
                                     className="w-full bg-background border rounded-lg px-4 py-2 min-h-[100px] font-mono text-sm"
                                     value={currentRule?.message_template || ''}
@@ -489,15 +530,15 @@ export function NotificationsManager({ api, toast }: any) {
                                     placeholder="Ex: Olá {{cliente}}, sua OS #{{numero}} mudou para {{status}}."
                                 />
                                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => setCurrentRule({ ...currentRule, message_template: (currentRule.message_template || '') + ' {{cliente}}' })}>{'{{cliente}}'}</span>
-                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => setCurrentRule({ ...currentRule, message_template: (currentRule.message_template || '') + ' {{numero}}' })}>{'{{numero}}'}</span>
-                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => setCurrentRule({ ...currentRule, message_template: (currentRule.message_template || '') + ' {{status}}' })}>{'{{status}}'}</span>
-                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => setCurrentRule({ ...currentRule, message_template: (currentRule.message_template || '') + ' {{data_previsao}}' })}>{'{{data_previsao}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => addToken('{{cliente}}')}>{'{{cliente}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => addToken('{{numero}}')}>{'{{numero}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => addToken('{{status}}')}>{'{{status}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => addToken('{{data_previsao}}')}>{'{{data_previsao}}'}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-6 border-t bg-muted/5 flex justify-end gap-3 rounded-b-xl sticky bottom-0 backdrop-blur-md">
+                        <div className="flex-none p-6 border-t bg-muted/5 flex justify-end gap-3 rounded-b-xl">
                             <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>
                             <Button onClick={async () => {
                                 try {
