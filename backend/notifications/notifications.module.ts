@@ -10,12 +10,14 @@ import { PrismaModule } from '../../../core/prisma/prisma.module';
 
 import { NotificationEventListenerService } from './event-listener.service';
 import { NotificationRuleController } from './rules.controller';
+import { NotificationsModule as RootNotificationsModule } from '../../../notifications/notifications.module';
 
 @Module({
     imports: [
         PrismaModule,
         EventEmitterModule,
         ScheduleModule,
+        RootNotificationsModule,
     ],
     controllers: [NotificationRuleController],
     providers: [

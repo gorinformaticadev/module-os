@@ -13,11 +13,16 @@ export interface NotificationStrategy {
     }): Promise<{ success: boolean; error?: string }>;
 }
 
+import { NotificationGateway } from '../../../notifications/notification.gateway';
+
 @Injectable()
 export class SystemStrategy implements NotificationStrategy {
     private readonly logger = new Logger(SystemStrategy.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly gateway: NotificationGateway
+    ) { }
 
     async send(data: {
         tenantId: string;
@@ -25,13 +30,34 @@ export class SystemStrategy implements NotificationStrategy {
         content: string;
         metadata?: any;
     }) {
-        this.logger.log(`[System] Criando notificação interna para ${data.recipient}...`);
+        // Resolver Email para ID de Usuário se necessário (para garantir entrega no Socket que usa ID)
+        let recipientId = data.recipient;
+        if (recipientId.includes('@')) {
+            try {
+                // Tenta buscar na tabela de usuários do sistema (core)
+                // Nota: Assumindo que o PrismaService injetado tem acesso ao modelo User (do schema global)
+                // Se o PrismaService for o do módulo OS, pode não ter. Mas SystemStrategy geralmente usa Prisma global.
+                // O Prisma injetado é o do Core (importado).
+                const user = await this.prisma.user.findUnique({
+                    where: { email: recipientId },
+                    select: { id: true }
+                });
+                if (user) {
+                    this.logger.log(`[System] Email ${recipientId} resolvido para User ID ${user.id}`);
+                    recipientId = user.id;
+                }
+            } catch (e) {
+                // Ignora erro de resolução e usa o email mesmo
+            }
+        }
+
+        this.logger.log(`[System] Criando notificação interna para ${recipientId}...`);
 
         try {
-            await this.prisma.notification.create({
+            const notification = await this.prisma.notification.create({
                 data: {
                     tenantId: data.tenantId,
-                    userId: data.recipient,
+                    userId: recipientId,
                     title: data.metadata?.title || 'Atualização OS',
                     message: data.content,
                     severity: 'info',
@@ -43,6 +69,18 @@ export class SystemStrategy implements NotificationStrategy {
                     read: false
                 }
             });
+
+            // Emitir notificação em tempo real via WebSocket
+            // Mapear campos do Prisma (message, severity) para Entidade (description, type)
+            const gatewayNotification: any = {
+                ...notification,
+                description: notification.message,
+                type: notification.severity as any,
+                metadata: notification.data as any
+            };
+
+            await this.gateway.emitNewNotification(gatewayNotification);
+
             return { success: true };
         } catch (error: any) {
             this.logger.error(`Erro ao criar notificação interna: ${error.message}`);

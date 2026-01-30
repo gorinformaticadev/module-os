@@ -62,7 +62,7 @@ const Badge = ({ children, variant = 'default', className = '' }: any) => {
     return <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${(variants as any)[variant]} ${className}`}>{children}</span>;
 };
 
-export function NotificationsManager({ api, toast }: any) {
+export function NotificationsManager({ api, toast, user }: any) {
     const [activeSubTab, setActiveSubTab] = useState<'rules' | 'history'>('rules');
     const [loading, setLoading] = useState(false);
     const [rules, setRules] = useState<any[]>([]);
@@ -401,6 +401,92 @@ export function NotificationsManager({ api, toast }: any) {
                                         <option value="EMAIL">📧 E-mail</option>
                                         <option value="WHATSAPP">📱 WhatsApp</option>
                                     </select>
+                                </div>
+
+                                <div className="col-span-2 space-y-2">
+                                    <label className="text-sm font-medium flex items-center">
+                                        Destinatários
+                                        <InfoTooltip text="Quem deve receber esta mensagem?" />
+                                    </label>
+                                    <div className="flex gap-6 p-4 bg-muted/20 rounded-lg border items-center">
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                checked={currentRule?.recipients?.some((r: any) => r.type === 'CLIENT')}
+                                                onChange={(e) => {
+                                                    const current = currentRule?.recipients || [];
+                                                    let newValue;
+                                                    if (e.target.checked) {
+                                                        newValue = [...current, { type: 'CLIENT' }];
+                                                    } else {
+                                                        newValue = current.filter((r: any) => r.type !== 'CLIENT');
+                                                    }
+                                                    setCurrentRule({ ...currentRule, recipients: newValue });
+                                                }}
+                                            />
+                                            <span>Cliente</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                checked={currentRule?.recipients?.some((r: any) => r.type === 'TECHNICIAN')}
+                                                onChange={(e) => {
+                                                    const current = currentRule?.recipients || [];
+                                                    let newValue;
+                                                    if (e.target.checked) {
+                                                        newValue = [...current, { type: 'TECHNICIAN' }];
+                                                    } else {
+                                                        newValue = current.filter((r: any) => r.type !== 'TECHNICIAN');
+                                                    }
+                                                    setCurrentRule({ ...currentRule, recipients: newValue });
+                                                }}
+                                            />
+                                            <span>Técnico Responsável</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                checked={currentRule?.recipients?.some((r: any) => r.type === 'ADMIN')}
+                                                onChange={(e) => {
+                                                    const current = currentRule?.recipients || [];
+                                                    let newValue;
+                                                    if (e.target.checked) {
+                                                        newValue = [...current, { type: 'ADMIN' }];
+                                                    } else {
+                                                        newValue = current.filter((r: any) => r.type !== 'ADMIN');
+                                                    }
+                                                    setCurrentRule({ ...currentRule, recipients: newValue });
+                                                }}
+                                            />
+                                            <span>Administradores</span>
+                                        </label>
+
+                                        {user?.role === 'SUPER_ADMIN' && (
+                                            <label className="flex items-center gap-2 cursor-pointer select-none text-red-600 font-medium">
+                                                <input
+                                                    type="checkbox"
+                                                    className="h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
+                                                    checked={currentRule?.recipients?.some((r: any) => r.type === 'SUPER_ADMIN')}
+                                                    onChange={(e) => {
+                                                        const current = currentRule?.recipients || [];
+                                                        let newValue;
+                                                        if (e.target.checked) {
+                                                            newValue = [...current, { type: 'SUPER_ADMIN' }];
+                                                        } else {
+                                                            newValue = current.filter((r: any) => r.type !== 'SUPER_ADMIN');
+                                                        }
+                                                        setCurrentRule({ ...currentRule, recipients: newValue });
+                                                    }}
+                                                />
+                                                <span>Super Admins (Global)</span>
+                                            </label>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Dynamic Config Section */}

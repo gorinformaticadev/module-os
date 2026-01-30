@@ -367,6 +367,41 @@ export default function OrdemServicoConfiguracoesPage() {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('agendamento');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const getUserFromToken = () => {
+    try {
+      if (typeof window === 'undefined') return null;
+      let token = '';
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) token = tokenCookie.split('=')[1];
+      else {
+        const encrypted = sessionStorage.getItem("@App:token");
+        if (encrypted) token = atob(encrypted);
+      }
+
+      if (!token) return null;
+
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('Erro ao decodificar token', e);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // Carregar dados iniciais
+    setLoading(false);
+    const user = getUserFromToken();
+    if (user) setCurrentUser(user);
+  }, []);
 
   const [config, setConfig] = useState({
     title: '',
@@ -783,7 +818,7 @@ export default function OrdemServicoConfiguracoesPage() {
       {/* Main Content Area */}
       <div className="space-y-6">
         {activeTab === 'agendamento' && (
-          <NotificationsManager api={api} toast={toast} />
+          <NotificationsManager api={api} toast={toast} user={currentUser} />
         )}
 
         {activeTab === 'usuarios' && (

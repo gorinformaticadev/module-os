@@ -48,7 +48,7 @@ export class NotificationHistoryService {
                 `INSERT INTO mod_ordem_servico_notif_history (
                     tenant_id, rule_id, ordem_servico_id, channel, 
                     recipient, content, status, error_message, fingerprint
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                ) VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9)`,
                 data.tenantId, data.ruleId, data.ordemServicoId, data.channel,
                 data.recipient, data.content, data.status, data.errorMessage, data.fingerprint
             );

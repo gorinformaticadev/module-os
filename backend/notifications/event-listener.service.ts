@@ -37,9 +37,10 @@ export class NotificationEventListenerService {
                 const config = typeof rule.trigger_config === 'string' ? JSON.parse(rule.trigger_config) : rule.trigger_config;
 
                 if (config.events && config.events.includes(eventType)) {
-                    this.logger.log(`Regra [${rule.title}] disparada para evento ${eventType}`);
+                    this.logger.log(`Regra [${rule.title}] disparada para evento ${eventType}. Canal: ${rule.channel}`);
 
-                    const recipients = await this.resolveRecipient(osData, rule.recipients);
+                    const recipients = await this.resolveRecipient(osData, rule.recipients, rule.channel);
+                    this.logger.log(`Disparando regra [${rule.title}] para evento ${eventType} (Recipients: ${recipients.length}, Raw: ${JSON.stringify(rule.recipients)})`);
 
                     for (const recipient of recipients) {
                         await this.dispatcher.dispatch({
@@ -59,36 +60,70 @@ export class NotificationEventListenerService {
         }
     }
 
-    private async resolveRecipient(os: any, recipients: any[]): Promise<string[]> {
-        const targets: string[] = [];
+    private async resolveRecipient(os: any, recipients: any[], channel: string): Promise<string[]> {
+        const targets: Set<string> = new Set(); // Usar Set para evitar duplicatas
 
-        if (!Array.isArray(recipients)) return targets;
+        if (!Array.isArray(recipients)) return Array.from(targets);
 
         for (const r of recipients) {
             if (r.type === 'CLIENT') {
                 // Tenta buscar do payload ou banco
-                if (os.cliente_email) targets.push(os.cliente_email);
+                if (os.cliente_email) targets.add(os.cliente_email);
                 else if (os.cliente_id) {
                     const client = await this.prisma.$queryRawUnsafe<any[]>(
-                        `SELECT email FROM mod_ordem_servico_clients WHERE id = $1`, os.cliente_id
+                        `SELECT email FROM mod_ordem_servico_clients WHERE id = $1::uuid`, os.cliente_id
                     );
-                    if (client[0]?.email) targets.push(client[0].email);
+                    if (client[0]?.email) targets.add(client[0].email);
                 }
+
+                // SMART LOGIC: Se for notificação de SISTEMA (In-App) e o destino for CLIENTE,
+                // adicionamos também o Técnico Responsável (se houver), pois provavelmente é um alerta interno sobre o cliente.
+                // O cliente (externo) muitas vezes não tem acesso ao painel.
+                if (channel === 'SYSTEM' && os.usuario_responsavel_id) {
+                    targets.add(os.usuario_responsavel_id);
+                }
+
             } else if (r.type === 'TECHNICIAN') {
                 if (os.usuario_responsavel_id) {
                     const user = await this.prisma.user.findUnique({
                         where: { id: os.usuario_responsavel_id },
                         select: { email: true, id: true }
                     });
-                    // Se for canal SYSTEM, usa o ID. Se Email, usa o email.
-                    // O dispatcher deve saber lidar, mas aqui retornamos o identificador principal
-                    if (user?.id) targets.push(user.id);
+
+                    if (channel === 'SYSTEM' && user?.id) {
+                        targets.add(user.id);
+                    } else if (user?.email) {
+                        targets.add(user.email);
+                    }
+                }
+            } else if (r.type === 'ADMIN') {
+                // Notificar administradores do tenant
+                const admins = await this.prisma.user.findMany({
+                    where: {
+                        tenantId: os.tenant_id,
+                        role: 'ADMIN'
+                    },
+                    select: { id: true, email: true }
+                });
+                for (const admin of admins) {
+                    if (channel === 'SYSTEM') targets.add(admin.id);
+                    else if (admin.email) targets.add(admin.email);
+                }
+            } else if (r.type === 'SUPER_ADMIN') {
+                // Notificar Super Admins (Global)
+                const superAdmins = await this.prisma.user.findMany({
+                    where: { role: 'SUPER_ADMIN' },
+                    select: { id: true, email: true }
+                });
+                for (const sa of superAdmins) {
+                    if (channel === 'SYSTEM') targets.add(sa.id);
+                    else if (sa.email) targets.add(sa.email);
                 }
             } else if (r.type === 'CUSTOM') {
-                targets.push(r.value);
+                targets.add(r.value);
             }
         }
-        return targets;
+        return Array.from(targets);
     }
 
     private formatMessage(template: string, os: any): string {
