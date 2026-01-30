@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { NotificationRuleService } from './rules.service';
 import { NotificationHistoryService } from './history.service';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
+import { validateCreatePayload, validateUpdatePayload, handlePrismaError } from './dto/rule.dto';
 
 @Controller('api/ordem_servico/notificacoes')
 @UseGuards(JwtAuthGuard)
@@ -23,17 +24,63 @@ export class NotificationRuleController {
 
     @Post('regras')
     async createRule(@Req() req: any, @Body() data: any) {
-        return this.rules.create(req.user.tenantId, data);
+        try {
+            // Validação explícita do payload
+            const validatedData = validateCreatePayload(data);
+            return this.rules.create(req.user.tenantId, validatedData);
+        } catch (error: any) {
+            // Re-lançar erros de validação e BadRequest
+            if (error.status) throw error;
+            handlePrismaError(error, 'criação de regra');
+        }
     }
 
     @Put('regras/:id')
     async updateRule(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-        return this.rules.update(req.user.tenantId, id, data);
+        try {
+            // Validação explícita do payload
+            const validatedData = validateUpdatePayload(data);
+            return this.rules.update(req.user.tenantId, id, validatedData);
+        } catch (error: any) {
+            if (error.status) throw error;
+            handlePrismaError(error, 'atualização de regra');
+        }
+    }
+
+    @Patch('regras/:id')
+    async patchRule(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+        // Atualização parcial - usa a mesma validação do PUT
+        try {
+            const validatedData = validateUpdatePayload(data);
+            return this.rules.update(req.user.tenantId, id, validatedData);
+        } catch (error: any) {
+            if (error.status) throw error;
+            handlePrismaError(error, 'atualização parcial de regra');
+        }
+    }
+
+    @Patch('regras/:id/toggle')
+    async toggleRule(@Req() req: any, @Param('id') id: string, @Body() data: any) {
+        // Endpoint específico para toggle de status (atualização parcial mínima)
+        try {
+            if (data.enabled === undefined) {
+                throw { status: 400, message: 'Campo enabled é obrigatório para toggle' };
+            }
+            return this.rules.update(req.user.tenantId, id, { enabled: Boolean(data.enabled) });
+        } catch (error: any) {
+            if (error.status) throw error;
+            handlePrismaError(error, 'toggle de regra');
+        }
     }
 
     @Delete('regras/:id')
     async removeRule(@Req() req: any, @Param('id') id: string) {
-        return this.rules.remove(req.user.tenantId, id);
+        try {
+            return this.rules.remove(req.user.tenantId, id);
+        } catch (error: any) {
+            if (error.status) throw error;
+            handlePrismaError(error, 'exclusão de regra');
+        }
     }
 
     @Get('historico')
