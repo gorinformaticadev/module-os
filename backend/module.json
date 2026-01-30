@@ -1,48 +1,48 @@
 {
-  "name": "ordem_servico",
-  "displayName": "Ordem de Serviço",
-  "version": "1.0.0",
-  "description": "Módulo de Gerenciamento de Ordens de Serviço",
-  "author": "GOR Informatica",
-  "category": "custom",
-  "enabled": true,
-  "dependencies": null,
-  "icon": "Wrench",
-  "menus": [
-    {
-      "label": "Dashboard",
-      "route": "/modules/ordem_servico/pages/dashboard",
-      "icon": "BarChart3",
-      "order": 1
-    },
-    {
-      "label": "Ordens de Serviço",
-      "route": "/modules/ordem_servico/pages/ordens",
-      "icon": "ClipboardList",
-      "order": 2
-    },
-    {
-      "label": "Clientes",
-      "route": "/modules/ordem_servico/pages/clientes",
-      "icon": "Users",
-      "order": 3
-    },
-    {
-      "label": "Produtos / Serviços",
-      "route": "/modules/ordem_servico/pages/produtos",
-      "icon": "Package",
-      "order": 4
-    },
-    {
-      "label": "Configurações",
-      "route": "/modules/ordem_servico/pages/configuracoes",
-      "icon": "Settings",
-      "order": 5
-    }
-  ],
-  "defaultConfig": {
-    "showNotifications": true,
-    "enableWidgets": true,
-    "maxItems": 50
-  }
+    "name":  "ordem_servico",
+    "displayName":  "Ordem de Serviço",
+    "version":  "3.1.0",
+    "description":  "Módulo de Gerenciamento de Ordens de Serviço",
+    "author":  "GOR Informatica",
+    "category":  "custom",
+    "enabled":  true,
+    "dependencies":  null,
+    "icon":  "Wrench",
+    "menus":  [
+                  {
+                      "label":  "Dashboard",
+                      "route":  "/modules/ordem_servico/pages/dashboard",
+                      "icon":  "BarChart3",
+                      "order":  1
+                  },
+                  {
+                      "label":  "Ordens de Serviço",
+                      "route":  "/modules/ordem_servico/pages/ordens",
+                      "icon":  "ClipboardList",
+                      "order":  2
+                  },
+                  {
+                      "label":  "Clientes",
+                      "route":  "/modules/ordem_servico/pages/clientes",
+                      "icon":  "Users",
+                      "order":  3
+                  },
+                  {
+                      "label":  "Produtos / Serviços",
+                      "route":  "/modules/ordem_servico/pages/produtos",
+                      "icon":  "Package",
+                      "order":  4
+                  },
+                  {
+                      "label":  "Configurações",
+                      "route":  "/modules/ordem_servico/pages/configuracoes",
+                      "icon":  "Settings",
+                      "order":  5
+                  }
+              ],
+    "defaultConfig":  {
+                          "showNotifications":  true,
+                          "enableWidgets":  true,
+                          "maxItems":  50
+                      }
 }
