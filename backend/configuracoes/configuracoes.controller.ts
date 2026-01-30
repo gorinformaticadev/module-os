@@ -1,6 +1,7 @@
 import { Controller, Get, Put, Post, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
+
 import { ConfiguracoesService } from './configuracoes.service';
 
 @Controller('api/ordem_servico/config')
@@ -77,7 +78,7 @@ export class ConfiguracoesController {
         }
     }
 
-    @Get('ai')
+    @Get(['ai', 'ia'])
     async getAiConfig(@Req() req: ExpressRequest & { user: any }) {
         try {
             this.logger.log(`getAiConfig endpoint chamado. Tenant: ${req.user?.tenantId}`);
@@ -88,7 +89,7 @@ export class ConfiguracoesController {
         }
     }
 
-    @Post('ai')
+    @Post(['ai', 'ia'])
     async updateAiConfig(@Req() req: ExpressRequest & { user: any }, @Body() body: any) {
         try {
             this.logger.log(`updateAiConfig endpoint chamado. Tenant: ${req.user?.tenantId}`);
@@ -99,7 +100,7 @@ export class ConfiguracoesController {
         }
     }
 
-    @Post('ai/test')
+    @Post(['ai/test', 'ia/test'])
     async testAiConfig(@Req() req: ExpressRequest & { user: any }, @Body() body: any) {
         try {
             this.logger.log(`testAiConfig endpoint chamado. Tenant: ${req.user?.tenantId}`);
