@@ -423,7 +423,7 @@ export function NotificationsManager({ api, toast }: any) {
                                                     <label key={evt} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border cursor-pointer hover:border-primary">
                                                         <input
                                                             type="checkbox"
-                                                            checked={currentRule?.trigger_config?.events?.includes(evt)}
+                                                            checked={currentRule?.trigger_config?.events?.includes(evt) ?? false}
                                                             onChange={(e) => {
                                                                 const events = currentRule?.trigger_config?.events || [];
                                                                 const newEvents = e.target.checked

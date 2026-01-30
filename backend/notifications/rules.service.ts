@@ -17,7 +17,7 @@ export class NotificationRuleService {
 
     async findOne(tenantId: string, id: string) {
         const rules: any[] = await this.prisma.$queryRawUnsafe(
-            `SELECT * FROM mod_ordem_servico_notif_rules WHERE tenant_id = $1 AND id = $2`,
+            `SELECT * FROM mod_ordem_servico_notif_rules WHERE tenant_id = $1 AND id = $2::uuid`,
             tenantId,
             id
         );
@@ -149,7 +149,11 @@ export class NotificationRuleService {
                 }
             }
 
-            fields.push(`${dbField} = $${placeholderIndex++}`);
+            if (dbField === 'trigger_config' || dbField === 'recipients') {
+                fields.push(`${dbField} = $${placeholderIndex++}::jsonb`);
+            } else {
+                fields.push(`${dbField} = $${placeholderIndex++}`);
+            }
             values.push(value);
             processedCols.add(dbField);
         }
@@ -159,12 +163,13 @@ export class NotificationRuleService {
         fields.push(`updated_at = CURRENT_TIMESTAMP`);
 
         const query = `UPDATE mod_ordem_servico_notif_rules SET ${fields.join(', ')} 
-                       WHERE tenant_id = $1 AND id = $2 RETURNING *`;
+                       WHERE tenant_id = $1 AND id = $2::uuid RETURNING *`;
 
         try {
             const results = await this.prisma.$queryRawUnsafe(query, ...values);
             return (results as any[])[0];
         } catch (error: any) {
+            this.logger.error(`Failed to update notification rule ${id}. Error: ${error.message} \nQuery: ${query} \nValues: ${JSON.stringify(values)}`);
             this.logger.error(`Failed to update notification rule ${id}: ${error.message}`, error.stack);
             throw error;
         }
@@ -174,7 +179,7 @@ export class NotificationRuleService {
         await this.findOne(tenantId, id);
         try {
             await this.prisma.$queryRawUnsafe(
-                `DELETE FROM mod_ordem_servico_notif_rules WHERE tenant_id = $1 AND id = $2`,
+                `DELETE FROM mod_ordem_servico_notif_rules WHERE tenant_id = $1 AND id = $2::uuid`,
                 tenantId,
                 id
             );

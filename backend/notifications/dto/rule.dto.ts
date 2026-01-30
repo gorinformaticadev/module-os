@@ -129,11 +129,14 @@ export function validateUpdatePayload(data: any): Partial<CreateNotificationRule
         throw new BadRequestException('Payload deve ser um objeto válido');
     }
 
-    // Verificar campos proibidos
+    // Verificação de campos proibidos removida para permitir que o frontend envie o objeto completo
+    // Os campos ignorados simplesmente não serão copiados para o objeto de resultado
+    /*
     const forbiddenUsed = FORBIDDEN_FIELDS.filter(field => field in data);
     if (forbiddenUsed.length > 0) {
         throw new BadRequestException(`Campos não permitidos: ${forbiddenUsed.join(', ')}`);
     }
+    */
 
     const result: Partial<CreateNotificationRuleDto> = {};
 

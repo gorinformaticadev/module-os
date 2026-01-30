@@ -38,8 +38,15 @@ export class NotificationRuleController {
     @Put('regras/:id')
     async updateRule(@Req() req: any, @Param('id') id: string, @Body() data: any) {
         try {
-            // Validação explícita do payload
-            const validatedData = validateUpdatePayload(data);
+            // Buscar regra existente para contexto (necessário para validação correta de trigger_config)
+            const existingRule = await this.rules.findOne(req.user.tenantId, id);
+
+            // Validação explícita do payload, passando o trigger_type existente como fallback
+            const validatedData = validateUpdatePayload({
+                ...data,
+                trigger_type: data.trigger_type || existingRule.trigger_type
+            });
+
             return this.rules.update(req.user.tenantId, id, validatedData);
         } catch (error: any) {
             if (error.status) throw error;
