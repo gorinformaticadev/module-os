@@ -153,7 +153,19 @@ export function NotificationsManager({ api, toast }: any) {
                 </div>
 
                 {activeSubTab === 'rules' && (
-                    <Button onClick={() => { setCurrentRule({}); setIsEditing(true); }} className="gap-2">
+                    <Button onClick={() => {
+                        setCurrentRule({
+                            title: '',
+                            description: '',
+                            enabled: true,
+                            trigger_type: 'EVENT',
+                            trigger_config: {},
+                            channel: 'SYSTEM',
+                            recipients: [{ type: 'CLIENT' }],
+                            message_template: ''
+                        });
+                        setIsEditing(true);
+                    }} className="gap-2">
                         <Plus className="h-4 w-4" />
                         Nova Regra
                     </Button>
@@ -172,7 +184,19 @@ export function NotificationsManager({ api, toast }: any) {
                             <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
                             <h3 className="text-lg font-medium">Nenhuma regra configurada</h3>
                             <p className="text-muted-foreground mb-6">Comece criando uma regra de gatilho para suas Ordens de Serviço.</p>
-                            <Button variant="outline" onClick={() => { setCurrentRule({}); setIsEditing(true); }}>Criar primeira regra</Button>
+                            <Button variant="outline" onClick={() => {
+                                setCurrentRule({
+                                    title: '',
+                                    description: '',
+                                    enabled: true,
+                                    trigger_type: 'EVENT',
+                                    trigger_config: {},
+                                    channel: 'SYSTEM',
+                                    recipients: [{ type: 'CLIENT' }],
+                                    message_template: ''
+                                });
+                                setIsEditing(true);
+                            }}>Criar primeira regra</Button>
                         </div>
                     ) : (
                         rules.map((rule) => (
@@ -426,7 +450,7 @@ export function NotificationsManager({ api, toast }: any) {
                                                         trigger_config: { ...currentRule.trigger_config, offset_duration: val }
                                                     })}
                                                 />
-                                                
+
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium flex items-center">
                                                         Referência
@@ -556,9 +580,15 @@ export function NotificationsManager({ api, toast }: any) {
 
                                     const payload = {
                                         ...currentRule,
+                                        title: currentRule.title || 'Nova Regra',
+                                        description: currentRule.description || '',
+                                        enabled: currentRule.enabled !== false,
+                                        trigger_type: currentRule.trigger_type || 'EVENT',
                                         trigger_config: currentRule.trigger_config || {},
+                                        channel: currentRule.channel || 'SYSTEM',
                                         max_executions: currentRule.max_executions || null,
-                                        recipients: currentRule.recipients || [{ type: 'CLIENT' }]
+                                        recipients: currentRule.recipients || [{ type: 'CLIENT' }],
+                                        message_template: currentRule.message_template || ''
                                     };
 
                                     await (api as any)[method](url, payload);
