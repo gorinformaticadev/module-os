@@ -40,6 +40,63 @@
                       "order":  5
                   }
               ],
+    "dashboard":  [
+                      {
+                          "id":  "status",
+                          "name":  "Operacao de OS",
+                          "icon":  "Wrench",
+                          "description":  "Resumo operacional do modulo de ordens de servico.",
+                          "route":  "/modules/ordem_servico/pages/dashboard",
+                          "actionLabel":  "Abrir dashboard",
+                          "kind":  "summary",
+                          "size":  "medium",
+                          "order":  1,
+                          "stats":  [
+                                        {
+                                            "label":  "Modulo",
+                                            "value":  "Ativo"
+                                        },
+                                        {
+                                            "label":  "Menus",
+                                            "value":  "5"
+                                        },
+                                        {
+                                            "label":  "Entrada",
+                                            "value":  "Dashboard"
+                                        }
+                                    ],
+                          "items":  [
+                                        {
+                                            "id":  "ordem_servico-dashboard",
+                                            "label":  "Dashboard",
+                                            "value":  "/modules/ordem_servico/pages/dashboard",
+                                            "column":  "Atalhos",
+                                            "tone":  "neutral"
+                                        },
+                                        {
+                                            "id":  "ordem_servico-ordens",
+                                            "label":  "Ordens de Servico",
+                                            "value":  "/modules/ordem_servico/pages/ordens",
+                                            "column":  "Atalhos",
+                                            "tone":  "neutral"
+                                        },
+                                        {
+                                            "id":  "ordem_servico-clientes",
+                                            "label":  "Clientes",
+                                            "value":  "/modules/ordem_servico/pages/clientes",
+                                            "column":  "Atalhos",
+                                            "tone":  "neutral"
+                                        },
+                                        {
+                                            "id":  "ordem_servico-produtos",
+                                            "label":  "Produtos / Servicos",
+                                            "value":  "/modules/ordem_servico/pages/produtos",
+                                            "column":  "Atalhos",
+                                            "tone":  "neutral"
+                                        }
+                                    ]
+                      }
+                  ],
     "defaultConfig":  {
                           "showNotifications":  true,
                           "enableWidgets":  true,
