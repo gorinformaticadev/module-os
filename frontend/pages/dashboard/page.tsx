@@ -10,17 +10,12 @@ import {
   MessageCircle,
   Edit,
   Trash2,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  PlayCircle,
-  XCircle
 } from 'lucide-react';
-
-// Componente de Alerta de Retirada
 import { AlertaRetiradaBadge } from '../../components/AlertaRetiradaBadge';
+import { MODULE_ROUTE_ROOT } from '../../module-manifest';
+import { ordem_servicoService } from '../../services/ordem_servico.service';
+import { OrdemServico as ApiOrdemServico, StatusOS } from '../../types/ordem-servico.types';
 
-// Componentes UI customizados para o módulo raiz
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -110,16 +105,62 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
 });
 Badge.displayName = "Badge";
 
-// Tipos para as ordens de serviço
-interface OrdemServico {
+type DashboardOrderStatus = 'aberto' | 'orcamento' | 'aguardando' | 'execucao' | 'finalizada' | 'aprovada';
+
+interface DashboardOrder {
   id: string;
   numero: string;
   cliente: string;
   dataPrevisaoFinal: string;
-  status: 'aberto' | 'orcamento' | 'aguardando' | 'execucao' | 'finalizada' | 'aprovada';
+  status: DashboardOrderStatus;
 }
 
-// Componente de atalho com teclado
+function formatDashboardDate(dateString?: string | null): string {
+  if (!dateString) {
+    return '-';
+  }
+
+  return new Date(dateString).toLocaleDateString('pt-BR');
+}
+
+function mapDashboardStatus(ordem: ApiOrdemServico): DashboardOrderStatus | null {
+  if (ordem.status === StatusOS.ORCAMENTO && ordem.orcamento_aprovado) {
+    return 'aprovada';
+  }
+
+  switch (ordem.status) {
+    case StatusOS.ABERTA:
+      return 'aberto';
+    case StatusOS.ORCAMENTO:
+      return 'orcamento';
+    case StatusOS.AGUARDANDO_CLIENTE:
+    case StatusOS.AGUARDANDO_PECAS:
+      return 'aguardando';
+    case StatusOS.EM_ANALISE:
+    case StatusOS.EM_EXECUCAO:
+      return 'execucao';
+    case StatusOS.FINALIZADA:
+      return 'finalizada';
+    default:
+      return null;
+  }
+}
+
+function mapDashboardOrder(ordem: ApiOrdemServico): DashboardOrder | null {
+  const status = mapDashboardStatus(ordem);
+  if (!status) {
+    return null;
+  }
+
+  return {
+    id: ordem.id,
+    numero: ordem.numero,
+    cliente: ordem.cliente?.name || 'Cliente nao informado',
+    dataPrevisaoFinal: formatDashboardDate(ordem.data_previsao || ordem.data_conclusao || ordem.updated_at),
+    status,
+  };
+}
+
 const ShortcutCard = ({
   title,
   shortcut,
@@ -151,22 +192,23 @@ const ShortcutCard = ({
   );
 };
 
-// Componente de tabela de ordens
 const OrderTable = ({
   title,
   orders,
-  emptyMessage
+  emptyMessage,
+  loading
 }: {
   title: string;
-  orders: OrdemServico[];
+  orders: DashboardOrder[];
   emptyMessage: string;
+  loading: boolean;
 }) => {
-  const getStatusBadge = (status: OrdemServico['status']) => {
+  const getStatusBadge = (status: DashboardOrder['status']) => {
     const statusConfig = {
       aberto: { label: 'Aberto', variant: 'default' as const, color: 'bg-green-500' },
-      orcamento: { label: 'Orçamento', variant: 'secondary' as const, color: 'bg-yellow-500' },
+      orcamento: { label: 'Orcamento', variant: 'secondary' as const, color: 'bg-yellow-500' },
       aguardando: { label: 'Aguardando', variant: 'outline' as const, color: 'bg-blue-500' },
-      execucao: { label: 'Em Execução', variant: 'default' as const, color: 'bg-purple-500' },
+      execucao: { label: 'Em Execucao', variant: 'default' as const, color: 'bg-purple-500' },
       finalizada: { label: 'Finalizada', variant: 'secondary' as const, color: 'bg-gray-500' },
       aprovada: { label: 'Aprovada', variant: 'default' as const, color: 'bg-green-600' }
     };
@@ -179,9 +221,8 @@ const OrderTable = ({
     );
   };
 
-  const handleAction = (action: string, ordem: OrdemServico) => {
-    console.log(`Ação ${action} para ordem ${ordem.numero}`);
-    // Aqui você implementaria as ações reais
+  const handleAction = (action: string, ordem: DashboardOrder) => {
+    console.log(`Acao ${action} para ordem ${ordem.numero}`);
   };
 
   return (
@@ -192,7 +233,11 @@ const OrderTable = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {orders.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-8 text-gray-500">
+            Carregando dados do dashboard...
+          </div>
+        ) : orders.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             {emptyMessage}
           </div>
@@ -201,11 +246,11 @@ const OrderTable = ({
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Nº</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">No</th>
                   <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Cliente</th>
                   <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Data Prev. Final</th>
                   <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Status</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Ações</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Acoes</th>
                 </tr>
               </thead>
               <tbody>
@@ -284,35 +329,68 @@ const OrderTable = ({
 };
 
 export default function OrdemServicoDashboardPage() {
-  const [ordens, setOrdens] = useState<OrdemServico[]>([]);
+  const [ordens, setOrdens] = useState<DashboardOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Simulação de dados - em produção, isso viria de uma API
   useEffect(() => {
-    // Aqui você faria a chamada para a API para buscar as ordens
-    setOrdens([]);
+    let mounted = true;
+
+    const loadDashboard = async () => {
+      try {
+        setLoading(true);
+        setLoadError(null);
+
+        const response = await ordem_servicoService.listOrdens();
+        const rawOrdens = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+            ? response.data
+            : [];
+        const mappedOrdens = rawOrdens
+          .map((ordem: ApiOrdemServico) => mapDashboardOrder(ordem))
+          .filter((ordem: DashboardOrder | null): ordem is DashboardOrder => ordem !== null);
+
+        if (mounted) {
+          setOrdens(mappedOrdens);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dashboard de ordens:', error);
+
+        if (mounted) {
+          setOrdens([]);
+          setLoadError('Nao foi possivel carregar os dados do dashboard.');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadDashboard();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleShortcut = (action: string) => {
-    console.log(`Atalho acionado: ${action}`);
-    // Implementar navegação para as respectivas páginas
     switch (action) {
       case 'clientes':
-        // Rotas atualizadas conforme module.json
-        window.location.href = '/modules/ordem_servico/pages/clientes';
+        window.location.href = `${MODULE_ROUTE_ROOT}/clientes`;
         break;
       case 'produtos':
-        window.location.href = '/modules/ordem_servico/pages/produtos';
+        window.location.href = `${MODULE_ROUTE_ROOT}/produtos`;
         break;
       case 'ordens':
-        window.location.href = '/modules/ordem_servico/pages/ordens';
+        window.location.href = `${MODULE_ROUTE_ROOT}/ordens`;
         break;
     }
   };
 
-  // Listener para atalhos de teclado globais
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      // Verificar se não está em um input ou textarea
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
       }
@@ -337,7 +415,6 @@ export default function OrdemServicoDashboardPage() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Filtrar ordens por status
   const ordensAberto = ordens.filter(o => o.status === 'aberto');
   const ordensOrcamento = ordens.filter(o => o.status === 'orcamento');
   const ordensAguardando = ordens.filter(o => o.status === 'aguardando');
@@ -347,17 +424,18 @@ export default function OrdemServicoDashboardPage() {
 
   return (
     <div className="p-6 max-w-full mx-auto space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      {/* Título */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-          Dashboard - Ordem de Serviços
+          Dashboard - Ordem de Servicos
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Visão geral das ordens de serviço e atalhos rápidos
+          Visao geral das ordens de servico e atalhos rapidos
         </p>
+        {loadError ? (
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{loadError}</p>
+        ) : null}
       </div>
 
-      {/* Atalhos no topo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <ShortcutCard
           title="Clientes"
@@ -367,7 +445,7 @@ export default function OrdemServicoDashboardPage() {
           onClick={() => handleShortcut('clientes')}
         />
         <ShortcutCard
-          title="Produtos/Serviços"
+          title="Produtos/Servicos"
           shortcut="F2"
           icon={Package}
           color="bg-gradient-to-r from-orange-500 to-orange-600"
@@ -382,61 +460,61 @@ export default function OrdemServicoDashboardPage() {
         />
       </div>
 
-      {/* Alertas de Equipamentos para Retirada */}
       <div className="mb-8">
         <AlertaRetiradaBadge variant="card" />
       </div>
 
-      {/* Cards de Ordens */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Primeira linha */}
         <OrderTable
-          title="Ordens de Serviços Em Orçamento"
+          title="Ordens de Servicos Em Orcamento"
           orders={ordensOrcamento}
-          emptyMessage="Nenhuma ordem em orçamento encontrada"
+          emptyMessage="Nenhuma ordem em orcamento encontrada"
+          loading={loading}
         />
 
         <OrderTable
-          title="Ordens de Serviços Em Aberto"
+          title="Ordens de Servicos Em Aberto"
           orders={ordensAberto}
           emptyMessage="Nenhuma ordem em aberto encontrada"
+          loading={loading}
         />
 
-        {/* Segunda linha */}
         <OrderTable
-          title="Ordens de Serviços Aprovadas"
+          title="Ordens de Servicos Aprovadas"
           orders={ordensAprovadas}
           emptyMessage="Nenhuma ordem aprovada encontrada"
+          loading={loading}
         />
 
         <OrderTable
-          title="Ordens de Serviços Finalizadas"
+          title="Ordens de Servicos Finalizadas"
           orders={ordensFinalizadas}
           emptyMessage="Nenhuma ordem finalizada encontrada"
+          loading={loading}
         />
 
-        {/* Terceira linha */}
         <OrderTable
-          title="Ordens de Serviços Em Andamento e Aguardando Peças"
+          title="Ordens de Servicos Em Andamento e Aguardando Pecas"
           orders={ordensAguardando}
-          emptyMessage="Nenhuma ordem aguardando peças encontrada"
+          emptyMessage="Nenhuma ordem aguardando pecas encontrada"
+          loading={loading}
         />
 
         <OrderTable
           title="Status de Vendas"
           orders={ordensExecucao}
-          emptyMessage="Nenhuma venda em execução encontrada"
+          emptyMessage="Nenhuma venda em execucao encontrada"
+          loading={loading}
         />
       </div>
 
-      {/* Instruções de atalhos */}
       <div className="mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Atalhos de Teclado:
         </h3>
         <div className="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-400">
           <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F1</kbd> Clientes</span>
-          <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F2</kbd> Produtos/Serviços</span>
+          <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F2</kbd> Produtos/Servicos</span>
           <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F3</kbd> Ordens</span>
         </div>
       </div>

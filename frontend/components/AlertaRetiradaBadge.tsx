@@ -9,6 +9,7 @@ interface AlertaRetiradaBadgeProps {
     className?: string;
     showDetails?: boolean;
     refreshInterval?: number; // em milissegundos
+    variant?: 'badge' | 'card';
 }
 
 // Cliente API
@@ -40,10 +41,12 @@ const api = {
 export function AlertaRetiradaBadge({ 
     className = '', 
     showDetails = false,
-    refreshInterval = 60000 // 1 minuto
+    refreshInterval = 60000, // 1 minuto
+    variant
 }: AlertaRetiradaBadgeProps) {
     const [alertas, setAlertas] = useState<AlertaRetirada | null>(null);
     const [loading, setLoading] = useState(true);
+    const renderDetails = variant ? variant === 'card' : showDetails;
 
     const fetchAlertas = async () => {
         try {
@@ -81,7 +84,7 @@ export function AlertaRetiradaBadge({
     };
 
     // Versão simples (apenas badge)
-    if (!showDetails) {
+    if (!renderDetails) {
         return (
             <Link 
                 href="/modules/ordem_servico/pages/ordens?status=6"

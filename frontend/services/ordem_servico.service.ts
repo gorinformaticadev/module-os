@@ -9,6 +9,18 @@ export const ordem_servicoService = {
         return api.get('/api/ordem_servico/stats');
     },
 
+    listOrdens: async (filters?: any) => {
+        return api.get('/api/ordem_servico/ordens', { params: filters });
+    },
+
+    getDashboardData: async () => {
+        return api.get('/api/ordem_servico/ordens/dashboard');
+    },
+
+    getAlertasRetirada: async () => {
+        return api.get('/api/ordem_servico/ordens/alertas-retirada');
+    },
+
     getNotificationConfigs: async () => {
         return api.get('/api/ordem_servico/config/notifications');
     },
