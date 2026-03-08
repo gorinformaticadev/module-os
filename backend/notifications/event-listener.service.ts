@@ -26,9 +26,8 @@ export class NotificationEventListenerService {
 
     private async processEventRules(tenantId: string, eventType: string, osId: string, osData: any) {
         try {
-            // Buscar regras do tipo EVENT que reagem a este evento específico
             const rules: any[] = await this.prisma.$queryRawUnsafe(
-                `SELECT * FROM mod_ordem_servico_notif_rules 
+                `SELECT * FROM mod_ordem_servico_notif_rules
                  WHERE tenant_id = $1 AND enabled = true AND trigger_type = 'EVENT'`,
                 tenantId
             );
@@ -39,18 +38,18 @@ export class NotificationEventListenerService {
                 if (config.events && config.events.includes(eventType)) {
                     this.logger.log(`Regra [${rule.title}] disparada para evento ${eventType}. Canal: ${rule.channel}`);
 
-                    const recipients = await this.resolveRecipient(osData, rule.recipients, rule.channel);
+                    const recipients = await this.resolveRecipients(tenantId, osData, rule.recipients, rule.channel);
                     this.logger.log(`Disparando regra [${rule.title}] para evento ${eventType} (Recipients: ${recipients.length}, Raw: ${JSON.stringify(rule.recipients)})`);
 
                     for (const recipient of recipients) {
                         await this.dispatcher.dispatch({
-                            tenantId: tenantId,
+                            tenantId,
                             ruleId: rule.id,
                             ordemServicoId: osId,
                             channel: rule.channel,
-                            recipient: recipient,
+                            recipient,
                             content: this.formatMessage(rule.message_template, osData),
-                            fingerprint: `event-${eventType}-${osId}-${rule.id}-${recipient}`
+                            fingerprint: `event-${eventType}-${osId}-${rule.id}-${recipient}`,
                         });
                     }
                 }
@@ -60,70 +59,193 @@ export class NotificationEventListenerService {
         }
     }
 
-    private async resolveRecipient(os: any, recipients: any[], channel: string): Promise<string[]> {
-        const targets: Set<string> = new Set(); // Usar Set para evitar duplicatas
+    private async resolveRecipients(tenantId: string, os: any, recipients: any, channel: string): Promise<string[]> {
+        const parsedRecipients = typeof recipients === 'string' ? JSON.parse(recipients) : recipients;
+        if (!Array.isArray(parsedRecipients)) {
+            return [];
+        }
 
-        if (!Array.isArray(recipients)) return Array.from(targets);
+        const targets = new Set<string>();
+        const internalDelivery = this.usesInternalDelivery(channel);
 
-        for (const r of recipients) {
-            if (r.type === 'CLIENT') {
-                // Tenta buscar do payload ou banco
-                if (os.cliente_email) targets.add(os.cliente_email);
-                else if (os.cliente_id) {
-                    const client = await this.prisma.$queryRawUnsafe<any[]>(
-                        `SELECT email FROM mod_ordem_servico_clients WHERE id = $1::uuid`, os.cliente_id
-                    );
-                    if (client[0]?.email) targets.add(client[0].email);
-                }
-
-                // SMART LOGIC: Se for notificação de SISTEMA (In-App) e o destino for CLIENTE,
-                // adicionamos também o Técnico Responsável (se houver), pois provavelmente é um alerta interno sobre o cliente.
-                // O cliente (externo) muitas vezes não tem acesso ao painel.
-                if (channel === 'SYSTEM' && os.usuario_responsavel_id) {
-                    targets.add(os.usuario_responsavel_id);
-                }
-
-            } else if (r.type === 'TECHNICIAN') {
-                if (os.usuario_responsavel_id) {
-                    const user = await this.prisma.user.findUnique({
-                        where: { id: os.usuario_responsavel_id },
-                        select: { email: true, id: true }
-                    });
-
-                    if (channel === 'SYSTEM' && user?.id) {
-                        targets.add(user.id);
-                    } else if (user?.email) {
-                        targets.add(user.email);
-                    }
-                }
-            } else if (r.type === 'ADMIN') {
-                // Notificar administradores do tenant
-                const admins = await this.prisma.user.findMany({
-                    where: {
-                        tenantId: os.tenant_id,
-                        role: 'ADMIN'
-                    },
-                    select: { id: true, email: true }
-                });
-                for (const admin of admins) {
-                    if (channel === 'SYSTEM') targets.add(admin.id);
-                    else if (admin.email) targets.add(admin.email);
-                }
-            } else if (r.type === 'SUPER_ADMIN') {
-                // Notificar Super Admins (Global)
-                const superAdmins = await this.prisma.user.findMany({
-                    where: { role: 'SUPER_ADMIN' },
-                    select: { id: true, email: true }
-                });
-                for (const sa of superAdmins) {
-                    if (channel === 'SYSTEM') targets.add(sa.id);
-                    else if (sa.email) targets.add(sa.email);
-                }
-            } else if (r.type === 'CUSTOM') {
-                targets.add(r.value);
+        for (const recipient of parsedRecipients) {
+            switch (recipient.type) {
+                case 'CLIENT':
+                    await this.appendClientTargets(targets, os, tenantId, internalDelivery);
+                    break;
+                case 'TECHNICIAN':
+                    await this.appendTechnicianTargets(targets, os, tenantId, internalDelivery);
+                    break;
+                case 'ADMIN':
+                    await this.appendTenantRoleTargets(targets, tenantId, ['ADMIN'], internalDelivery);
+                    break;
+                case 'SUPER_ADMIN':
+                    await this.appendTenantRoleTargets(targets, tenantId, ['SUPER_ADMIN'], internalDelivery, true);
+                    break;
+                case 'CUSTOM':
+                    await this.appendCustomTargets(targets, recipient, tenantId, internalDelivery);
+                    break;
             }
         }
+
         return Array.from(targets);
+    }
+
+    private usesInternalDelivery(channel: string): boolean {
+        const normalizedChannel = String(channel || '').toUpperCase();
+        return normalizedChannel === 'SYSTEM' || normalizedChannel === 'PUSH';
+    }
+
+    private async appendClientTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
+        let clientEmail = os.cliente_email;
+
+        if (!clientEmail && os.cliente_id) {
+            const client = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT email FROM mod_ordem_servico_clients WHERE id = $1::uuid AND tenant_id = $2`,
+                os.cliente_id,
+                tenantId
+            );
+            clientEmail = client[0]?.email;
+        }
+
+        if (!clientEmail) {
+            return;
+        }
+
+        if (internalDelivery) {
+            const userId = await this.resolveUserIdByEmail(clientEmail, tenantId);
+            if (userId) {
+                targets.add(userId);
+            }
+            return;
+        }
+
+        targets.add(clientEmail);
+    }
+
+    private async appendTechnicianTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
+        if (!os.usuario_responsavel_id) {
+            return;
+        }
+
+        const user = await this.prisma.user.findFirst({
+            where: {
+                id: os.usuario_responsavel_id,
+                isLocked: false,
+                OR: [
+                    { tenantId },
+                    { role: 'SUPER_ADMIN' },
+                ],
+            },
+            select: { id: true, email: true },
+        });
+
+        if (!user) {
+            return;
+        }
+
+        if (internalDelivery) {
+            targets.add(user.id);
+        } else if (user.email) {
+            targets.add(user.email);
+        }
+    }
+
+    private async appendTenantRoleTargets(
+        targets: Set<string>,
+        tenantId: string,
+        roles: string[],
+        internalDelivery: boolean,
+        global = false
+    ) {
+        const users = await this.prisma.user.findMany({
+            where: global
+                ? {
+                    role: { in: roles as any },
+                    isLocked: false,
+                }
+                : {
+                    tenantId,
+                    role: { in: roles as any },
+                    isLocked: false,
+                },
+            select: { id: true, email: true },
+        });
+
+        for (const user of users) {
+            if (internalDelivery) {
+                targets.add(user.id);
+            } else if (user.email) {
+                targets.add(user.email);
+            }
+        }
+    }
+
+    private async appendCustomTargets(targets: Set<string>, recipient: any, tenantId: string, internalDelivery: boolean) {
+        const rawRecipient = String(
+            recipient?.value ?? recipient?.identifier ?? recipient?.config?.value ?? ''
+        ).trim();
+
+        if (!rawRecipient) {
+            return;
+        }
+
+        if (!internalDelivery) {
+            targets.add(rawRecipient);
+            return;
+        }
+
+        const userId = rawRecipient.includes('@')
+            ? await this.resolveUserIdByEmail(rawRecipient, tenantId, true)
+            : await this.resolveExplicitUserId(rawRecipient, tenantId, true);
+
+        if (userId) {
+            targets.add(userId);
+        }
+    }
+
+    private async resolveUserIdByEmail(email: string, tenantId: string, allowSuperAdmin = false): Promise<string | null> {
+        const user = await this.prisma.user.findFirst({
+            where: allowSuperAdmin
+                ? {
+                    email,
+                    isLocked: false,
+                    OR: [
+                        { tenantId },
+                        { role: 'SUPER_ADMIN' },
+                    ],
+                }
+                : {
+                    email,
+                    tenantId,
+                    isLocked: false,
+                },
+            select: { id: true },
+        });
+
+        return user?.id ?? null;
+    }
+
+    private async resolveExplicitUserId(userId: string, tenantId: string, allowSuperAdmin = false): Promise<string | null> {
+        const user = await this.prisma.user.findFirst({
+            where: allowSuperAdmin
+                ? {
+                    id: userId,
+                    isLocked: false,
+                    OR: [
+                        { tenantId },
+                        { role: 'SUPER_ADMIN' },
+                    ],
+                }
+                : {
+                    id: userId,
+                    tenantId,
+                    isLocked: false,
+                },
+            select: { id: true },
+        });
+
+        return user?.id ?? null;
     }
 
     private formatMessage(template: string, os: any): string {
@@ -134,7 +256,7 @@ export class NotificationEventListenerService {
             '{{cliente}}': os.cliente_nome || 'Cliente',
             '{{status}}': os.status,
             '{{data_previsao}}': os.data_previsao ? new Date(os.data_previsao).toLocaleDateString() : 'N/A',
-            '{{valor}}': os.valor_servico || '0,00'
+            '{{valor}}': os.valor_servico || '0,00',
         };
 
         for (const key in map) {

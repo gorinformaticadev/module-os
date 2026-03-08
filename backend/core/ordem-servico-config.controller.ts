@@ -6,7 +6,7 @@ import { PrismaService } from '@core/prisma/prisma.service';
 import { OrdemServicoCronService } from './ordem-servico-cron.service';
 import { Request as ExpressRequest } from 'express';
 
-@Controller('api/ordem_servico/config')
+@Controller('ordem_servico/config')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN')
 export class OrdemServicoConfigController {

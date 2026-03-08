@@ -4,7 +4,7 @@
  */
 export interface TriggerConfigDto {
     event_type?: string;
-    condition?: Record<string, any>;
+    condition?: Record<string, any> | string;
     frequency?: {
         days?: number;
         hours?: number;

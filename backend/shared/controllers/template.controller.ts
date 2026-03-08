@@ -3,7 +3,7 @@ import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { TemplateService } from '../services/template.service';
 
-@Controller('api/ordem_servico/templates')
+@Controller('ordem_servico/templates')
 @UseGuards(JwtAuthGuard)
 export class TemplateController {
     private readonly logger = new Logger(TemplateController.name);

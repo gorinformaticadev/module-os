@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Note: Removing @UseGuards from class level to allow Public access to uploads
-@Controller('api/ordem_servico/produtos')
+@Controller('ordem_servico/produtos')
 export class ProdutosController {
     private readonly logger = new Logger(ProdutosController.name);
 

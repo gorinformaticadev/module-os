@@ -2,7 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } f
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { TiposEquipamentoService } from './tipos-equipamento.service';
 
-@Controller('api/ordem_servico/tipos-equipamento')
+@Controller('ordem_servico/tipos-equipamento')
 @UseGuards(JwtAuthGuard)
 export class TiposEquipamentoController {
   constructor(private readonly tiposEquipamentoService: TiposEquipamentoService) {}

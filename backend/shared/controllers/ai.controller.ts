@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { AiService } from '../services/ai.service';
 import { AI_PROMPTS } from '../services/prompts';
 
-@Controller('api/ordem_servico/ai')
+@Controller('ordem_servico/ai')
 @UseGuards(JwtAuthGuard)
 export class AiController {
     private readonly logger = new Logger(AiController.name);

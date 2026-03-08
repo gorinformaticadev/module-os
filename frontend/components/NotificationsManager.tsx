@@ -70,6 +70,64 @@ export function NotificationsManager({ api, toast, user }: any) {
     const [isEditing, setIsEditing] = useState(false);
     const [currentRule, setCurrentRule] = useState<any>(null);
 
+    const INTERNAL_CHANNELS = ['SYSTEM', 'PUSH'];
+
+    const isInternalChannel = (channel?: string) => INTERNAL_CHANNELS.includes(channel || 'SYSTEM');
+
+    const getDefaultRecipientsForChannel = (channel?: string) => (
+        isInternalChannel(channel) ? [{ type: 'TECHNICIAN' }] : [{ type: 'CLIENT' }]
+    );
+
+    const sanitizeRecipientsForChannel = (channel?: string, recipients?: any[]) => {
+        const allowedTypes = isInternalChannel(channel)
+            ? ['TECHNICIAN', 'ADMIN', 'SUPER_ADMIN']
+            : ['CLIENT', 'TECHNICIAN', 'ADMIN', 'SUPER_ADMIN'];
+
+        const safeRecipients = Array.isArray(recipients)
+            ? recipients.filter((recipient: any) => allowedTypes.includes(recipient?.type))
+            : [];
+
+        return safeRecipients.length > 0 ? safeRecipients : getDefaultRecipientsForChannel(channel);
+    };
+
+    const buildEmptyRule = () => ({
+        title: '',
+        description: '',
+        enabled: true,
+        trigger_type: 'EVENT',
+        trigger_config: {},
+        channel: 'SYSTEM',
+        recipients: getDefaultRecipientsForChannel('SYSTEM'),
+        message_template: ''
+    });
+
+    const applyTemplate = (config: any) => {
+        const channel = config?.channel || 'SYSTEM';
+        setCurrentRule({
+            ...config,
+            enabled: true,
+            recipients: sanitizeRecipientsForChannel(channel, config?.recipients)
+        });
+    };
+
+    const updateRecipients = (type: string, checked: boolean) => {
+        const currentRecipients = currentRule?.recipients || [];
+        const nextRecipients = checked
+            ? [...currentRecipients.filter((recipient: any) => recipient.type !== type), { type }]
+            : currentRecipients.filter((recipient: any) => recipient.type !== type);
+
+        setCurrentRule({
+            ...currentRule,
+            recipients: sanitizeRecipientsForChannel(currentRule?.channel, nextRecipients)
+        });
+    };
+
+    const getChannelIcon = (channel?: string, className = 'h-6 w-6') => {
+        if (channel === 'EMAIL') return <Mail className={className} />;
+        if (isInternalChannel(channel)) return <Bell className={className} />;
+        return <MessageSquare className={className} />;
+    };
+
     // Pagination for history
     const [historyFilters, setHistoryFilters] = useState({
         status: '',
@@ -80,6 +138,9 @@ export function NotificationsManager({ api, toast, user }: any) {
         if (activeSubTab === 'rules') fetchRules();
         else fetchHistory();
     }, [activeSubTab, historyFilters]);
+
+    const currentChannel = currentRule?.channel || 'SYSTEM';
+    const internalChannelSelected = isInternalChannel(currentChannel);
 
     const fetchRules = async () => {
         try {
@@ -154,16 +215,7 @@ export function NotificationsManager({ api, toast, user }: any) {
 
                 {activeSubTab === 'rules' && (
                     <Button onClick={() => {
-                        setCurrentRule({
-                            title: '',
-                            description: '',
-                            enabled: true,
-                            trigger_type: 'EVENT',
-                            trigger_config: {},
-                            channel: 'SYSTEM',
-                            recipients: [{ type: 'CLIENT' }],
-                            message_template: ''
-                        });
+                        setCurrentRule(buildEmptyRule());
                         setIsEditing(true);
                     }} className="gap-2">
                         <Plus className="h-4 w-4" />
@@ -185,16 +237,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                             <h3 className="text-lg font-medium">Nenhuma regra configurada</h3>
                             <p className="text-muted-foreground mb-6">Comece criando uma regra de gatilho para suas Ordens de Serviço.</p>
                             <Button variant="outline" onClick={() => {
-                                setCurrentRule({
-                                    title: '',
-                                    description: '',
-                                    enabled: true,
-                                    trigger_type: 'EVENT',
-                                    trigger_config: {},
-                                    channel: 'SYSTEM',
-                                    recipients: [{ type: 'CLIENT' }],
-                                    message_template: ''
-                                });
+                                setCurrentRule(buildEmptyRule());
                                 setIsEditing(true);
                             }}>Criar primeira regra</Button>
                         </div>
@@ -204,7 +247,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                                 <div className="flex justify-between items-start">
                                     <div className="flex gap-4">
                                         <div className={`p-3 rounded-lg ${rule.enabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                                            {rule.channel === 'EMAIL' ? <Mail className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
+                                            {getChannelIcon(rule.channel)}
                                         </div>
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
@@ -292,7 +335,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                                         <td className="px-5 py-4 font-medium">Rule #{item.rule_id.substring(0, 8)}</td>
                                         <td className="px-5 py-4">
                                             <Badge variant="outline" className="gap-1">
-                                                {item.channel === 'EMAIL' ? <Mail className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
+                                                {getChannelIcon(item.channel, 'h-3 w-3')}
                                                 {item.channel}
                                             </Badge>
                                         </td>
@@ -350,7 +393,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                                             { label: '⚠️ OS Atrasada', config: { title: 'OS Fora do Prazo', trigger_type: 'CONDITION', trigger_config: { condition: 'OVERDUE' }, channel: 'SYSTEM', message_template: 'Atenção: OS #{{numero}} está atrasada!' } },
                                             { label: '✅ Finalizada (Zap)', config: { title: 'OS Concluída', trigger_type: 'EVENT', trigger_config: { events: ['STATUS_CHANGED'], status_to: 'CONCLUIDO' }, channel: 'WHATSAPP', message_template: 'Olá {{cliente}}, sua OS #{{numero}} foi finalizada!' } },
                                         ].map((t, i) => (
-                                            <Button key={i} variant="outline" size="sm" onClick={() => setCurrentRule({ ...t.config, enabled: true })}>{t.label}</Button>
+                                            <Button key={i} variant="outline" size="sm" onClick={() => applyTemplate(t.config)}>{t.label}</Button>
                                         ))}
                                     </div>
                                 </div>
@@ -383,7 +426,6 @@ export function NotificationsManager({ api, toast, user }: any) {
                                         <option value="EVENT">⚡ Evento (Imediato)</option>
                                         <option value="OFFSET">🕒 Tempo Relativo (Offset)</option>
                                         <option value="CONDITION">🔍 Condição (Estado)</option>
-                                        <option value="CRON">📅 Agendamento Fixo</option>
                                     </select>
                                 </div>
 
@@ -394,13 +436,25 @@ export function NotificationsManager({ api, toast, user }: any) {
                                     </label>
                                     <select
                                         className="w-full bg-background border rounded-lg px-4 py-2"
-                                        value={currentRule?.channel || 'SYSTEM'}
-                                        onChange={(e) => setCurrentRule({ ...currentRule, channel: e.target.value })}
+                                        value={currentChannel}
+                                        onChange={(e) => {
+                                            const nextChannel = e.target.value;
+                                            setCurrentRule({
+                                                ...currentRule,
+                                                channel: nextChannel,
+                                                recipients: sanitizeRecipientsForChannel(nextChannel, currentRule?.recipients)
+                                            });
+                                        }}
                                     >
-                                        <option value="SYSTEM">🔔 Sistema (Notificação Interna)</option>
+                                        <option value="SYSTEM">🔔 Sistema (Interna + Push Central)</option>
                                         <option value="EMAIL">📧 E-mail</option>
                                         <option value="WHATSAPP">📱 WhatsApp</option>
                                     </select>
+                                    <p className="text-xs text-muted-foreground">
+                                        {internalChannelSelected
+                                            ? 'Sistema usa o hub central de notificacoes e entrega somente para usuarios internos do tenant.'
+                                            : 'Canais externos podem atender cliente e, quando fizer sentido, usuarios internos.'}
+                                    </p>
                                 </div>
 
                                 <div className="col-span-2 space-y-2">
@@ -409,21 +463,13 @@ export function NotificationsManager({ api, toast, user }: any) {
                                         <InfoTooltip text="Quem deve receber esta mensagem?" />
                                     </label>
                                     <div className="flex gap-6 p-4 bg-muted/20 rounded-lg border items-center">
-                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <label className={`flex items-center gap-2 select-none ${internalChannelSelected ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
                                             <input
                                                 type="checkbox"
                                                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                disabled={internalChannelSelected}
                                                 checked={currentRule?.recipients?.some((r: any) => r.type === 'CLIENT')}
-                                                onChange={(e) => {
-                                                    const current = currentRule?.recipients || [];
-                                                    let newValue;
-                                                    if (e.target.checked) {
-                                                        newValue = [...current, { type: 'CLIENT' }];
-                                                    } else {
-                                                        newValue = current.filter((r: any) => r.type !== 'CLIENT');
-                                                    }
-                                                    setCurrentRule({ ...currentRule, recipients: newValue });
-                                                }}
+                                                onChange={(e) => updateRecipients('CLIENT', e.target.checked)}
                                             />
                                             <span>Cliente</span>
                                         </label>
@@ -433,16 +479,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                                                 type="checkbox"
                                                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                                 checked={currentRule?.recipients?.some((r: any) => r.type === 'TECHNICIAN')}
-                                                onChange={(e) => {
-                                                    const current = currentRule?.recipients || [];
-                                                    let newValue;
-                                                    if (e.target.checked) {
-                                                        newValue = [...current, { type: 'TECHNICIAN' }];
-                                                    } else {
-                                                        newValue = current.filter((r: any) => r.type !== 'TECHNICIAN');
-                                                    }
-                                                    setCurrentRule({ ...currentRule, recipients: newValue });
-                                                }}
+                                                onChange={(e) => updateRecipients('TECHNICIAN', e.target.checked)}
                                             />
                                             <span>Técnico Responsável</span>
                                         </label>
@@ -452,16 +489,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                                                 type="checkbox"
                                                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                                 checked={currentRule?.recipients?.some((r: any) => r.type === 'ADMIN')}
-                                                onChange={(e) => {
-                                                    const current = currentRule?.recipients || [];
-                                                    let newValue;
-                                                    if (e.target.checked) {
-                                                        newValue = [...current, { type: 'ADMIN' }];
-                                                    } else {
-                                                        newValue = current.filter((r: any) => r.type !== 'ADMIN');
-                                                    }
-                                                    setCurrentRule({ ...currentRule, recipients: newValue });
-                                                }}
+                                                onChange={(e) => updateRecipients('ADMIN', e.target.checked)}
                                             />
                                             <span>Administradores</span>
                                         </label>
@@ -472,21 +500,17 @@ export function NotificationsManager({ api, toast, user }: any) {
                                                     type="checkbox"
                                                     className="h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
                                                     checked={currentRule?.recipients?.some((r: any) => r.type === 'SUPER_ADMIN')}
-                                                    onChange={(e) => {
-                                                        const current = currentRule?.recipients || [];
-                                                        let newValue;
-                                                        if (e.target.checked) {
-                                                            newValue = [...current, { type: 'SUPER_ADMIN' }];
-                                                        } else {
-                                                            newValue = current.filter((r: any) => r.type !== 'SUPER_ADMIN');
-                                                        }
-                                                        setCurrentRule({ ...currentRule, recipients: newValue });
-                                                    }}
+                                                    onChange={(e) => updateRecipients('SUPER_ADMIN', e.target.checked)}
                                                 />
                                                 <span>Super Admins (Global)</span>
                                             </label>
                                         )}
                                     </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {internalChannelSelected
+                                            ? 'Para notificacoes internas, use Tecnico Responsavel, Administradores ou Super Admin. Cliente fica bloqueado neste canal.'
+                                            : 'Para e-mail e WhatsApp, Cliente pode ser usado normalmente.'}
+                                    </p>
                                 </div>
 
                                 {/* Dynamic Config Section */}
@@ -671,9 +695,9 @@ export function NotificationsManager({ api, toast, user }: any) {
                                         enabled: currentRule.enabled !== false,
                                         trigger_type: currentRule.trigger_type || 'EVENT',
                                         trigger_config: currentRule.trigger_config || {},
-                                        channel: currentRule.channel || 'SYSTEM',
+                                        channel: currentChannel,
                                         max_executions: currentRule.max_executions || null,
-                                        recipients: currentRule.recipients || [{ type: 'CLIENT' }],
+                                        recipients: sanitizeRecipientsForChannel(currentChannel, currentRule.recipients),
                                         message_template: currentRule.message_template || ''
                                     };
 

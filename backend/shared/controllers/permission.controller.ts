@@ -3,7 +3,7 @@ import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { PermissionService } from '../services/permission.service';
 
-@Controller('api/ordem_servico/permissions')
+@Controller('ordem_servico/permissions')
 @UseGuards(JwtAuthGuard)
 export class PermissionController {
     private readonly logger = new Logger(PermissionController.name);

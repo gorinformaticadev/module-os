@@ -86,6 +86,20 @@ frontend/
 
 ### **Passos de Instalação**
 
+Se a instalacao for feita pelo menu `Configuracoes > Sistema > Modulos`, nao compacte o repositorio inteiro manualmente.
+
+Use o pacote oficial:
+
+```powershell
+.\scripts\gerar-zip-instalador.ps1
+```
+
+Depois envie `dist\ordem_servico-installer-<versao>.zip`.
+
+O instalador interno rejeita arquivos shell como `install.sh`, entao o ZIP precisa conter apenas `module.json` na raiz e os diretorios `backend/` e `frontend/` com arquivos permitidos.
+
+Para modulos baseados neste, leia tambem `DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_NESTE.md`.
+
 1. **Copiar arquivos para o sistema**
    ```bash
    # Copiar backend

@@ -1,5 +1,4 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { NotificationDispatcherService } from './dispatcher.service';
 import { NotificationRuleService } from './rules.service';
@@ -27,9 +26,9 @@ export class NotificationSchedulerService implements OnModuleInit {
                 '* * * * *',
                 () => this.handleCron(),
                 {
-                    name: 'Ordem de Serviço: Worker de Notificações',
-                    description: 'Busca OSs atrasadas ou que atingiram prazos configurados e realiza os disparos automáticos.',
-                    settingsUrl: '/modules/ordem_servico/pages/configuracoes'
+                    name: 'Ordem de Servico: Worker de Notificacoes',
+                    description: 'Busca OSs atrasadas ou que atingiram prazos configurados e realiza os disparos automaticos.',
+                    settingsUrl: '/modules/ordem_servico/pages/configuracoes',
                 }
             );
         } catch (e) {
@@ -37,18 +36,14 @@ export class NotificationSchedulerService implements OnModuleInit {
         }
     }
 
-    @Cron(CronExpression.EVERY_MINUTE)
     async handleCron() {
         if (this.isProcessing) return;
         this.isProcessing = true;
 
         try {
-            // this.logger.log('Starting OS Notification Worker...');
-
-            // 1. Get all active CRON/CONDITION rules
             const activeRules: any[] = await this.prisma.$queryRawUnsafe(
-                `SELECT * FROM mod_ordem_servico_notif_rules 
-                 WHERE enabled = true 
+                `SELECT * FROM mod_ordem_servico_notif_rules
+                 WHERE enabled = true
                  AND (trigger_type = 'CRON' OR trigger_type = 'CONDITION' OR trigger_type = 'OFFSET')
                  AND (next_execution_at IS NULL OR next_execution_at <= CURRENT_TIMESTAMP)
                  AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
@@ -58,7 +53,6 @@ export class NotificationSchedulerService implements OnModuleInit {
             for (const rule of activeRules) {
                 await this.processRule(rule);
             }
-
         } catch (error: any) {
             this.logger.error(`Worker error: ${error.message}`);
         } finally {
@@ -70,7 +64,7 @@ export class NotificationSchedulerService implements OnModuleInit {
         if (rule.trigger_type === 'CONDITION') {
             await this.processConditionRule(rule);
         } else if (rule.trigger_type === 'CRON') {
-            // Basic CRON
+            return;
         } else if (rule.trigger_type === 'OFFSET') {
             await this.processOffsetRule(rule);
         }
@@ -124,7 +118,7 @@ export class NotificationSchedulerService implements OnModuleInit {
                         tenantId: rule.tenant_id,
                         ruleId: rule.id,
                         ordemServicoId: os.id,
-                        lastState: { notified_at: new Date() }
+                        lastState: { notified_at: new Date() },
                     });
                 }
             }
@@ -142,7 +136,6 @@ export class NotificationSchedulerService implements OnModuleInit {
     private async dispatchNotification(rule: any, os: any, fingerprint: string): Promise<boolean> {
         const config = typeof rule.trigger_config === 'string' ? JSON.parse(rule.trigger_config) : rule.trigger_config;
 
-        // Silence Window Check
         if (config.silence_window?.start && config.silence_window?.end) {
             const now = new Date();
             const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
@@ -158,12 +151,12 @@ export class NotificationSchedulerService implements OnModuleInit {
                 : (currentTotalMinutes >= startTotal || currentTotalMinutes <= endTotal);
 
             if (isSilenced) {
-                this.logger.log(`Regra [${rule.title}] silenciada pela Janela de Silêncio`);
+                this.logger.log(`Regra [${rule.title}] silenciada pela Janela de Silencio`);
                 return false;
             }
         }
 
-        const recipientsList = await this.resolveRecipients(os, rule.recipients);
+        const recipientsList = await this.resolveRecipients(os, rule.recipients, rule.channel, rule.tenant_id);
         let atLeastOneSuccess = false;
 
         for (const recipient of recipientsList) {
@@ -174,9 +167,11 @@ export class NotificationSchedulerService implements OnModuleInit {
                 channel: rule.channel,
                 recipient,
                 content: this.formatMessage(rule.message_template, os),
-                fingerprint: `${fingerprint}-${recipient}`
+                fingerprint: `${fingerprint}-${recipient}`,
             });
-            if (result.success) atLeastOneSuccess = true;
+            if (result.success) {
+                atLeastOneSuccess = true;
+            }
         }
 
         if (atLeastOneSuccess) {
@@ -225,36 +220,198 @@ export class NotificationSchedulerService implements OnModuleInit {
                         tenantId: rule.tenant_id,
                         ruleId: rule.id,
                         ordemServicoId: os.id,
-                        lastState: { status: os.status, notified_at: new Date() }
+                        lastState: { status: os.status, notified_at: new Date() },
                     });
                 }
             }
         }
     }
 
-    private async resolveRecipients(os: any, recipients: any): Promise<string[]> {
+    private async resolveRecipients(os: any, recipients: any, channel: string, tenantId: string): Promise<string[]> {
         const config = typeof recipients === 'string' ? JSON.parse(recipients) : recipients;
         if (!Array.isArray(config)) return [];
 
-        const targets: string[] = [];
-        for (const r of config) {
-            if (r.type === 'CLIENT') {
-                if (os.cliente_email) targets.push(os.cliente_email);
-                else {
-                    // Busca profunda no banco se necessário
-                    const client = await this.prisma.$queryRawUnsafe<any[]>(
-                        `SELECT email FROM mod_ordem_servico_clients WHERE id = $1`, os.cliente_id
-                    );
-                    if (client[0]?.email) targets.push(client[0].email);
-                }
-            } else if (r.type === 'TECHNICIAN' && os.usuario_responsavel_id) {
-                const user = await this.prisma.user.findUnique({ where: { id: os.usuario_responsavel_id }, select: { email: true, id: true } });
-                if (user?.email) targets.push(user.email);
-            } else if (r.type === 'CUSTOM' && r.value) {
-                targets.push(r.value);
+        const targets = new Set<string>();
+        const internalDelivery = this.usesInternalDelivery(channel);
+
+        for (const recipient of config) {
+            switch (recipient.type) {
+                case 'CLIENT':
+                    await this.appendClientTargets(targets, os, tenantId, internalDelivery);
+                    break;
+                case 'TECHNICIAN':
+                    await this.appendTechnicianTargets(targets, os, tenantId, internalDelivery);
+                    break;
+                case 'ADMIN':
+                    await this.appendTenantRoleTargets(targets, tenantId, ['ADMIN'], internalDelivery);
+                    break;
+                case 'SUPER_ADMIN':
+                    await this.appendTenantRoleTargets(targets, tenantId, ['SUPER_ADMIN'], internalDelivery, true);
+                    break;
+                case 'CUSTOM':
+                    await this.appendCustomTargets(targets, recipient, tenantId, internalDelivery);
+                    break;
             }
         }
-        return targets;
+
+        return Array.from(targets);
+    }
+
+    private usesInternalDelivery(channel: string): boolean {
+        const normalizedChannel = String(channel || '').toUpperCase();
+        return normalizedChannel === 'SYSTEM' || normalizedChannel === 'PUSH';
+    }
+
+    private async appendClientTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
+        let clientEmail = os.cliente_email;
+
+        if (!clientEmail && os.cliente_id) {
+            const client = await this.prisma.$queryRawUnsafe<any[]>(
+                `SELECT email FROM mod_ordem_servico_clients WHERE id = $1::uuid AND tenant_id = $2`,
+                os.cliente_id,
+                tenantId
+            );
+            clientEmail = client[0]?.email;
+        }
+
+        if (!clientEmail) {
+            return;
+        }
+
+        if (internalDelivery) {
+            const userId = await this.resolveUserIdByEmail(clientEmail, tenantId);
+            if (userId) {
+                targets.add(userId);
+            }
+            return;
+        }
+
+        targets.add(clientEmail);
+    }
+
+    private async appendTechnicianTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
+        if (!os.usuario_responsavel_id) {
+            return;
+        }
+
+        const user = await this.prisma.user.findFirst({
+            where: {
+                id: os.usuario_responsavel_id,
+                isLocked: false,
+                OR: [
+                    { tenantId },
+                    { role: 'SUPER_ADMIN' },
+                ],
+            },
+            select: { id: true, email: true },
+        });
+
+        if (!user) {
+            return;
+        }
+
+        if (internalDelivery) {
+            targets.add(user.id);
+        } else if (user.email) {
+            targets.add(user.email);
+        }
+    }
+
+    private async appendTenantRoleTargets(
+        targets: Set<string>,
+        tenantId: string,
+        roles: string[],
+        internalDelivery: boolean,
+        global = false
+    ) {
+        const users = await this.prisma.user.findMany({
+            where: global
+                ? {
+                    role: { in: roles as any },
+                    isLocked: false,
+                }
+                : {
+                    tenantId,
+                    role: { in: roles as any },
+                    isLocked: false,
+                },
+            select: { id: true, email: true },
+        });
+
+        for (const user of users) {
+            if (internalDelivery) {
+                targets.add(user.id);
+            } else if (user.email) {
+                targets.add(user.email);
+            }
+        }
+    }
+
+    private async appendCustomTargets(targets: Set<string>, recipient: any, tenantId: string, internalDelivery: boolean) {
+        const rawRecipient = String(
+            recipient?.value ?? recipient?.identifier ?? recipient?.config?.value ?? ''
+        ).trim();
+
+        if (!rawRecipient) {
+            return;
+        }
+
+        if (!internalDelivery) {
+            targets.add(rawRecipient);
+            return;
+        }
+
+        const userId = rawRecipient.includes('@')
+            ? await this.resolveUserIdByEmail(rawRecipient, tenantId, true)
+            : await this.resolveExplicitUserId(rawRecipient, tenantId, true);
+
+        if (userId) {
+            targets.add(userId);
+        }
+    }
+
+    private async resolveUserIdByEmail(email: string, tenantId: string, allowSuperAdmin = false): Promise<string | null> {
+        const user = await this.prisma.user.findFirst({
+            where: allowSuperAdmin
+                ? {
+                    email,
+                    isLocked: false,
+                    OR: [
+                        { tenantId },
+                        { role: 'SUPER_ADMIN' },
+                    ],
+                }
+                : {
+                    email,
+                    tenantId,
+                    isLocked: false,
+                },
+            select: { id: true },
+        });
+
+        return user?.id ?? null;
+    }
+
+    private async resolveExplicitUserId(userId: string, tenantId: string, allowSuperAdmin = false): Promise<string | null> {
+        const user = await this.prisma.user.findFirst({
+            where: allowSuperAdmin
+                ? {
+                    id: userId,
+                    isLocked: false,
+                    OR: [
+                        { tenantId },
+                        { role: 'SUPER_ADMIN' },
+                    ],
+                }
+                : {
+                    id: userId,
+                    tenantId,
+                    isLocked: false,
+                },
+            select: { id: true },
+        });
+
+        return user?.id ?? null;
     }
 
     private formatMessage(template: string, os: any): string {
@@ -264,7 +421,7 @@ export class NotificationSchedulerService implements OnModuleInit {
             '{{numero}}': os.numero || os.id.split('-')[0],
             '{{cliente}}': os.cliente_nome || 'Cliente',
             '{{status}}': os.status,
-            '{{data_previsao}}': os.data_previsao ? new Date(os.data_previsao).toLocaleDateString() : 'N/A'
+            '{{data_previsao}}': os.data_previsao ? new Date(os.data_previsao).toLocaleDateString() : 'N/A',
         };
 
         for (const key in map) {

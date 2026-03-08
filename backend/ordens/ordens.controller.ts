@@ -33,7 +33,7 @@ import {
     AlertaRetiradaResponseDTO
 } from '../shared/dto/ordem-servico.dto';
 
-@Controller('api/ordem_servico/ordens')
+@Controller('ordem_servico/ordens')
 @UseGuards(JwtAuthGuard)
 export class OrdensController {
     private readonly logger = new Logger(OrdensController.name);

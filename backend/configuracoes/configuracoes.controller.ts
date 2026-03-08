@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 
 import { ConfiguracoesService } from './configuracoes.service';
 
-@Controller('api/ordem_servico/config')
+@Controller('ordem_servico/config')
 @UseGuards(JwtAuthGuard)
 export class ConfiguracoesController {
     private readonly logger = new Logger(ConfiguracoesController.name);

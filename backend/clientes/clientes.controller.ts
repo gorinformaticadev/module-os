@@ -9,7 +9,7 @@ import { PermissionGuard } from '../shared/guards/permission.guard';
 import { RequireClientsPermission } from '../shared/decorators/require-permission.decorator';
 import { Public } from '@core/common/decorators/public.decorator';
 
-@Controller('api/ordem_servico/clientes')
+@Controller('ordem_servico/clientes')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class ClientesController {
     private readonly logger = new Logger(ClientesController.name);

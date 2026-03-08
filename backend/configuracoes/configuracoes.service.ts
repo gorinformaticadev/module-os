@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
+import { OrdemServicoCronService } from '../core/ordem-servico-cron.service';
 import { AiService } from '../shared/services/ai.service';
 
 @Injectable()
@@ -8,11 +9,11 @@ export class ConfiguracoesService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly aiService: AiService
+        private readonly aiService: AiService,
+        private readonly cronService: OrdemServicoCronService
     ) { }
 
     private getDefaultPermissions() {
-        // Permissões padrão caso a tabela não exista
         const defaultPermissions: Record<string, Record<string, boolean>> = {};
 
         const permissions = [
@@ -20,14 +21,14 @@ export class ConfiguracoesService {
             'orders_view', 'orders_create', 'orders_edit', 'orders_delete', 'orders_assign',
             'clients_view', 'clients_create', 'clients_edit', 'clients_delete',
             'products_view', 'products_create', 'products_edit', 'products_delete',
-            'config_view', 'config_users', 'config_permissions', 'config_system'
+            'config_view', 'config_users', 'config_permissions', 'config_system',
         ];
 
-        permissions.forEach(permId => {
+        permissions.forEach((permId) => {
             defaultPermissions[permId] = {
-                admin: true, // Admin tem tudo
+                admin: true,
                 technician: ['dashboard_view', 'orders_view', 'orders_create', 'orders_edit', 'clients_view', 'products_view'].includes(permId),
-                attendant: ['dashboard_view', 'orders_view', 'orders_create', 'clients_view', 'clients_create', 'clients_edit', 'products_view'].includes(permId)
+                attendant: ['dashboard_view', 'orders_view', 'orders_create', 'clients_view', 'clients_create', 'clients_edit', 'products_view'].includes(permId),
             };
         });
 
@@ -36,53 +37,49 @@ export class ConfiguracoesService {
 
     async getUsers(tenantId: string) {
         try {
-            this.logger.log(`Buscando usuários para tenant ${tenantId}`);
+            this.logger.log(`Buscando usuarios para tenant ${tenantId}`);
 
             const users = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT id, name, email, role FROM users ORDER BY name ASC`
+                `SELECT id, name, email, role
+                 FROM users
+                 WHERE "tenantId" = $1 AND "isLocked" = false
+                 ORDER BY name ASC`,
+                tenantId
             );
 
-            this.logger.log(`✅ ${users.length} usuários encontrados`);
+            this.logger.log(`Usuarios encontrados: ${users.length}`);
             return users;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar usuários:`, error);
+            this.logger.error(`Erro ao buscar usuarios:`, error);
             throw error;
         }
     }
 
     async toggleTechnician(tenantId: string, userId: string, isTechnician: boolean) {
         try {
-            this.logger.log(`Alterando status de técnico para usuário ${userId}: ${isTechnician}`);
-
-            // Aqui você pode implementar a lógica para marcar um usuário como técnico
-            // Por exemplo, criar uma tabela específica ou usar um campo na tabela users
-
-            // Por enquanto, vamos apenas retornar sucesso
+            this.logger.log(`Alterando status de tecnico para usuario ${userId}: ${isTechnician}`);
             return { success: true, userId, isTechnician };
         } catch (error) {
-            this.logger.error(`❌ Erro ao alterar status de técnico:`, error);
+            this.logger.error(`Erro ao alterar status de tecnico:`, error);
             throw error;
         }
     }
 
     async getProfilePermissions(tenantId: string) {
         try {
-            this.logger.log(`Buscando permissões de perfil para tenant ${tenantId}`);
+            this.logger.log(`Buscando permissoes de perfil para tenant ${tenantId}`);
 
             const permissions = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT profile, permission_id, allowed 
-                 FROM mod_ordem_servico_profile_permissions 
+                `SELECT profile, permission_id, allowed
+                 FROM mod_ordem_servico_profile_permissions
                  WHERE tenant_id = $1 OR tenant_id = 'default'
                  ORDER BY profile ASC, permission_id ASC`,
                 tenantId
             );
 
-            this.logger.log(`✅ ${permissions.length} permissões de perfil encontradas`);
-
-            // Transformar array em objeto estruturado
             const structuredPermissions: Record<string, Record<string, boolean>> = {};
 
-            permissions.forEach(perm => {
+            permissions.forEach((perm) => {
                 if (!structuredPermissions[perm.permission_id]) {
                     structuredPermissions[perm.permission_id] = {};
                 }
@@ -91,30 +88,27 @@ export class ConfiguracoesService {
 
             return structuredPermissions;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar permissões de perfil:`, error);
-            // Se a tabela não existir, retornar permissões padrão
+            this.logger.error(`Erro ao buscar permissoes de perfil:`, error);
             return this.getDefaultPermissions();
         }
     }
 
     async updateProfilePermissions(tenantId: string, permissions: any) {
         try {
-            this.logger.log(`Atualizando permissões de perfil para tenant ${tenantId}`);
+            this.logger.log(`Atualizando permissoes de perfil para tenant ${tenantId}`);
 
-            // Primeiro, deletar todas as permissões existentes para este tenant
             await this.prisma.$executeRawUnsafe(
                 `DELETE FROM mod_ordem_servico_profile_permissions WHERE tenant_id = $1`,
                 tenantId
             );
 
-            // Inserir as novas permissões
             const insertPromises = [];
 
             for (const [permissionId, profiles] of Object.entries(permissions)) {
                 for (const [profileName, allowed] of Object.entries(profiles as Record<string, boolean>)) {
                     insertPromises.push(
                         this.prisma.$executeRawUnsafe(
-                            `INSERT INTO mod_ordem_servico_profile_permissions 
+                            `INSERT INTO mod_ordem_servico_profile_permissions
                              (tenant_id, profile, permission_id, allowed, created_at, updated_at)
                              VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
                             tenantId,
@@ -128,39 +122,40 @@ export class ConfiguracoesService {
 
             await Promise.all(insertPromises);
 
-            this.logger.log(`✅ Permissões de perfil atualizadas com sucesso`);
             return { success: true, permissions };
         } catch (error) {
-            this.logger.error(`❌ Erro ao atualizar permissões de perfil:`, error);
+            this.logger.error(`Erro ao atualizar permissoes de perfil:`, error);
             throw error;
         }
     }
 
     async getNotifications(tenantId: string) {
         try {
-            this.logger.log(`Buscando notificações para tenant ${tenantId}`);
+            this.logger.log(`Buscando notificacoes para tenant ${tenantId}`);
 
             const notifications = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT * FROM mod_ordem_servico_notification_schedules ORDER BY created_at DESC`
+                `SELECT * FROM mod_ordem_servico_notification_schedules
+                 WHERE tenant_id = $1
+                 ORDER BY created_at DESC`,
+                tenantId
             );
 
-            this.logger.log(`✅ ${notifications.length} notificações encontradas`);
             return notifications;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar notificações:`, error);
-            // Se a tabela não existir, retornar array vazio
+            this.logger.error(`Erro ao buscar notificacoes:`, error);
             return [];
         }
     }
 
     async createNotification(tenantId: string, data: any) {
         try {
-            this.logger.log(`Criando notificação para tenant ${tenantId}`);
+            this.logger.log(`Criando notificacao para tenant ${tenantId}`);
 
             const result = await this.prisma.$executeRawUnsafe(
                 `INSERT INTO mod_ordem_servico_notification_schedules
-                (title, content, audience, cron_expression, enabled)
-                VALUES ($1, $2, $3, $4, $5)`,
+                (tenant_id, title, content, audience, cron_expression, enabled)
+                VALUES ($1, $2, $3, $4, $5, $6)`,
+                tenantId,
                 data.title,
                 data.content,
                 data.audience || 'all',
@@ -168,17 +163,18 @@ export class ConfiguracoesService {
                 data.enabled ?? true
             );
 
-            this.logger.log(`✅ Notificação criada com sucesso`);
+            await this.cronService.registerNotificationJob();
+
             return { success: true, result };
         } catch (error) {
-            this.logger.error(`❌ Erro ao criar notificação:`, error);
+            this.logger.error(`Erro ao criar notificacao:`, error);
             throw error;
         }
     }
 
     async getAiConfig(tenantId: string) {
         try {
-            this.logger.log(`Buscando configuração de IA para tenant ${tenantId}`);
+            this.logger.log(`Buscando configuracao de IA para tenant ${tenantId}`);
 
             const results = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT value FROM mod_ordem_servico_configs WHERE tenant_id = $1 AND key = 'ai_integration'`,
@@ -190,23 +186,21 @@ export class ConfiguracoesService {
             }
 
             const config = JSON.parse(results[0].value);
-            // Mascarar a API Key por segurança
             if (config.apiKey) {
                 config.apiKey = '********' + config.apiKey.slice(-4);
             }
 
             return config;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar configuração de IA:`, error);
+            this.logger.error(`Erro ao buscar configuracao de IA:`, error);
             return { enabled: false };
         }
     }
 
     async updateAiConfig(tenantId: string, config: any) {
         try {
-            this.logger.log(`Atualizando configuração de IA para tenant ${tenantId}`);
+            this.logger.log(`Atualizando configuracao de IA para tenant ${tenantId}`);
 
-            // Se a key vier mascarada, precisamos manter a key original se existir
             if (config.apiKey && config.apiKey.startsWith('********')) {
                 const currentConfig = await this.getAiConfigInternal(tenantId);
                 if (currentConfig && currentConfig.apiKey) {
@@ -216,15 +210,13 @@ export class ConfiguracoesService {
 
             const configValue = JSON.stringify(config);
 
-            // Tentar atualizar
             const updateResult = await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordem_servico_configs SET value = $1, updated_at = CURRENT_TIMESTAMP 
+                `UPDATE mod_ordem_servico_configs SET value = $1, updated_at = CURRENT_TIMESTAMP
                  WHERE tenant_id = $2 AND key = 'ai_integration'`,
                 configValue,
                 tenantId
             );
 
-            // Se não atualizou nenhum, inserir
             if (updateResult === 0) {
                 await this.prisma.$executeRawUnsafe(
                     `INSERT INTO mod_ordem_servico_configs (tenant_id, key, value) VALUES ($1, 'ai_integration', $2)`,
@@ -235,7 +227,7 @@ export class ConfiguracoesService {
 
             return { success: true };
         } catch (error) {
-            this.logger.error(`❌ Erro ao atualizar configuração de IA:`, error);
+            this.logger.error(`Erro ao atualizar configuracao de IA:`, error);
             throw error;
         }
     }
@@ -251,11 +243,11 @@ export class ConfiguracoesService {
             return null;
         }
     }
+
     async testAiConfig(tenantId: string, testConfig: any) {
         try {
-            this.logger.log(`Testando configuração de IA para tenant ${tenantId}`);
+            this.logger.log(`Testando configuracao de IA para tenant ${tenantId}`);
 
-            // Se a key vier mascarada, precisamos da key real do banco (se estiver testando a config salva)
             if (testConfig.apiKey && testConfig.apiKey.startsWith('********')) {
                 const currentConfig = await this.getAiConfigInternal(tenantId);
                 if (currentConfig && currentConfig.apiKey) {
@@ -265,24 +257,24 @@ export class ConfiguracoesService {
 
             const response = await this.aiService.callAI(
                 tenantId,
-                { prompt: 'Olá! Por favor, responda confirmando que você está funcionando corretamente.' },
+                { prompt: 'Ola! Por favor, responda confirmando que voce esta funcionando corretamente.' },
                 testConfig
             );
 
             return { success: true, response };
         } catch (error: any) {
-            this.logger.error(`❌ Erro no teste de IA:`, error);
+            this.logger.error(`Erro no teste de IA:`, error);
             return {
                 success: false,
                 message: error.message || 'Erro desconhecido ao testar IA',
-                details: error.response?.data || error.response || error
+                details: error.response?.data || error.response || error,
             };
         }
     }
 
     async getConfigurations(tenantId: string) {
         try {
-            this.logger.log(`Buscando configurações genéricas para tenant ${tenantId}`);
+            this.logger.log(`Buscando configuracoes genericas para tenant ${tenantId}`);
 
             const results = await this.prisma.$queryRawUnsafe<any[]>(
                 `SELECT key as config_key, value as config_value FROM mod_ordem_servico_configs WHERE tenant_id = $1`,
@@ -291,30 +283,28 @@ export class ConfiguracoesService {
 
             return results;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar configurações genéricas:`, error);
+            this.logger.error(`Erro ao buscar configuracoes genericas:`, error);
             return [];
         }
     }
 
     async saveConfiguration(tenantId: string, key: string, value: any) {
         try {
-            this.logger.log(`Salvando configuração: ${key} para tenant ${tenantId}`);
+            this.logger.log(`Salvando configuracao: ${key} para tenant ${tenantId}`);
 
             const configValue = typeof value === 'string' ? value : JSON.stringify(value);
 
-            // Tentar atualizar
             const updateResult = await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordem_servico_configs SET value = $1, updated_at = CURRENT_TIMESTAMP 
+                `UPDATE mod_ordem_servico_configs SET value = $1, updated_at = CURRENT_TIMESTAMP
                  WHERE tenant_id = $2 AND key = $3`,
                 configValue,
                 tenantId,
                 key
             );
 
-            // Se não atualizou nenhum, inserir
             if (updateResult === 0) {
                 await this.prisma.$executeRawUnsafe(
-                    `INSERT INTO mod_ordem_servico_configs (tenant_id, key, value, created_at, updated_at) 
+                    `INSERT INTO mod_ordem_servico_configs (tenant_id, key, value, created_at, updated_at)
                      VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
                     tenantId,
                     key,
@@ -324,7 +314,7 @@ export class ConfiguracoesService {
 
             return { success: true };
         } catch (error) {
-            this.logger.error(`❌ Erro ao salvar configuração:`, error);
+            this.logger.error(`Erro ao salvar configuracao:`, error);
             throw error;
         }
     }

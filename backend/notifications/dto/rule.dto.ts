@@ -1,58 +1,45 @@
-import { BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { CreateNotificationRuleDto } from './create-notification-rule.dto';
 import { TriggerConfigDto } from './create-notification-rule.dto';
 
-/**
- * Campos proibidos que não devem ser enviados pelo frontend
- */
 const FORBIDDEN_FIELDS = [
     'id',
     'current_executions',
     'last_execution_at',
     'created_at',
     'updated_at',
-    'tenant_id'
+    'tenant_id',
 ];
 
-const ALLOWED_TRIGGER_TYPES = ['EVENT', 'SCHEDULE', 'MANUAL'] as const;
+const ALLOWED_TRIGGER_TYPES = ['EVENT', 'CONDITION', 'OFFSET', 'CRON', 'SCHEDULE', 'MANUAL'] as const;
 const ALLOWED_CHANNELS = ['SYSTEM', 'EMAIL', 'WHATSAPP', 'SMS', 'PUSH'] as const;
 
-/**
- * Valida e normaliza o payload de criação
- * @throws BadRequestException para payload inválido
- */
 export function validateCreatePayload(data: any): CreateNotificationRuleDto {
     if (!data || typeof data !== 'object') {
-        throw new BadRequestException('Payload deve ser um objeto válido');
+        throw new BadRequestException('Payload deve ser um objeto valido');
     }
 
-    // Verificar campos proibidos
-    const forbiddenUsed = FORBIDDEN_FIELDS.filter(field => field in data);
+    const forbiddenUsed = FORBIDDEN_FIELDS.filter((field) => field in data);
     if (forbiddenUsed.length > 0) {
-        throw new BadRequestException(`Campos não permitidos: ${forbiddenUsed.join(', ')}`);
+        throw new BadRequestException(`Campos nao permitidos: ${forbiddenUsed.join(', ')}`);
     }
 
-    // Validar título obrigatório
     if (!data.title || typeof data.title !== 'string' || data.title.trim() === '') {
-        throw new BadRequestException(' título é obrigatório');
+        throw new BadRequestException('title e obrigatorio');
     }
 
-    // Validar trigger_type se fornecido
     const triggerType = data.trigger_type || data.triggerType;
     if (triggerType && !ALLOWED_TRIGGER_TYPES.includes(triggerType)) {
         throw new BadRequestException(`trigger_type deve ser um dos: ${ALLOWED_TRIGGER_TYPES.join(', ')}`);
     }
 
-    // Validar channel se fornecido
     const channel = data.channel || data.channel;
     if (channel && !ALLOWED_CHANNELS.includes(channel)) {
         throw new BadRequestException(`channel deve ser um dos: ${ALLOWED_CHANNELS.join(', ')}`);
     }
 
-    // Normalizar trigger_config baseado no trigger_type
     const normalizedTriggerConfig = normalizeTriggerConfig(triggerType, data.trigger_config || data.triggerConfig);
 
-    // Validar recipients se fornecido
     let normalizedRecipients: any[] | null | undefined;
     if (data.recipients) {
         if (!Array.isArray(data.recipients)) {
@@ -60,17 +47,16 @@ export function validateCreatePayload(data: any): CreateNotificationRuleDto {
         }
         normalizedRecipients = data.recipients.map((r: any, index: number) => {
             if (!r.type || typeof r.type !== 'string') {
-                throw new BadRequestException(`recipient[${index}].type é obrigatório`);
+                throw new BadRequestException(`recipient[${index}].type e obrigatorio`);
             }
             return {
                 type: r.type,
                 identifier: r.identifier,
-                config: r.config
+                config: r.config,
             };
         });
     }
 
-    // Validar e converter expires_at
     let normalizedExpiresAt: string | null | undefined;
     if (data.expires_at || data.expiresAt || data.expiresIn) {
         const expiresValue = data.expires_at || data.expiresAt || data.expiresIn;
@@ -79,7 +65,7 @@ export function validateCreatePayload(data: any): CreateNotificationRuleDto {
         } else if (typeof expiresValue === 'string') {
             const parsed = Date.parse(expiresValue);
             if (isNaN(parsed)) {
-                throw new BadRequestException('expires_at deve ser uma data válida');
+                throw new BadRequestException('expires_at deve ser uma data valida');
             }
             normalizedExpiresAt = new Date(parsed).toISOString();
         } else {
@@ -87,7 +73,6 @@ export function validateCreatePayload(data: any): CreateNotificationRuleDto {
         }
     }
 
-    // Validar max_executions
     let normalizedMaxExecutions: number | null | undefined;
     if (data.max_executions !== undefined) {
         if (data.max_executions === null || data.max_executions === '') {
@@ -95,13 +80,12 @@ export function validateCreatePayload(data: any): CreateNotificationRuleDto {
         } else {
             const parsed = Number(data.max_executions);
             if (isNaN(parsed) || parsed < 0) {
-                throw new BadRequestException('max_executions deve ser um número não negativo');
+                throw new BadRequestException('max_executions deve ser um numero nao negativo');
             }
             normalizedMaxExecutions = parsed;
         }
     }
 
-    // Campos de UI ignorados (removidos do payload antes da persistência)
     const uiFields = ['isNew', 'isEditing', 'saving', 'loading', 'error'];
     for (const uiField of uiFields) {
         delete data[uiField];
@@ -117,38 +101,24 @@ export function validateCreatePayload(data: any): CreateNotificationRuleDto {
         recipients: normalizedRecipients,
         message_template: data.message_template?.trim() || data.messageTemplate?.trim() || null,
         max_executions: normalizedMaxExecutions,
-        expires_at: normalizedExpiresAt
+        expires_at: normalizedExpiresAt,
     };
 }
 
-/**
- * Valida e normaliza o payload de atualização (parcial)
- */
 export function validateUpdatePayload(data: any): Partial<CreateNotificationRuleDto> {
     if (!data || typeof data !== 'object') {
-        throw new BadRequestException('Payload deve ser um objeto válido');
+        throw new BadRequestException('Payload deve ser um objeto valido');
     }
-
-    // Verificação de campos proibidos removida para permitir que o frontend envie o objeto completo
-    // Os campos ignorados simplesmente não serão copiados para o objeto de resultado
-    /*
-    const forbiddenUsed = FORBIDDEN_FIELDS.filter(field => field in data);
-    if (forbiddenUsed.length > 0) {
-        throw new BadRequestException(`Campos não permitidos: ${forbiddenUsed.join(', ')}`);
-    }
-    */
 
     const result: Partial<CreateNotificationRuleDto> = {};
 
-    // Validar título se fornecido
     if (data.title !== undefined) {
         if (typeof data.title !== 'string' || data.title.trim() === '') {
-            throw new BadRequestException('title deve ser uma string não vazia');
+            throw new BadRequestException('title deve ser uma string nao vazia');
         }
         result.title = data.title.trim();
     }
 
-    // Validar trigger_type se fornecido
     if (data.trigger_type !== undefined || data.triggerType !== undefined) {
         const triggerType = data.trigger_type || data.triggerType;
         if (!ALLOWED_TRIGGER_TYPES.includes(triggerType)) {
@@ -157,14 +127,12 @@ export function validateUpdatePayload(data: any): Partial<CreateNotificationRule
         result.trigger_type = triggerType;
     }
 
-    // Normalizar trigger_config se fornecido
     if (data.trigger_config !== undefined || data.triggerConfig !== undefined) {
         const triggerType = data.trigger_type || data.triggerType;
         const triggerConfig = data.trigger_config || data.triggerConfig;
         result.trigger_config = normalizeTriggerConfig(triggerType, triggerConfig);
     }
 
-    // Validar channel se fornecido
     if (data.channel !== undefined) {
         if (!ALLOWED_CHANNELS.includes(data.channel)) {
             throw new BadRequestException(`channel deve ser um dos: ${ALLOWED_CHANNELS.join(', ')}`);
@@ -172,7 +140,6 @@ export function validateUpdatePayload(data: any): Partial<CreateNotificationRule
         result.channel = data.channel;
     }
 
-    // Validar recipients se fornecido
     if (data.recipients !== undefined) {
         if (data.recipients === null) {
             result.recipients = null;
@@ -181,18 +148,17 @@ export function validateUpdatePayload(data: any): Partial<CreateNotificationRule
         } else {
             result.recipients = data.recipients.map((r: any, index: number) => {
                 if (!r.type || typeof r.type !== 'string') {
-                    throw new BadRequestException(`recipient[${index}].type é obrigatório`);
+                    throw new BadRequestException(`recipient[${index}].type e obrigatorio`);
                 }
                 return {
                     type: r.type,
                     identifier: r.identifier,
-                    config: r.config
+                    config: r.config,
                 };
             });
         }
     }
 
-    // Campos simples
     if (data.description !== undefined) {
         result.description = data.description?.trim() || null;
     }
@@ -203,20 +169,18 @@ export function validateUpdatePayload(data: any): Partial<CreateNotificationRule
         result.message_template = data.message_template?.trim() || null;
     }
 
-    // Validar max_executions
     if (data.max_executions !== undefined) {
         if (data.max_executions === null || data.max_executions === '') {
             result.max_executions = null;
         } else {
             const parsed = Number(data.max_executions);
             if (isNaN(parsed) || parsed < 0) {
-                throw new BadRequestException('max_executions deve ser um número não negativo');
+                throw new BadRequestException('max_executions deve ser um numero nao negativo');
             }
             result.max_executions = parsed;
         }
     }
 
-    // Validar expires_at
     if (data.expires_at !== undefined || data.expiresAt !== undefined || data.expiresIn !== undefined) {
         const expiresValue = data.expires_at || data.expiresAt || data.expiresIn;
         if (expiresValue === null || expiresValue === undefined || expiresValue === '') {
@@ -224,7 +188,7 @@ export function validateUpdatePayload(data: any): Partial<CreateNotificationRule
         } else if (typeof expiresValue === 'string') {
             const parsed = Date.parse(expiresValue);
             if (isNaN(parsed)) {
-                throw new BadRequestException('expires_at deve ser uma data válida');
+                throw new BadRequestException('expires_at deve ser uma data valida');
             }
             result.expires_at = new Date(parsed).toISOString();
         } else {
@@ -232,7 +196,6 @@ export function validateUpdatePayload(data: any): Partial<CreateNotificationRule
         }
     }
 
-    // Remover campos de UI se existirem
     const uiFields = ['isNew', 'isEditing', 'saving', 'loading', 'error'];
     for (const uiField of uiFields) {
         delete (result as any)[uiField];
@@ -241,42 +204,44 @@ export function validateUpdatePayload(data: any): Partial<CreateNotificationRule
     return result;
 }
 
-/**
- * Normaliza trigger_config baseado no trigger_type
- */
 function normalizeTriggerConfig(triggerType: string | undefined, triggerConfig: any): TriggerConfigDto {
-    // Se não fornecido, retornar configuração padrão baseada no tipo
     if (!triggerConfig) {
         return getDefaultTriggerConfig(triggerType || 'EVENT');
     }
 
-    // Se já for string, validar e retornar
     if (typeof triggerConfig === 'string') {
         try {
             const parsed = JSON.parse(triggerConfig);
             return { ...getDefaultTriggerConfig(triggerType || 'EVENT'), ...parsed };
         } catch {
-            throw new BadRequestException('trigger_config deve ser um JSON válido');
+            throw new BadRequestException('trigger_config deve ser um JSON valido');
         }
     }
 
-    // Se for objeto, mesclar com padrões
     return { ...getDefaultTriggerConfig(triggerType || 'EVENT'), ...triggerConfig };
 }
 
-/**
- * Retorna configuração padrão baseada no tipo de trigger
- */
 function getDefaultTriggerConfig(triggerType: string): TriggerConfigDto {
     switch (triggerType) {
         case 'EVENT':
             return {
                 event_type: 'OS_STATUS_CHANGE',
-                condition: {}
+                condition: {},
+            };
+        case 'CONDITION':
+            return {
+                condition: 'OVERDUE',
+                frequency: { days: 0, hours: 1, minutes: 0, seconds: 0 },
+            };
+        case 'OFFSET':
+            return {
+                reference: 'BEFORE_DEADLINE',
+                offset_duration: { days: 0, hours: 24, minutes: 0, seconds: 0 },
             };
         case 'SCHEDULE':
+        case 'CRON':
             return {
-                frequency: { days: 0, hours: 0, minutes: 0, seconds: 0 }
+                cron_expression: '0 9 * * *',
             };
         case 'MANUAL':
             return {};
@@ -285,40 +250,29 @@ function getDefaultTriggerConfig(triggerType: string): TriggerConfigDto {
     }
 }
 
-/**
- * Tratamento de erros do Prisma
- */
 export function handlePrismaError(error: any, operation: string): never {
     const message = error.message || 'Erro desconhecido';
 
-    // Registro não encontrado
     if (message.includes('not found') || message.includes('No record') || error.code === 'P2025') {
-        throw new NotFoundException(`Regra de notificação não encontrada`);
+        throw new NotFoundException('Regra de notificacao nao encontrada');
     }
 
-    // Violação de constraint única
     if (error.code === 'P2002') {
-        throw new ConflictException('Já existe uma regra com este título');
+        throw new ConflictException('Ja existe uma regra com este titulo');
     }
 
-    // Erro de validação do PostgreSQL
     if (error.code === '22P02' || error.code === '22P03') {
-        throw new BadRequestException('Formato de dados inválido');
+        throw new BadRequestException('Formato de dados invalido');
     }
 
-    // Erro de foreign key
     if (error.code === 'P2003') {
-        throw new BadRequestException('Referência inválida');
+        throw new BadRequestException('Referencia invalida');
     }
 
-    // Erro genérico de constraint
     if (error.code === 'P0001') {
         throw new BadRequestException(message);
     }
 
-    // Log do erro original para debug
     console.error(`NotificationRuleService - ${operation}:`, error);
-
-    // Erro interno genérico
     throw new BadRequestException(`Falha ao processar ${operation}`);
 }

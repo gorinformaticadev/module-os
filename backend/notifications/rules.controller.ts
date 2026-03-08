@@ -4,7 +4,7 @@ import { NotificationHistoryService } from './history.service';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
 import { validateCreatePayload, validateUpdatePayload, handlePrismaError } from './dto/rule.dto';
 
-@Controller('api/ordem_servico/notificacoes')
+@Controller('ordem_servico/notificacoes')
 @UseGuards(JwtAuthGuard)
 export class NotificationRuleController {
     constructor(

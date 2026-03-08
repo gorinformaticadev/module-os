@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { NotificationHistoryService } from './history.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { NotificationGateway } from '../../../notifications/notification.gateway';
+import { NotificationService } from '../../../notifications/notification.service';
+import { NotificationHistoryService } from './history.service';
 
-// Interfaces para as estratégias
 export interface NotificationStrategy {
     send(data: {
         tenantId: string;
@@ -13,14 +14,13 @@ export interface NotificationStrategy {
     }): Promise<{ success: boolean; error?: string }>;
 }
 
-import { NotificationGateway } from '../../../notifications/notification.gateway';
-
 @Injectable()
 export class SystemStrategy implements NotificationStrategy {
     private readonly logger = new Logger(SystemStrategy.name);
 
     constructor(
         private readonly prisma: PrismaService,
+        private readonly notificationService: NotificationService,
         private readonly gateway: NotificationGateway
     ) { }
 
@@ -30,72 +30,74 @@ export class SystemStrategy implements NotificationStrategy {
         content: string;
         metadata?: any;
     }) {
-        // Resolver Email para ID de Usuário se necessário (para garantir entrega no Socket que usa ID)
-        let recipientId = data.recipient;
-        if (recipientId.includes('@')) {
-            try {
-                // Tenta buscar na tabela de usuários do sistema (core)
-                // Nota: Assumindo que o PrismaService injetado tem acesso ao modelo User (do schema global)
-                // Se o PrismaService for o do módulo OS, pode não ter. Mas SystemStrategy geralmente usa Prisma global.
-                // O Prisma injetado é o do Core (importado).
-                const user = await this.prisma.user.findUnique({
-                    where: { email: recipientId },
-                    select: { id: true }
-                });
-                if (user) {
-                    this.logger.log(`[System] Email ${recipientId} resolvido para User ID ${user.id}`);
-                    recipientId = user.id;
-                }
-            } catch (e) {
-                // Ignora erro de resolução e usa o email mesmo
-            }
+        const recipientId = await this.resolveRecipientUserId(data.tenantId, data.recipient);
+        if (!recipientId) {
+            const error = `Destinatario interno nao encontrado para ${data.recipient}`;
+            this.logger.warn(`[System] ${error}`);
+            return { success: false, error };
         }
 
-        this.logger.log(`[System] Criando notificação interna para ${recipientId}...`);
+        this.logger.log(`[System] Criando notificacao interna para ${recipientId}...`);
 
         try {
-            const notification = await this.prisma.notification.create({
-                data: {
-                    tenantId: data.tenantId,
-                    userId: recipientId,
-                    title: data.metadata?.title || 'Atualização OS',
-                    message: data.content,
-                    severity: 'info',
-                    audience: 'user',
-                    source: 'module',
-                    module: 'ordem_servico',
-                    context: data.metadata?.context || null,
-                    data: data.metadata || {},
-                    read: false
-                }
+            const notification = await this.notificationService.createSystemNotificationEntity({
+                severity: 'info',
+                title: data.metadata?.title || 'Atualizacao OS',
+                body: data.content,
+                data: data.metadata || {},
+                source: 'module',
+                module: 'ordem_servico',
+                tenantId: data.tenantId,
+                userId: recipientId,
+                targetUserId: recipientId,
+                targetRole: null,
+                type: 'SYSTEM_ALERT',
             });
 
-            // Emitir notificação em tempo real via WebSocket
-            // Mapear campos do Prisma (message, severity) para Entidade (description, type)
-            const gatewayNotification: any = {
-                ...notification,
-                description: notification.message,
-                type: notification.severity as any,
-                metadata: notification.data as any
-            };
+            if (!notification) {
+                return { success: false, error: 'Falha ao persistir notificacao interna' };
+            }
 
-            await this.gateway.emitNewNotification(gatewayNotification);
-
+            await this.gateway.emitNewNotification(notification);
             return { success: true };
         } catch (error: any) {
-            this.logger.error(`Erro ao criar notificação interna: ${error.message}`);
+            this.logger.error(`Erro ao criar notificacao interna: ${error.message}`);
             return { success: false, error: error.message };
         }
+    }
+
+    private async resolveRecipientUserId(tenantId: string, recipient: string): Promise<string | null> {
+        const normalizedRecipient = String(recipient || '').trim();
+        if (!normalizedRecipient) {
+            return null;
+        }
+
+        const lookupField = normalizedRecipient.includes('@')
+            ? { email: normalizedRecipient }
+            : { id: normalizedRecipient };
+
+        const user = await this.prisma.user.findFirst({
+            where: {
+                ...lookupField,
+                isLocked: false,
+                OR: [
+                    { tenantId },
+                    { role: 'SUPER_ADMIN' },
+                ],
+            },
+            select: { id: true },
+        });
+
+        return user?.id ?? null;
     }
 }
 
 @Injectable()
 export class EmailStrategy implements NotificationStrategy {
     private readonly logger = new Logger(EmailStrategy.name);
-    // Aqui injetaríamos um MailerService real do Core se disponível
+
     async send(data: any) {
         this.logger.log(`[Email] Enviando para ${data.recipient}...`);
-        // Simulação de sucesso
         return { success: true };
     }
 }
@@ -103,20 +105,20 @@ export class EmailStrategy implements NotificationStrategy {
 @Injectable()
 export class WhatsAppStrategy implements NotificationStrategy {
     private readonly logger = new Logger(WhatsAppStrategy.name);
+
     constructor(private readonly eventEmitter: EventEmitter2) { }
 
     async send(data: any) {
         this.logger.log(`[WhatsApp] Emitindo evento para CRM: ${data.recipient}...`);
 
-        // Emite evento para que o módulo de integração WhatsApp do sistema (CRM) processe
         this.eventEmitter.emit('whatsapp.send_message', {
             tenantId: data.tenantId,
             to: data.recipient,
             message: data.content,
             metadata: {
                 ...data.metadata,
-                origin: 'ordem-servico-notification-system'
-            }
+                origin: 'ordem-servico-notification-system',
+            },
         });
 
         return { success: true };
@@ -137,6 +139,7 @@ export class NotificationDispatcherService {
         this.strategies['EMAIL'] = emailStrategy;
         this.strategies['WHATSAPP'] = whatsappStrategy;
         this.strategies['SYSTEM'] = systemStrategy;
+        this.strategies['PUSH'] = systemStrategy;
     }
 
     async dispatch(params: {
@@ -151,12 +154,12 @@ export class NotificationDispatcherService {
         const strategy = this.strategies[params.channel.toUpperCase()];
 
         if (!strategy) {
-            const error = `Canal ${params.channel} não suportado`;
+            const error = `Canal ${params.channel} nao suportado`;
             this.logger.error(error);
             await this.history.log({
                 ...params,
                 status: 'ERROR',
-                errorMessage: error
+                errorMessage: error,
             });
             return { success: false, error };
         }
@@ -168,14 +171,14 @@ export class NotificationDispatcherService {
                 content: params.content,
                 metadata: {
                     ruleId: params.ruleId,
-                    ordemServicoId: params.ordemServicoId
-                }
+                    ordemServicoId: params.ordemServicoId,
+                },
             });
 
             await this.history.log({
                 ...params,
                 status: result.success ? 'SUCCESS' : 'ERROR',
-                errorMessage: result.error
+                errorMessage: result.error,
             });
 
             return result;
@@ -184,7 +187,7 @@ export class NotificationDispatcherService {
             await this.history.log({
                 ...params,
                 status: 'ERROR',
-                errorMessage: error.message
+                errorMessage: error.message,
             });
             return { success: false, error: error.message };
         }
