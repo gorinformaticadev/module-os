@@ -6,7 +6,15 @@ SELECT
     t.id,
     'module_enabled',
     'true'
-FROM tenants t WHERE t.ativo = true LIMIT 1;
+FROM tenants t
+WHERE t.ativo = true
+  AND NOT EXISTS (
+    SELECT 1
+    FROM mod_ordem_servico_configs c
+    WHERE c.tenant_id = t.id
+      AND c.key = 'module_enabled'
+  )
+LIMIT 1;
 
 INSERT INTO mod_ordem_servico_configs (id, tenant_id, key, value)
 SELECT
@@ -14,4 +22,12 @@ SELECT
     t.id,
     'version',
     '1.0.0'
-FROM tenants t WHERE t.ativo = true LIMIT 1;
+FROM tenants t
+WHERE t.ativo = true
+  AND NOT EXISTS (
+    SELECT 1
+    FROM mod_ordem_servico_configs c
+    WHERE c.tenant_id = t.id
+      AND c.key = 'version'
+  )
+LIMIT 1;
