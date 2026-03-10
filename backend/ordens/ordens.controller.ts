@@ -3,9 +3,16 @@ import { Request as ExpressRequest, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Public } from '@core/common/decorators/public.decorator';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { OrdensService } from './ordens.service';
+import { PermissionGuard } from '../shared/guards/permission.guard';
+import { RequireOrdersPermission } from '../shared/decorators/require-permission.decorator';
+import {
+    assertTenantUploadAccess,
+    ORDEM_SERVICO_UPLOAD_OPTIONS,
+    persistTenantUpload,
+    resolveTenantUploadPath,
+} from '../shared/utils/upload-security.util';
 import {
     CreateOrdemServicoDTO,
     UpdateOrdemServicoDTO,
@@ -333,15 +340,26 @@ export class OrdensController {
     }
 
     @Post('upload')
-    @UseInterceptors(FileInterceptor('file'))
-    async uploadFile(@UploadedFile() file: any, @Req() req: ExpressRequest & { user: any }): Promise<UploadResponseDTO> {
+    @UseGuards(PermissionGuard)
+    @RequireOrdersPermission('edit')
+    @UseInterceptors(FileInterceptor('file', ORDEM_SERVICO_UPLOAD_OPTIONS))
+    async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: ExpressRequest & { user: any }): Promise<UploadResponseDTO> {
         try {
             if (!file) {
                 throw new BadRequestException('Nenhum arquivo enviado');
             }
 
             // 1. Recuperação e Validação do Buffer
-            let bufferData = file.buffer;
+            const safeTenantId = String(req.user?.tenantId || '').trim();
+            if (!safeTenantId) {
+                throw new BadRequestException('Tenant invalido para upload');
+            }
+
+            const uploadRoot = path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'ordens');
+            const persistedUpload = persistTenantUpload(uploadRoot, safeTenantId, file);
+            return { url: `/api/ordem_servico/ordens/uploads/${safeTenantId}/${persistedUpload.fileName}` };
+
+            let bufferData = file.buffer as any;
 
             if (bufferData && typeof bufferData === 'object' && !Buffer.isBuffer(bufferData)) {
                 if (bufferData.type === 'Buffer' && Array.isArray(bufferData.data)) {
@@ -361,7 +379,10 @@ export class OrdensController {
             }
 
             // 2. Caminho Seguro e Isolado por Tenant
-            const tenantId = req.user?.tenantId || 'global';
+            const tenantId = String(req.user?.tenantId || '').trim();
+            if (!tenantId) {
+                throw new BadRequestException('Tenant invalido para upload');
+            }
             const uploadDir = path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'ordens', tenantId);
 
             if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -375,14 +396,36 @@ export class OrdensController {
             return { url: `/api/ordem_servico/ordens/uploads/${tenantId}/${uniqueName}` };
         } catch (error: any) {
             this.logger.error('Erro no upload de foto do equipamento:', error);
+            if (error instanceof HttpException) {
+                throw error;
+            }
             throw new HttpException('Erro ao processar upload: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Get('uploads/:tenantId/:filename')
-    @Public()
-    async serveFile(@Param('filename') filename: string, @Param('tenantId') tenantId: string, @Res() res: Response) {
+    @UseGuards(PermissionGuard)
+    @RequireOrdersPermission('view')
+    async serveFile(
+        @Param('filename') filename: string,
+        @Param('tenantId') tenantId: string,
+        @Req() req: ExpressRequest & { user: any },
+        @Res() res: Response,
+    ) {
         try {
+            assertTenantUploadAccess(String(req.user?.tenantId || ''), tenantId);
+            const uploadRoot = path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'ordens');
+            const safeFilePath = resolveTenantUploadPath(uploadRoot, tenantId, filename);
+
+            if (fs.existsSync(safeFilePath)) {
+                res.setHeader('Cache-Control', 'private, max-age=300');
+                res.sendFile(safeFilePath);
+                return;
+            }
+
+            res.status(404).json({ message: 'Arquivo nÃ£o encontrado' });
+            return;
+
             const filePath = path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'ordens', tenantId, filename);
 
             if (!filePath.startsWith(path.resolve(process.cwd(), 'uploads', 'modules', 'ordem_servico', 'ordens'))) {
@@ -390,12 +433,16 @@ export class OrdensController {
             }
 
             if (fs.existsSync(filePath)) {
+                res.setHeader('Cache-Control', 'private, max-age=300');
                 res.sendFile(filePath);
             } else {
                 res.status(404).json({ message: 'Arquivo não encontrado' });
             }
         } catch (error) {
             this.logger.error('Erro ao servir arquivo:', error);
+            if (error instanceof HttpException) {
+                throw error;
+            }
             res.status(500).json({ message: 'Erro interno ao buscar imagem' });
         }
     }
