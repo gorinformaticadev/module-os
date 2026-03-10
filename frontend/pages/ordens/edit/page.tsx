@@ -251,6 +251,8 @@ export default function EditOrdemPage() {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [uploading, setUploading] = useState(false);
     const [openCombobox, setOpenCombobox] = useState(false);
+    const [sessionUploadedPhotos, setSessionUploadedPhotos] = useState<string[]>([]);
+    const pendingUploadsStorageKey = ordemId ? `ordem_servico_pending_uploads:${ordemId}` : '';
     // Estados do formulário
     const [formData, setFormData] = useState({
         tipo_servico: '',
@@ -281,6 +283,78 @@ export default function EditOrdemPage() {
         equipamento_acessorios: '',
         equipamento_estado: '',
     });
+
+    const readPendingUploadedPhotos = (): string[] => {
+        if (!pendingUploadsStorageKey || typeof window === 'undefined') {
+            return [];
+        }
+
+        try {
+            const rawValue = window.sessionStorage.getItem(pendingUploadsStorageKey);
+            if (!rawValue) {
+                return [];
+            }
+
+            const parsedValue = JSON.parse(rawValue);
+            if (!Array.isArray(parsedValue)) {
+                return [];
+            }
+
+            return parsedValue
+                .filter((value) => typeof value === 'string' && value.trim().length > 0)
+                .map((value) => value.trim());
+        } catch {
+            return [];
+        }
+    };
+
+    useEffect(() => {
+        setSessionUploadedPhotos(readPendingUploadedPhotos());
+    }, [pendingUploadsStorageKey]);
+
+    useEffect(() => {
+        if (!pendingUploadsStorageKey || typeof window === 'undefined') {
+            return;
+        }
+
+        if (sessionUploadedPhotos.length === 0) {
+            window.sessionStorage.removeItem(pendingUploadsStorageKey);
+            return;
+        }
+
+        window.sessionStorage.setItem(
+            pendingUploadsStorageKey,
+            JSON.stringify(Array.from(new Set(sessionUploadedPhotos))),
+        );
+    }, [pendingUploadsStorageKey, sessionUploadedPhotos]);
+
+    const cleanupServerUploads = async (urls: string[]) => {
+        const uniqueUrls = Array.from(
+            new Set(urls.filter((url) => typeof url === 'string' && url.trim().length > 0).map((url) => url.trim())),
+        );
+        if (uniqueUrls.length === 0) {
+            return;
+        }
+
+        try {
+            await api.post('/api/ordem_servico/ordens/uploads/cleanup', { urls: uniqueUrls });
+        } catch {
+            // Cleanup failure should not block user navigation.
+        }
+    };
+
+    const clearPendingUploadState = () => {
+        setSessionUploadedPhotos([]);
+        if (pendingUploadsStorageKey && typeof window !== 'undefined') {
+            window.sessionStorage.removeItem(pendingUploadsStorageKey);
+        }
+    };
+
+    const handleCancelNavigation = async () => {
+        await cleanupServerUploads(sessionUploadedPhotos);
+        clearPendingUploadState();
+        router.push('/modules/ordem_servico/pages/ordens');
+    };
 
     useEffect(() => {
         if (!ordemId) {
@@ -424,7 +498,7 @@ export default function EditOrdemPage() {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = (event) => {
-                const img = new Image();
+                const img = new window.Image();
                 img.src = event.target?.result as string;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
@@ -471,12 +545,19 @@ export default function EditOrdemPage() {
         setCompressing(true);
         setUploading(true);
         const newPhotos = [...(formData.equipamento_fotos || [])];
+        const sessionNewPhotos: string[] = [];
 
         try {
             for (let i = 0; i < files.length; i++) {
                 const blob = await compressImage(files[i]);
                 const formDataUpload = new FormData();
                 formDataUpload.append('file', blob, `foto-${i}.jpg`);
+                if (ordemId) {
+                    formDataUpload.append('ordemId', ordemId);
+                }
+                if (ordem?.numero) {
+                    formDataUpload.append('ordemNumero', ordem.numero);
+                }
 
                 const { data } = await api.post('/api/ordem_servico/ordens/upload', formDataUpload, {
                     headers: {
@@ -485,9 +566,13 @@ export default function EditOrdemPage() {
                 });
 
                 newPhotos.push(data.url);
+                sessionNewPhotos.push(data.url);
             }
 
             setFormData({ ...formData, equipamento_fotos: newPhotos });
+            if (sessionNewPhotos.length > 0) {
+                setSessionUploadedPhotos((prev) => Array.from(new Set([...prev, ...sessionNewPhotos])));
+            }
             toast({ title: 'Sucesso', description: 'Fotos enviadas com sucesso!' });
         } catch (error) {
             console.error('Erro no upload de foto:', error);
@@ -500,10 +585,16 @@ export default function EditOrdemPage() {
         }
     };
 
-    const handleRemovePhoto = (index: number) => {
+    const handleRemovePhoto = async (index: number) => {
         const currentPhotos = [...(formData.equipamento_fotos || [])];
+        const removedPhoto = currentPhotos[index];
         currentPhotos.splice(index, 1);
         setFormData({ ...formData, equipamento_fotos: currentPhotos });
+
+        if (removedPhoto && sessionUploadedPhotos.includes(removedPhoto)) {
+            setSessionUploadedPhotos((prev) => prev.filter((url) => url !== removedPhoto));
+            await cleanupServerUploads([removedPhoto]);
+        }
     };
 
     // --- CARREGAMENTO INICIAL ---
@@ -537,6 +628,7 @@ export default function EditOrdemPage() {
             setLoadingOrdem(true);
             const response = await api.get(`/api/ordem_servico/ordens/${ordemId}`);
             const ordemData = response.data;
+            const pendingUploadedPhotos = readPendingUploadedPhotos();
 
             setOrdem(ordemData);
 
@@ -545,7 +637,7 @@ export default function EditOrdemPage() {
                 tipo_servico: ordemData.tipo_servico || '',
                 prioridade: ordemData.prioridade || 'MEDIA',
                 descricao: ordemData.descricao || '',
-                status: ordemData.status || StatusOS.ABERTA,
+                status: ordemData.status ?? StatusOS.ABERTA,
                 usuario_responsavel_id: ordemData.usuario_responsavel_id || '',
                 origem_solicitacao: ordemData.origem_solicitacao || 'PRESENCIAL',
                 equipamento_tipo: ordemData.equipamento_tipo || '',
@@ -560,8 +652,10 @@ export default function EditOrdemPage() {
                 laudo_tecnico: ordemData.laudo_tecnico || '',
                 motivo_cancelamento: ordemData.motivo_cancelamento || '',
                 itens: ordemData.itens || [],
-                equipamento_fotos: ordemData.equipamento_fotos || [],
-                garantia_dias: ordemData.garantia_dias || 0,
+                equipamento_fotos: Array.from(
+                    new Set([...(ordemData.equipamento_fotos || []), ...pendingUploadedPhotos]),
+                ),
+                garantia_dias: ordemData.garantia_dias ?? 0,
                 formatacao_so: ordemData.formatacao_so || '',
                 formatacao_backup: !!ordemData.formatacao_backup,
                 formatacao_backup_descricao: ordemData.formatacao_backup_descricao || '',
@@ -658,6 +752,49 @@ export default function EditOrdemPage() {
         try {
             setLoading(true);
 
+            const parsedValorServico = formData.valor_servico
+                ? Number.parseFloat(String(formData.valor_servico).replace(',', '.'))
+                : undefined;
+            const valorServico = Number.isFinite(parsedValorServico as number) ? parsedValorServico : undefined;
+
+            const parsedStatus = Number(formData.status);
+            const statusValido = Number.isInteger(parsedStatus) && parsedStatus >= 0 && parsedStatus <= 9
+                ? parsedStatus
+                : undefined;
+            const statusPayload = statusValido !== undefined && statusValido !== ordem.status
+                ? statusValido
+                : undefined;
+
+            const parsedGarantiaDias = Number(formData.garantia_dias);
+            const garantiaDias = Number.isInteger(parsedGarantiaDias) && parsedGarantiaDias >= 0
+                ? parsedGarantiaDias
+                : undefined;
+
+            const origemSolicitacaoValida = Object.values(OrigemSolicitacao).includes(formData.origem_solicitacao)
+                ? formData.origem_solicitacao
+                : undefined;
+
+            const dataPrevisao = formData.data_previsao
+                ? new Date(`${formData.data_previsao}T00:00:00.000Z`)
+                : undefined;
+            const dataPrevisaoPayload = dataPrevisao && !Number.isNaN(dataPrevisao.getTime())
+                ? dataPrevisao.toISOString()
+                : undefined;
+
+            const equipamentoFotosPayload = Array.isArray(formData.equipamento_fotos)
+                ? formData.equipamento_fotos.filter((foto) => typeof foto === 'string' && foto.trim().length > 0)
+                : undefined;
+
+            const itensPayload = Array.isArray(formData.itens)
+                ? formData.itens.map((item) => ({
+                    produto_id: item.produto_id || undefined,
+                    descricao: item.descricao,
+                    valor_unitario: Number(item.valor_unitario || 0),
+                    quantidade: Number(item.quantidade || 0),
+                    valor_total: Number(item.valor_total || 0),
+                }))
+                : undefined;
+
             // Create payload matching the DTO structure exactly
             const payload = {
                 tipo_servico: formData.tipo_servico,
@@ -665,9 +802,9 @@ export default function EditOrdemPage() {
                 descricao: formData.descricao,
                 observacoes_internas: formData.observacoes_internas || undefined,
                 observacoes_cliente: formData.observacoes_cliente || undefined,
-                valor_servico: formData.valor_servico ? parseFloat(formData.valor_servico.toString().replace(',', '.')) : undefined,
-                origem_solicitacao: formData.origem_solicitacao,
-                status: Number(formData.status),
+                valor_servico: valorServico,
+                origem_solicitacao: origemSolicitacaoValida,
+                status: statusPayload,
                 usuario_responsavel_id: formData.usuario_responsavel_id || undefined,
 
                 // Equipment fields
@@ -680,20 +817,18 @@ export default function EditOrdemPage() {
 
                 // Formatting fields
                 formatacao_so: formData.formatacao_so || undefined,
-                formatacao_backup: formData.formatacao_backup || undefined,
+                formatacao_backup: typeof formData.formatacao_backup === 'boolean'
+                    ? formData.formatacao_backup
+                    : undefined,
                 formatacao_backup_descricao: formData.formatacao_backup_descricao || undefined,
                 formatacao_senha: formData.formatacao_senha || undefined,
-                garantia_dias: formData.garantia_dias || 0,
-
-                // These fields are not in the provided instruction's payload, but were in the original.
-                // Assuming they should be kept if not explicitly removed by the instruction.
-                // Re-adding them based on the original structure, but with the new formatting for existing fields.
+                garantia_dias: garantiaDias,
                 forma_pagamento: formData.forma_pagamento || undefined,
-                data_previsao: formData.data_previsao ? formData.data_previsao : undefined,
+                data_previsao: dataPrevisaoPayload,
                 motivo_cancelamento: formData.motivo_cancelamento || undefined,
-                equipamento_fotos: formData.equipamento_fotos,
+                equipamento_fotos: equipamentoFotosPayload,
                 laudo_tecnico: formData.laudo_tecnico || undefined,
-                itens: formData.itens,
+                itens: itensPayload,
             };
 
             // Remove undefined values
@@ -713,10 +848,18 @@ export default function EditOrdemPage() {
 
             // router.push('/modules/ordem_servico/pages/ordens');
             // Refresh data instead of redirecting
+            clearPendingUploadState();
             await loadOrdem();
         } catch (error: any) {
             console.error('Erro ao salvar OS:', error);
-            const msg = error.response?.data?.message || 'Erro ao processar sua solicitação.';
+            const backendMessage = error?.response?.data?.message;
+            const msg = Array.isArray(backendMessage)
+                ? backendMessage.filter((item) => typeof item === 'string' && item.trim().length > 0).join(' | ')
+                : typeof backendMessage === 'string' && backendMessage.trim().length > 0
+                    ? backendMessage
+                    : typeof error?.response?.data?.error === 'string' && error.response.data.error.trim().length > 0
+                        ? error.response.data.error
+                        : 'Erro ao processar sua solicitação.';
             toast({
                 title: 'Erro ao Salvar',
                 description: msg,
@@ -801,7 +944,7 @@ export default function EditOrdemPage() {
             <div className="p-6">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-4 text-destructive">Ordem não encontrada</h2>
-                    <Button onClick={() => router.push('/modules/ordem_servico/pages/ordens')}>
+                    <Button onClick={handleCancelNavigation}>
                         Voltar para Lista
                     </Button>
                 </div>
@@ -817,7 +960,7 @@ export default function EditOrdemPage() {
                     <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => router.push('/modules/ordem_servico/pages/ordens')}
+                        onClick={handleCancelNavigation}
                         title="Voltar"
                     >
                         <ArrowLeft className="h-4 w-4" />
@@ -846,7 +989,7 @@ export default function EditOrdemPage() {
                     </Button>
                     <Button
                         variant="outline"
-                        onClick={() => router.push('/modules/ordem_servico/pages/ordens')}
+                        onClick={handleCancelNavigation}
                         disabled={loading}
                     >
                         Cancelar
@@ -1899,7 +2042,7 @@ export default function EditOrdemPage() {
                         variant="outline"
                         className="h-12 text-lg"
                         size="lg"
-                        onClick={() => router.push('/modules/ordem_servico/pages/ordens')}
+                        onClick={handleCancelNavigation}
                         disabled={loading}
                     >
                         Cancelar

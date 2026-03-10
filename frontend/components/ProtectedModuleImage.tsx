@@ -19,7 +19,13 @@ export default function ProtectedModuleImage({
   ...imgProps
 }: ProtectedModuleImageProps) {
   const normalizedSrc = normalizeProtectedOrdemServicoMediaSrc(src);
-  const [resolvedSrc, setResolvedSrc] = useState<string | null>(normalizedSrc);
+  const [resolvedSrc, setResolvedSrc] = useState<string | null>(() => {
+    if (!normalizedSrc) {
+      return null;
+    }
+
+    return isProtectedOrdemServicoMediaSrc(normalizedSrc) ? null : normalizedSrc;
+  });
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
@@ -35,7 +41,8 @@ export default function ProtectedModuleImage({
       };
     }
 
-    if (!isProtectedOrdemServicoMediaSrc(normalizedSrc)) {
+    const isProtectedSrc = isProtectedOrdemServicoMediaSrc(normalizedSrc);
+    if (!isProtectedSrc) {
       setResolvedSrc(normalizedSrc);
       return () => {
         active = false;
