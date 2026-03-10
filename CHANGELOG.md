@@ -1,5 +1,19 @@
 # 📋 CHANGELOG - Módulo Ordem de Serviço
 
+## [3.1.0] - Atual
+### Funcionalidades Implementadas
+- 🤖 **IA Guidelines**: Criação de `DOCS/IA_PROMPT_CRIACAO_MODULO.md` detalhando como IAs devem gerar módulos compatíveis.
+- Centralização de Uploads: Mapeamento de rotas e segurança via utilitários do sistema hospedeiro para anexos do módulo.
+- Revisão detalhada da arquitetura multitenant (`req.user.tenantId`).
+
+## [3.0.0] - Atualizações Estruturais (Host Múltiplo)
+### Refatoração Completa e Compatibilidade
+- Remoção do prefixo `/api` dos controllers do módulo.
+- Migração de notificações transacionais e pushs diretos para a fila/stack central.
+- Job Scheduling / Crons desacoplados usando nova API host `CronService`.
+- Lançamento do script Powershell automatizado `gerar-zip-instalador.ps1` bloqueando envios não conformes.
+- Registração dinâmica de módulo (`backend/index.ts`) e injeção do `CompatibilityModuleContribution` (`frontend/index.tsx`).
+
 ## [2.2.0] - 2026-01-24
 ### ✅ **Correções Críticas Implementadas**
 

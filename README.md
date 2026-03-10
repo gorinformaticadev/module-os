@@ -128,7 +128,7 @@ Para modulos baseados neste, leia tambem `DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_N
      data: {
        slug: 'ordem_servico',
        name: 'Ordem de ServiÃ§os',
-       version: '1.0.1',
+       version: '3.1.0',
        status: 'active',
        hasBackend: true,
        hasFrontend: true
@@ -140,7 +140,18 @@ Para modulos baseados neste, leia tambem `DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_N
    ```bash
    cd apps/backend
    npm run start:dev
-   ```
+   
+## ?? **Desenvolvimento por Inteligência Artificial (Avançado)**
+
+O sistema dita regras estruturais inegociáveis. Para orientar qualquer IA (Cursor, ChatGPT, Claude) na criação de **novos módulos** a partir desta base ou desenvolver novos fluxos sem quebrar o módulo host, **forneça a ela nosso prompt mestre**:
+
+?? [**Prompt Ouro para IA (IA_PROMPT_CRIACAO_MODULO.md)**](./DOCS/IA_PROMPT_CRIACAO_MODULO.md)
+
+Leia também as documentações de arquitetura na pasta DOCS/:
+- [EMPACOTAMENTO_INSTALADOR_INTERNO.md](./DOCS/EMPACOTAMENTO_INSTALADOR_INTERNO.md) - Regras de geração de ZIP de deploy.
+- [GUIA_ADAPTACAO_MODULOS_BASEADOS_NESTE.md](./DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_NESTE.md) - Regras vitais sobre Controllers e Notificações centrais.
+- [NOTIFICATIONS_GUIDE.md](./DOCS/NOTIFICATIONS_GUIDE.md) - Documentação de alertas cronometrados (End Users).
+- [TUTORIAL_EDICAO_MODULO.md](./DOCS/TUTORIAL_EDICAO_MODULO.md) - Tutorial legível clássico de fork manual do Módulo de Ordem de Serviço.
 
 ## ðŸ”§ **ConfiguraÃ§Ã£o**
 
@@ -254,3 +265,5 @@ Este mÃ³dulo Ã© parte do sistema multitenant e segue a mesma licenÃ§a AGPL-3.0.
 ## ðŸ“ž **Suporte**
 
 Para suporte tÃ©cnico, entre em contato com a equipe de desenvolvimento ou abra uma issue no repositÃ³rio.
+
+
