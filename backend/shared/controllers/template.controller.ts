@@ -1,6 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
+import { Role } from '@prisma/client';
+import { Roles } from '@core/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@core/common/guards/roles.guard';
 import { TemplateService } from '../services/template.service';
 
 @Controller('ordem_servico/templates')
@@ -36,6 +39,8 @@ export class TemplateController {
     }
 
     @Post()
+    @UseGuards(RolesGuard)
+    @Roles(Role.ADMIN, Role.SUPER_ADMIN)
     async create(
         @Req() req: ExpressRequest & { user: any },
         @Body() data: any
@@ -50,6 +55,8 @@ export class TemplateController {
     }
 
     @Put(':id')
+    @UseGuards(RolesGuard)
+    @Roles(Role.ADMIN, Role.SUPER_ADMIN)
     async update(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string,
@@ -65,6 +72,8 @@ export class TemplateController {
     }
 
     @Delete(':id')
+    @UseGuards(RolesGuard)
+    @Roles(Role.ADMIN, Role.SUPER_ADMIN)
     async delete(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string

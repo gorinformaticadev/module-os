@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
+import ProtectedModuleImage from '../../../components/ProtectedModuleImage';
 import { RichTextEditor } from '../../../components/ui/rich-text-editor';
 import { useAI } from '../../../hooks/useAI';
 
@@ -475,7 +476,7 @@ export default function EditOrdemPage() {
             for (let i = 0; i < files.length; i++) {
                 const blob = await compressImage(files[i]);
                 const formDataUpload = new FormData();
-                formDataUpload.append('file', blob, files[i].name || `foto-${i}.jpg`);
+                formDataUpload.append('file', blob, `foto-${i}.jpg`);
 
                 const { data } = await api.post('/api/ordem_servico/ordens/upload', formDataUpload, {
                     headers: {
@@ -991,7 +992,7 @@ export default function EditOrdemPage() {
                                     <div className="flex items-center gap-4 shrink-0">
                                         <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center border border-muted-foreground/20 shadow-inner overflow-hidden">
                                             {ordem.cliente.image_url ? (
-                                                <img
+                                                <ProtectedModuleImage
                                                     src={ordem.cliente.image_url}
                                                     alt={ordem.cliente.name}
                                                     className="h-full w-full object-cover"
@@ -1462,7 +1463,7 @@ export default function EditOrdemPage() {
                         <div className="flex flex-wrap gap-2">
                             {formData.equipamento_fotos?.map((photo, index) => (
                                 <div key={index} className="relative group w-24 h-24">
-                                    <img
+                                    <ProtectedModuleImage
                                         src={photo}
                                         alt={`Foto ${index + 1}`}
                                         className="w-full h-full object-cover rounded-md border cursor-pointer hover:opacity-90 transition-opacity"
@@ -1706,7 +1707,7 @@ export default function EditOrdemPage() {
                                             <tr key={index} className="hover:bg-muted/10">
                                                 <td className="p-3 text-center">
                                                     {item.image_url ? (
-                                                        <img
+                                                        <ProtectedModuleImage
                                                             src={item.image_url}
                                                             alt="Miniatura"
                                                             className="h-10 w-10 object-cover rounded-md cursor-pointer border hover:scale-105 transition-transform mx-auto"
@@ -1952,7 +1953,11 @@ export default function EditOrdemPage() {
                                 </button>
                             )}
 
-                            <img src={previewImage} alt="Full Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+                            <ProtectedModuleImage
+                                src={previewImage}
+                                alt="Full Preview"
+                                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                            />
 
                             {/* Next Button */}
                             {formData.equipamento_fotos && formData.equipamento_fotos.length > 1 && (

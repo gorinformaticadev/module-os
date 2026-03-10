@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Search, Plus, Edit, RefreshCw, UploadCloud, Image as ImageIcon, Trash2, XCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import ProtectedModuleImage from '../../components/ProtectedModuleImage';
 
 export default function OrdemServicoProdutosPage() {
     const { toast } = useToast();
@@ -325,26 +326,22 @@ export default function OrdemServicoProdutosPage() {
                                         <tr key={p.id} className="border-t hover:bg-muted/50">
                                             <td className="p-3">
                                                 {p.image_url && p.image_url.trim() !== '' ? (
-                                                    <img
+                                                    <ProtectedModuleImage
                                                         src={p.image_url}
-
                                                         alt="Prod"
                                                         className="h-8 w-8 object-cover rounded bg-muted cursor-pointer hover:opacity-80 transition-opacity"
                                                         onClick={() => setPreviewImage(p.image_url)}
-                                                        onError={(e) => {
-                                                            console.error('Image load error:', p.image_url);
-                                                            e.currentTarget.style.display = 'none';
-                                                            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                                                            if (nextElement) {
-                                                                nextElement.style.display = 'flex';
-                                                            }
-                                                        }}
-                                                        onLoad={() => console.log('Image loaded successfully:', p.image_url)}
+                                                        fallback={
+                                                            <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">
+                                                                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                            </div>
+                                                        }
                                                     />
-                                                ) : null}
-                                                <div className="h-8 w-8 bg-muted rounded flex items-center justify-center" style={{ display: (p.image_url && p.image_url.trim() !== '') ? 'none' : 'flex' }}>
+                                                ) : (
+                                                <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">
                                                     <ImageIcon className="h-4 w-4 text-muted-foreground" />
                                                 </div>
+                                                )}
                                             </td>
                                             <td className="p-3 font-mono">{p.code}</td>
                                             <td className="p-3">{p.name}</td>
@@ -479,15 +476,10 @@ export default function OrdemServicoProdutosPage() {
                             <div className="flex items-center gap-4">
                                 {formData.image_url && formData.image_url.trim() !== '' && (
                                     <div className="relative">
-                                        <img
+                                        <ProtectedModuleImage
                                             src={formData.image_url}
                                             alt="Preview"
                                             className="h-16 w-16 object-cover rounded border"
-                                            onError={(e) => {
-                                                console.error('Preview image load error:', formData.image_url);
-                                                e.currentTarget.style.display = 'none';
-                                            }}
-                                            onLoad={() => console.log('Preview image loaded:', formData.image_url)}
                                         />
                                         <Button
                                             type="button"
@@ -573,7 +565,7 @@ export default function OrdemServicoProdutosPage() {
                     </DialogHeader>
                     {previewImage && (
                         <div className="relative w-full h-full flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
-                            <img
+                            <ProtectedModuleImage
                                 src={previewImage}
                                 alt="Preview"
                                 className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"

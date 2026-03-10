@@ -1,11 +1,15 @@
 import { Controller, Get, Put, Post, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
+import { Role } from '@prisma/client';
+import { Roles } from '@core/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@core/common/guards/roles.guard';
 
 import { ConfiguracoesService } from './configuracoes.service';
 
 @Controller('ordem_servico/config')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN, Role.SUPER_ADMIN)
 export class ConfiguracoesController {
     private readonly logger = new Logger(ConfiguracoesController.name);
 

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { X } from 'lucide-react';
 import ClientModal from '../../components/ClientModal';
 import ClientEditModal from '../../components/ClientEditModal';
+import ProtectedModuleImage from '../../components/ProtectedModuleImage';
 import { Cliente } from '../../types/ordem-servico.types';
 
 interface Client {
@@ -243,7 +244,11 @@ export default function OrdemServicoClientesPage() {
                                                     <div className="flex items-center gap-3">
                                                         <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                                                             {client.image_url ? (
-                                                                <img src={client.image_url} alt={client.name} className="h-full w-full object-cover" />
+                                                                <ProtectedModuleImage
+                                                                    src={client.image_url}
+                                                                    alt={client.name}
+                                                                    className="h-full w-full object-cover"
+                                                                />
                                                             ) : (
                                                                 <User className="h-5 w-5 text-primary" />
                                                             )}

@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import { Role } from '@prisma/client';
+import { Roles } from '../../../core/decorators/roles.decorator';
 import { NotificationRuleService } from './rules.service';
 import { NotificationHistoryService } from './history.service';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../core/guards/roles.guard';
 import { validateCreatePayload, validateUpdatePayload, handlePrismaError } from './dto/rule.dto';
 
 @Controller('ordem_servico/notificacoes')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN, Role.SUPER_ADMIN)
 export class NotificationRuleController {
     constructor(
         private readonly rules: NotificationRuleService,

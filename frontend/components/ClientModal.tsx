@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Camera, Loader2, User, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import ProtectedModuleImage from './ProtectedModuleImage';
 
 interface ClientModalProps {
     isOpen: boolean;
@@ -288,7 +289,7 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
             const blob = await compressImage(file);
 
             const formDataUpload = new FormData();
-            formDataUpload.append('file', blob, file.name || 'avatar.jpg');
+            formDataUpload.append('file', blob, 'avatar.jpg');
 
             const { data } = await api.post('/api/ordem_servico/clientes/upload', formDataUpload, {
                 headers: {
@@ -388,7 +389,11 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
                             <div className="h-32 w-32 rounded-3xl bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
                                 {formData.image_url ? (
                                     <>
-                                        <img src={formData.image_url} alt="Logo" className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+                                        <ProtectedModuleImage
+                                            src={formData.image_url}
+                                            alt="Logo"
+                                            className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                                        />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <Button size="icon" variant="destructive" className="h-8 w-8 rounded-full" onClick={() => setFormData({ ...formData, image_url: '' })}>
                                                 <Trash2 className="h-4 w-4" />

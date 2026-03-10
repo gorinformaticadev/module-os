@@ -14,6 +14,7 @@ import { Printer, Loader2, Download, X } from 'lucide-react';
 import { PrintTemplateA4 } from './PrintTemplateA4';
 import { PrintTemplateThermal } from './PrintTemplateThermal';
 import api, { API_URL } from '@/lib/api';
+import { resolveTenantLogoSrc } from '@/lib/tenant-logo';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface PrintModalProps {
@@ -56,9 +57,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
             const condicoesConfig = configRes.data.find((c: { config_key: string, config_value: string }) => c.config_key === 'condicoes_execucao');
             const condicoesExecucao = condicoesConfig ? condicoesConfig.config_value : '';
 
-            const logoUrl = user?.tenant?.logoUrl
-                ? `${API_URL}/uploads/logos/${user.tenant.logoUrl}`
-                : undefined;
+            const logoUrl = resolveTenantLogoSrc(user?.tenant?.logoUrl);
 
             const tenantInfo = {
                 name: user?.tenant?.nomeFantasia || 'Empresa',

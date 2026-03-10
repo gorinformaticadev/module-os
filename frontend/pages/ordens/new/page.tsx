@@ -56,6 +56,7 @@ import {
 import ClientModal from '../../../components/ClientModal';
 import ClientEditModal from '../../../components/ClientEditModal';
 import ClientOrdersList from '../../../components/ClientOrdersList';
+import ProtectedModuleImage from '../../../components/ProtectedModuleImage';
 import { RichTextEditor } from '../../../components/ui/rich-text-editor';
 import { useAI } from '../../../hooks/useAI';
 import { Brain } from 'lucide-react';
@@ -383,7 +384,7 @@ export default function NewOrdemRefactoredPage() {
                 const blob = await compressImage(files[i]);
 
                 const formDataUpload = new FormData();
-                formDataUpload.append('file', blob, files[i].name || `foto-${i}.jpg`);
+                formDataUpload.append('file', blob, `foto-${i}.jpg`);
 
                 const { data } = await api.post('/api/ordem_servico/ordens/upload', formDataUpload, {
                     headers: {
@@ -686,7 +687,11 @@ export default function NewOrdemRefactoredPage() {
                                 <div className="flex gap-4 items-start pt-2">
                                     <div className="h-20 w-20 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-inner shrink-0 overflow-hidden">
                                         {selectedClient.image_url ? (
-                                            <img src={selectedClient.image_url} alt={selectedClient.name} className="h-full w-full object-cover" />
+                                            <ProtectedModuleImage
+                                                src={selectedClient.image_url}
+                                                alt={selectedClient.name}
+                                                className="h-full w-full object-cover"
+                                            />
                                         ) : (
                                             <User className="h-10 w-10 text-primary" />
                                         )}
@@ -1203,7 +1208,7 @@ export default function NewOrdemRefactoredPage() {
                                         <div className="flex flex-wrap gap-2 pt-2">
                                             {formData.equipamento_fotos.map((photo, index) => (
                                                 <div key={index} className="group relative w-12 h-12 rounded-md border border-muted overflow-hidden bg-muted/30 hover:border-primary/50 transition-all cursor-pointer">
-                                                    <img
+                                                    <ProtectedModuleImage
                                                         src={photo}
                                                         alt={`Equipamento ${index + 1}`}
                                                         className="h-full w-full object-cover"
@@ -1240,7 +1245,7 @@ export default function NewOrdemRefactoredPage() {
                                             <DialogContent className="max-w-4xl p-0 overflow-hidden bg-transparent border-none shadow-none">
                                                 <div className="relative w-full h-full flex items-center justify-center p-4">
                                                     {selectedPhoto && (
-                                                        <img
+                                                        <ProtectedModuleImage
                                                             src={selectedPhoto}
                                                             alt="Visualização ampliada"
                                                             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Printer, ArrowLeft, Loader2, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import api, { API_URL } from '@/lib/api';
+import { resolveTenantLogoSrc } from '@/lib/tenant-logo';
 
 interface OrdemServico {
     id: string;
@@ -82,7 +83,10 @@ export default function PrintPreviewPage() {
                 let logoUrl = undefined;
 
                 if (user.tenant.logoUrl) {
-                    const originalUrl = `${API_URL}/uploads/logos/${user.tenant.logoUrl}?t=${Date.now()}`;
+                    const originalUrl = resolveTenantLogoSrc(user.tenant.logoUrl, Date.now());
+                    if (!originalUrl) {
+                        logoUrl = undefined;
+                    } else {
                     try {
                         const response = await fetch(originalUrl);
                         const blob = await response.blob();
@@ -95,6 +99,7 @@ export default function PrintPreviewPage() {
                         console.error('Erro ao converter logo para base64:', error);
                         // Fallback para URL original se falhar a conversão
                         logoUrl = originalUrl;
+                    }
                     }
                 }
 
