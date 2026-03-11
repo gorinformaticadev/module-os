@@ -11,6 +11,7 @@ import { PrismaModule } from '../../../core/prisma/prisma.module';
 import { NotificationEventListenerService } from './event-listener.service';
 import { NotificationRuleController } from './rules.controller';
 import { NotificationsModule as RootNotificationsModule } from '../../../notifications/notifications.module';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { NotificationsModule as RootNotificationsModule } from '../../../notific
         EventEmitterModule,
         ScheduleModule,
         RootNotificationsModule,
+        SharedModule,
     ],
     controllers: [NotificationRuleController],
     providers: [
@@ -37,4 +39,4 @@ import { NotificationsModule as RootNotificationsModule } from '../../../notific
         NotificationDispatcherService,
     ],
 })
-export class NotificationsModule { }
+export class OrdemServicoNotificationsModule { }

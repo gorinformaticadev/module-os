@@ -267,3 +267,4 @@ Este módulo é parte do sistema multitenant e segue a mesma licença AGPL-3.0.
 Para suporte técnico, entre em contato com a equipe de desenvolvimento ou abra uma issue no repositório.
 
 
+

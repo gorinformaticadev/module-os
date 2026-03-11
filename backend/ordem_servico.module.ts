@@ -8,7 +8,7 @@ import { CoreModule } from './core/core.module';
 import { PrismaModule } from '@core/prisma/prisma.module';
 import { AuditModule } from '@core/audit/audit.module';
 
-import { NotificationsModule } from './notifications/notifications.module';
+import { OrdemServicoNotificationsModule } from './notifications/notifications.module';
 
 @Module({
     imports: [
@@ -20,7 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
         ProdutosModule,
         OrdensModule,
         ConfiguracoesModule,
-        NotificationsModule,
+        OrdemServicoNotificationsModule,
     ],
     exports: [
         ClientesModule,
