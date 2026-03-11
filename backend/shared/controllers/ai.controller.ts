@@ -3,15 +3,18 @@ import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { AiService } from '../services/ai.service';
 import { AI_PROMPTS } from '../services/prompts';
+import { PermissionGuard } from '../guards/permission.guard';
+import { RequireOrdersPermission } from '../decorators/require-permission.decorator';
 
 @Controller('ordem_servico/ai')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class AiController {
     private readonly logger = new Logger(AiController.name);
 
     constructor(private readonly aiService: AiService) { }
 
     @Post('analisar-descricao')
+    @RequireOrdersPermission('edit')
     async analisarDescricao(@Req() req: ExpressRequest & { user: any }, @Body() body: { descricao: string }) {
         try {
             this.logger.log(`Solicitação de análise de descrição para tenant ${req.user.tenantId}`);
@@ -34,6 +37,7 @@ export class AiController {
     }
 
     @Post('gerar-laudo')
+    @RequireOrdersPermission('edit')
     async gerarLaudo(@Req() req: ExpressRequest & { user: any }, @Body() body: { problema: string, notas: string }) {
         try {
             this.logger.log(`Solicitação de geração de laudo para tenant ${req.user.tenantId}`);

@@ -1,15 +1,13 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
-import { Role } from '@prisma/client';
-import { Roles } from '../../../core/decorators/roles.decorator';
 import { NotificationRuleService } from './rules.service';
 import { NotificationHistoryService } from './history.service';
 import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../core/guards/roles.guard';
 import { validateCreatePayload, validateUpdatePayload, handlePrismaError } from './dto/rule.dto';
+import { PermissionGuard } from '../shared/guards/permission.guard';
+import { RequireConfigPermission } from '../shared/decorators/require-permission.decorator';
 
 @Controller('ordem_servico/notificacoes')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.SUPER_ADMIN)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class NotificationRuleController {
     constructor(
         private readonly rules: NotificationRuleService,
@@ -17,16 +15,19 @@ export class NotificationRuleController {
     ) { }
 
     @Get('regras')
+    @RequireConfigPermission('manage_notifications')
     async findAllRules(@Req() req: any) {
         return this.rules.findAll(req.user.tenantId);
     }
 
     @Get('regras/:id')
+    @RequireConfigPermission('manage_notifications')
     async findOneRule(@Req() req: any, @Param('id') id: string) {
         return this.rules.findOne(req.user.tenantId, id);
     }
 
     @Post('regras')
+    @RequireConfigPermission('manage_notifications')
     async createRule(@Req() req: any, @Body() data: any) {
         try {
             // Validação explícita do payload
@@ -40,6 +41,7 @@ export class NotificationRuleController {
     }
 
     @Put('regras/:id')
+    @RequireConfigPermission('manage_notifications')
     async updateRule(@Req() req: any, @Param('id') id: string, @Body() data: any) {
         try {
             // Buscar regra existente para contexto (necessário para validação correta de trigger_config)
@@ -59,6 +61,7 @@ export class NotificationRuleController {
     }
 
     @Patch('regras/:id')
+    @RequireConfigPermission('manage_notifications')
     async patchRule(@Req() req: any, @Param('id') id: string, @Body() data: any) {
         // Atualização parcial - usa a mesma validação do PUT
         try {
@@ -71,6 +74,7 @@ export class NotificationRuleController {
     }
 
     @Patch('regras/:id/toggle')
+    @RequireConfigPermission('manage_notifications')
     async toggleRule(@Req() req: any, @Param('id') id: string, @Body() data: any) {
         // Endpoint específico para toggle de status (atualização parcial mínima)
         try {
@@ -85,6 +89,7 @@ export class NotificationRuleController {
     }
 
     @Delete('regras/:id')
+    @RequireConfigPermission('manage_notifications')
     async removeRule(@Req() req: any, @Param('id') id: string) {
         try {
             return this.rules.remove(req.user.tenantId, id);
@@ -95,6 +100,7 @@ export class NotificationRuleController {
     }
 
     @Get('historico')
+    @RequireConfigPermission('manage_notifications')
     async findAllHistory(@Req() req: any, @Query() filters: any) {
         return this.history.findAll(req.user.tenantId, filters);
     }

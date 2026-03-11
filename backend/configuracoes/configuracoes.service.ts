@@ -2,10 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
 import { OrdemServicoCronService } from '../core/ordem-servico-cron.service';
 import { AiService } from '../shared/services/ai.service';
+import { AVAILABLE_PERMISSIONS } from '../shared/constants/available-permissions';
 
 @Injectable()
 export class ConfiguracoesService {
     private readonly logger = new Logger(ConfiguracoesService.name);
+    private readonly LEGACY_PROFILE_PERMISSION_MAP: Record<string, string> = {
+        dashboard_export: 'dashboard_view_statistics',
+        orders_assign: 'orders_change_status',
+        config_users: 'config_manage_permissions',
+        config_permissions: 'config_manage_permissions',
+        config_system: 'config_edit',
+    };
 
     constructor(
         private readonly prisma: PrismaService,
@@ -16,23 +24,60 @@ export class ConfiguracoesService {
     private getDefaultPermissions() {
         const defaultPermissions: Record<string, Record<string, boolean>> = {};
 
-        const permissions = [
-            'dashboard_view', 'dashboard_export',
-            'orders_view', 'orders_create', 'orders_edit', 'orders_delete', 'orders_assign',
-            'clients_view', 'clients_create', 'clients_edit', 'clients_delete',
-            'products_view', 'products_create', 'products_edit', 'products_delete',
-            'config_view', 'config_users', 'config_permissions', 'config_system',
-        ];
+        const technicianDefaults = new Set<string>([
+            'dashboard_view',
+            'dashboard_view_statistics',
+            'orders_view',
+            'orders_view_details',
+            'orders_create',
+            'orders_edit',
+            'orders_change_status',
+            'orders_view_history',
+            'clients_view',
+            'clients_view_details',
+            'clients_create',
+            'clients_edit',
+            'clients_upload_images',
+            'products_view',
+            'products_create',
+            'products_edit',
+            'products_upload_images',
+            'config_view',
+        ]);
 
-        permissions.forEach((permId) => {
-            defaultPermissions[permId] = {
-                admin: true,
-                technician: ['dashboard_view', 'orders_view', 'orders_create', 'orders_edit', 'clients_view', 'products_view'].includes(permId),
-                attendant: ['dashboard_view', 'orders_view', 'orders_create', 'clients_view', 'clients_create', 'clients_edit', 'products_view'].includes(permId),
-            };
-        });
+        const attendantDefaults = new Set<string>([
+            'dashboard_view',
+            'orders_view',
+            'orders_view_details',
+            'orders_create',
+            'clients_view',
+            'clients_view_details',
+            'clients_create',
+            'clients_edit',
+            'clients_upload_images',
+            'products_view',
+            'products_create',
+            'products_edit',
+            'products_upload_images',
+        ]);
+
+        for (const group of AVAILABLE_PERMISSIONS) {
+            for (const action of group.actions) {
+                const permId = `${group.resource}_${action.action}`;
+                defaultPermissions[permId] = {
+                    admin: true,
+                    technician: technicianDefaults.has(permId),
+                    attendant: attendantDefaults.has(permId),
+                };
+            }
+        }
 
         return defaultPermissions;
+    }
+
+    private normalizePermissionId(permissionId: string): string {
+        const key = String(permissionId || '').trim();
+        return this.LEGACY_PROFILE_PERMISSION_MAP[key] || key;
     }
 
     async getUsers(tenantId: string) {
@@ -70,23 +115,38 @@ export class ConfiguracoesService {
             this.logger.log(`Buscando permissoes de perfil para tenant ${tenantId}`);
 
             const permissions = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT profile, permission_id, allowed
+                `SELECT tenant_id, profile, permission_id, allowed
                  FROM mod_ordem_servico_profile_permissions
                  WHERE tenant_id = $1 OR tenant_id = 'default'
-                 ORDER BY profile ASC, permission_id ASC`,
+                 ORDER BY CASE WHEN tenant_id = 'default' THEN 0 ELSE 1 END, profile ASC, permission_id ASC`,
                 tenantId
             );
 
             const structuredPermissions: Record<string, Record<string, boolean>> = {};
+            const defaults = this.getDefaultPermissions();
 
             permissions.forEach((perm) => {
-                if (!structuredPermissions[perm.permission_id]) {
-                    structuredPermissions[perm.permission_id] = {};
+                const normalizedPermissionId = this.normalizePermissionId(perm.permission_id);
+                if (!normalizedPermissionId) {
+                    return;
                 }
-                structuredPermissions[perm.permission_id][perm.profile] = perm.allowed;
+
+                if (!structuredPermissions[normalizedPermissionId]) {
+                    structuredPermissions[normalizedPermissionId] = {};
+                }
+                structuredPermissions[normalizedPermissionId][perm.profile] = perm.allowed;
             });
 
-            return structuredPermissions;
+            const mergedPermissions: Record<string, Record<string, boolean>> = { ...defaults };
+
+            for (const [permissionId, profiles] of Object.entries(structuredPermissions)) {
+                mergedPermissions[permissionId] = {
+                    ...(mergedPermissions[permissionId] || {}),
+                    ...profiles,
+                };
+            }
+
+            return mergedPermissions;
         } catch (error) {
             this.logger.error(`Erro ao buscar permissoes de perfil:`, error);
             return this.getDefaultPermissions();
@@ -105,6 +165,7 @@ export class ConfiguracoesService {
             const insertPromises = [];
 
             for (const [permissionId, profiles] of Object.entries(permissions)) {
+                const normalizedPermissionId = this.normalizePermissionId(permissionId);
                 for (const [profileName, allowed] of Object.entries(profiles as Record<string, boolean>)) {
                     insertPromises.push(
                         this.prisma.$executeRawUnsafe(
@@ -113,7 +174,7 @@ export class ConfiguracoesService {
                              VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
                             tenantId,
                             profileName,
-                            permissionId,
+                            normalizedPermissionId,
                             allowed
                         )
                     );

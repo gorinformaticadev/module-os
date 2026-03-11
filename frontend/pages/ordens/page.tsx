@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +36,8 @@ import { OrdemViewModal } from '../../components/OrdemViewModal';
 import { PrintModal } from '../../components/PrintModal';
 import { WhatsAppModal } from '../../components/WhatsAppModal';
 import { AlertaRetiradaBadge } from '../../components/AlertaRetiradaBadge';
+import { ModulePageGuard } from '../../components/ModulePageGuard';
+import { useMultiplePermissions } from '../../hooks/usePermission';
 
 import api from '@/lib/api';
 
@@ -52,10 +53,18 @@ const useToast = () => ({
 
 export const dynamic = 'force-dynamic';
 
+const ORDERS_ACTION_PERMISSIONS = [
+  { resource: 'orders', action: 'create' },
+  { resource: 'orders', action: 'view_details' },
+  { resource: 'orders', action: 'edit' },
+  { resource: 'orders', action: 'delete' },
+  { resource: 'orders', action: 'change_status' },
+];
+
 export default function OrdensPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { hasPermission: hasOrdersPermission } = useMultiplePermissions(ORDERS_ACTION_PERMISSIONS);
   const [ordens, setOrdens] = useState<OrdemServico[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,6 +82,12 @@ export default function OrdensPage() {
   // WhatsApp Modal State
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [whatsAppOrder, setWhatsAppOrder] = useState<OrdemServico | null>(null);
+
+  const canCreateOrder = hasOrdersPermission('orders', 'create');
+  const canViewOrderDetails = hasOrdersPermission('orders', 'view_details');
+  const canEditOrder = hasOrdersPermission('orders', 'edit');
+  const canDeleteOrder = hasOrdersPermission('orders', 'delete');
+  const canChangeOrderStatus = hasOrdersPermission('orders', 'change_status');
 
   const handlePrintMenuEnter = useCallback((id: string) => {
     if (printMenuTimeoutRef.current) {
@@ -258,7 +273,8 @@ export default function OrdensPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <ModulePageGuard resource="orders" action="view">
+      <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -267,10 +283,12 @@ export default function OrdensPage() {
         </div>
         <div className="flex items-center gap-3">
           <AlertaRetiradaBadge variant="badge" />
-          <Button onClick={() => window.location.href = '/modules/ordem_servico/pages/ordens/new'} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nova Ordem
-          </Button>
+          {canCreateOrder && (
+            <Button onClick={() => window.location.href = '/modules/ordem_servico/pages/ordens/new'} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Nova Ordem
+            </Button>
+          )}
         </div>
       </div>
 
@@ -396,16 +414,18 @@ export default function OrdensPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleView(ordem)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          {canViewOrderDetails && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleView(ordem)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
 
-                          {ordem.status !== StatusOS.FINALIZADA && ordem.status !== StatusOS.CANCELADA && (
+                          {canEditOrder && ordem.status !== StatusOS.FINALIZADA && ordem.status !== StatusOS.CANCELADA && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -416,11 +436,12 @@ export default function OrdensPage() {
                             </Button>
                           )}
 
-                          <div
-                            className="relative"
-                            onMouseEnter={() => handlePrintMenuEnter(ordem.id)}
-                            onMouseLeave={handlePrintMenuLeave}
-                          >
+                          {canViewOrderDetails && (
+                            <div
+                              className="relative"
+                              onMouseEnter={() => handlePrintMenuEnter(ordem.id)}
+                              onMouseLeave={handlePrintMenuLeave}
+                            >
                             <Button
                               variant="ghost"
                               size="sm"
@@ -475,9 +496,10 @@ export default function OrdensPage() {
                                 </div>
                               </div>
                             )}
-                          </div>
+                            </div>
+                          )}
 
-                          {ordem.cliente?.phone_primary && (
+                          {canViewOrderDetails && ordem.cliente?.phone_primary && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -488,7 +510,7 @@ export default function OrdensPage() {
                             </Button>
                           )}
 
-                          {(ordem.status === StatusOS.ORCAMENTO || ordem.status === StatusOS.ABERTA) && (
+                          {canDeleteOrder && (ordem.status === StatusOS.ORCAMENTO || ordem.status === StatusOS.ABERTA) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -499,7 +521,7 @@ export default function OrdensPage() {
                             </Button>
                           )}
 
-                          {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
+                          {canChangeOrderStatus && (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') &&
                             (ordem.status === StatusOS.FINALIZADA || ordem.status === StatusOS.CANCELADA) && (
                               <Button
                                 variant="ghost"
@@ -528,7 +550,7 @@ export default function OrdensPage() {
             <DialogTitle>Reabrir Ordem de Serviço</DialogTitle>
             <DialogDescription>
               Tem certeza que deseja reabrir a OS <span className="font-bold">#{reopenOrder?.numero}</span>?
-              Isso alterará o status para "Em Execução".
+              Isso alterará o status para Em Execução.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -570,6 +592,7 @@ export default function OrdensPage() {
           }
         }
       `}</style>
-    </div>
+      </div>
+    </ModulePageGuard>
   );
 }

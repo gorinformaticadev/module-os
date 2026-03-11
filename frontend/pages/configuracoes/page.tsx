@@ -10,6 +10,17 @@ import { TiposEquipamentoManager } from '../../components/TiposEquipamentoManage
 import { RichTextEditor } from '../../components/ui/rich-text-editor';
 import { WhatsAppEditor } from '../../components/WhatsAppEditor';
 import { NotificationsManager } from '../../components/NotificationsManager';
+import { ModulePageGuard } from '../../components/ModulePageGuard';
+import { useMultiplePermissions } from '../../hooks/usePermission';
+
+type ConfigTab = 'agendamento' | 'usuarios' | 'permissoes' | 'opcoes-os' | 'ia';
+
+const CONFIG_ACTION_PERMISSIONS = [
+  { resource: 'config', action: 'view' },
+  { resource: 'config', action: 'edit' },
+  { resource: 'config', action: 'manage_permissions' },
+  { resource: 'config', action: 'manage_notifications' },
+];
 
 // Cliente API customizado para o módulo raiz (sem autenticação automática)
 const api = {
@@ -362,12 +373,18 @@ AvatarFallback.displayName = "AvatarFallback";
 
 export default function OrdemServicoConfiguracoesPage() {
   const { toast } = useToast();
+  const { hasPermission: hasConfigPermission, loading: permissionsLoading } = useMultiplePermissions(CONFIG_ACTION_PERMISSIONS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [schedules, setSchedules] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState('agendamento');
+  const [activeTab, setActiveTab] = useState<ConfigTab>('agendamento');
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const canViewConfig = hasConfigPermission('config', 'view');
+  const canEditConfig = hasConfigPermission('config', 'edit');
+  const canManageConfigPermissions = hasConfigPermission('config', 'manage_permissions');
+  const canManageConfigNotifications = hasConfigPermission('config', 'manage_notifications');
 
   const getUserFromToken = () => {
     try {
@@ -436,6 +453,15 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   const saveWhatsappTemplate = async () => {
+    if (!canEditConfig) {
+      toast({
+        title: 'Sem permissão',
+        description: 'Você não possui permissão para editar as configurações.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       setSavingWhatsapp(true);
       await api.post('/api/ordem_servico/config/settings', {
@@ -506,17 +532,62 @@ export default function OrdemServicoConfiguracoesPage() {
     setLoading(false);
   }, []);
 
+  const isTabAllowed = (tab: ConfigTab): boolean => {
+    if (tab === 'agendamento') return canManageConfigNotifications;
+    if (tab === 'usuarios') return canManageConfigPermissions;
+    if (tab === 'permissoes') return canManageConfigPermissions;
+    if (tab === 'opcoes-os') return canEditConfig;
+    if (tab === 'ia') return canViewConfig;
+    return false;
+  };
+
+  const getFirstAllowedTab = (): ConfigTab | null => {
+    const orderedTabs: ConfigTab[] = ['agendamento', 'usuarios', 'permissoes', 'opcoes-os', 'ia'];
+    return orderedTabs.find((tab) => isTabAllowed(tab)) || null;
+  };
+
   useEffect(() => {
-    if (activeTab === 'agendamento') {
+    if (permissionsLoading) {
+      return;
+    }
+
+    if (!isTabAllowed(activeTab)) {
+      const firstAllowedTab = getFirstAllowedTab();
+      if (firstAllowedTab && firstAllowedTab !== activeTab) {
+        setActiveTab(firstAllowedTab);
+      }
+    }
+  }, [
+    activeTab,
+    permissionsLoading,
+    canViewConfig,
+    canEditConfig,
+    canManageConfigPermissions,
+    canManageConfigNotifications,
+  ]);
+
+  useEffect(() => {
+    if (permissionsLoading) {
+      return;
+    }
+
+    if (activeTab === 'agendamento' && canManageConfigNotifications) {
       fetchSchedules();
-    } else if (activeTab === 'usuarios') {
+    } else if (activeTab === 'usuarios' && canManageConfigPermissions) {
       fetchUsers();
-    } else if (activeTab === 'ia') {
+    } else if (activeTab === 'ia' && canViewConfig) {
       fetchAiConfig();
-    } else if (activeTab === 'opcoes-os') {
+    } else if (activeTab === 'opcoes-os' && canEditConfig) {
       fetchCondicoesExecucao();
     }
-  }, [activeTab]);
+  }, [
+    activeTab,
+    permissionsLoading,
+    canViewConfig,
+    canEditConfig,
+    canManageConfigPermissions,
+    canManageConfigNotifications,
+  ]);
 
   const fetchSchedules = async () => {
     try {
@@ -550,6 +621,15 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   const saveAiConfig = async () => {
+    if (!canEditConfig) {
+      toast({
+        title: 'Sem permissão',
+        description: 'Você não possui permissão para editar as configurações.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       setSaving(true);
       await api.post('/api/ordem_servico/config/ia', aiConfig);
@@ -571,6 +651,15 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   const handleTestAi = async () => {
+    if (!canEditConfig) {
+      toast({
+        title: 'Sem permissão',
+        description: 'Você não possui permissão para testar a integração de IA.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       setTestingAi(true);
       setTestResponse(null);
@@ -607,13 +696,10 @@ export default function OrdemServicoConfiguracoesPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Iniciando fetchUsers...');
 
       const response = await api.get('/api/ordem_servico/config/users');
-      console.log('📦 Resposta da API users:', response);
 
       if (Array.isArray(response.data)) {
-        console.log(`✅ ${response.data.length} usuários recebidos:`, response.data);
         setUsers(response.data);
       } else {
         console.error('❌ Resposta não é um array:', response.data);
@@ -637,7 +723,12 @@ export default function OrdemServicoConfiguracoesPage() {
     }
   };
 
-  const handleToggleTechnician = async (userId: string, currentStatus: boolean, systemRole: string) => {
+  const handleToggleTechnician = async (userId: string, currentStatus: boolean, _systemRole: string) => {
+    if (!canManageConfigPermissions) {
+      toast({ title: 'Sem permissão para gerenciar usuários', variant: 'destructive' });
+      return;
+    }
+
     try {
       await api.put(`/api/ordem_servico/config/users/${userId}/technician`, {
         is_technician: !currentStatus
@@ -719,6 +810,15 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   const saveCondicoesExecucao = async () => {
+    if (!canEditConfig) {
+      toast({
+        title: 'Sem permissão',
+        description: 'Você não possui permissão para editar as configurações.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       setSavingCondicoes(true);
       await api.post('/api/ordem_servico/config/settings', {
@@ -741,7 +841,8 @@ export default function OrdemServicoConfiguracoesPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <ModulePageGuard resource="config" action="view">
+      <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -757,6 +858,7 @@ export default function OrdemServicoConfiguracoesPage() {
       {/* Horizontal Tabs */}
       <div className="border-b border-border">
         <nav className="flex space-x-8">
+          {canManageConfigNotifications && (
           <Button
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'agendamento'
@@ -768,6 +870,8 @@ export default function OrdemServicoConfiguracoesPage() {
             <Calendar className="h-4 w-4 mr-2" />
             Agendamento
           </Button>
+          )}
+          {canManageConfigPermissions && (
           <Button
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'usuarios'
@@ -779,6 +883,8 @@ export default function OrdemServicoConfiguracoesPage() {
             <Users className="h-4 w-4 mr-2" />
             Usuários
           </Button>
+          )}
+          {canManageConfigPermissions && (
           <Button
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'permissoes'
@@ -790,6 +896,8 @@ export default function OrdemServicoConfiguracoesPage() {
             <Shield className="h-4 w-4 mr-2" />
             Permissões
           </Button>
+          )}
+          {canEditConfig && (
           <Button
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'opcoes-os'
@@ -801,6 +909,8 @@ export default function OrdemServicoConfiguracoesPage() {
             <Settings className="h-4 w-4 mr-2" />
             Opções OS
           </Button>
+          )}
+          {canViewConfig && (
           <Button
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'ia'
@@ -812,16 +922,17 @@ export default function OrdemServicoConfiguracoesPage() {
             <Brain className="h-4 w-4 mr-2" />
             Inteligência Artificial
           </Button>
+          )}
         </nav>
       </div>
 
       {/* Main Content Area */}
       <div className="space-y-6">
-        {activeTab === 'agendamento' && (
+        {activeTab === 'agendamento' && canManageConfigNotifications && (
           <NotificationsManager api={api} toast={toast} user={currentUser} />
         )}
 
-        {activeTab === 'usuarios' && (
+        {activeTab === 'usuarios' && canManageConfigPermissions && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -899,7 +1010,7 @@ export default function OrdemServicoConfiguracoesPage() {
           </Card>
         )}
 
-        {activeTab === 'permissoes' && (
+        {activeTab === 'permissoes' && canManageConfigPermissions && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
@@ -925,7 +1036,7 @@ export default function OrdemServicoConfiguracoesPage() {
           </div>
         )}
 
-        {activeTab === 'opcoes-os' && (
+        {activeTab === 'opcoes-os' && canEditConfig && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
@@ -1057,7 +1168,7 @@ export default function OrdemServicoConfiguracoesPage() {
             </div>
           </div>
         )}
-        {activeTab === 'ia' && (
+        {activeTab === 'ia' && canViewConfig && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
@@ -1072,7 +1183,7 @@ export default function OrdemServicoConfiguracoesPage() {
               <Button
                 onClick={saveAiConfig}
                 className="gap-2"
-                disabled={saving}
+                disabled={saving || !canEditConfig}
               >
                 {saving ? 'Salvando...' : 'Salvar Alterações'}
                 <Save className="h-4 w-4" />
@@ -1206,7 +1317,7 @@ export default function OrdemServicoConfiguracoesPage() {
                 <Button
                   variant="outline"
                   onClick={handleTestAi}
-                  disabled={testingAi || !aiConfig.apiKey}
+                  disabled={testingAi || !aiConfig.apiKey || !canEditConfig}
                 >
                   {testingAi ? (
                     <>
@@ -1215,7 +1326,7 @@ export default function OrdemServicoConfiguracoesPage() {
                     </>
                   ) : 'Testar Conexão'}
                 </Button>
-                <Button onClick={saveAiConfig} disabled={saving}>
+                <Button onClick={saveAiConfig} disabled={saving || !canEditConfig}>
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1233,7 +1344,8 @@ export default function OrdemServicoConfiguracoesPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </ModulePageGuard>
   );
 }
 

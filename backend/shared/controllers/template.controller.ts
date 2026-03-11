@@ -1,19 +1,19 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req, Logger } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
-import { Role } from '@prisma/client';
-import { Roles } from '@core/common/decorators/roles.decorator';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
-import { RolesGuard } from '@core/common/guards/roles.guard';
 import { TemplateService } from '../services/template.service';
+import { PermissionGuard } from '../guards/permission.guard';
+import { RequireConfigPermission } from '../decorators/require-permission.decorator';
 
 @Controller('ordem_servico/templates')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class TemplateController {
     private readonly logger = new Logger(TemplateController.name);
 
     constructor(private readonly templateService: TemplateService) {}
 
     @Get()
+    @RequireConfigPermission('view')
     async findAll(@Req() req: ExpressRequest & { user: any }) {
         try {
             this.logger.log(`Buscando templates. Tenant: ${req.user?.tenantId}`);
@@ -25,6 +25,7 @@ export class TemplateController {
     }
 
     @Get(':id')
+    @RequireConfigPermission('view')
     async findById(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string
@@ -39,8 +40,7 @@ export class TemplateController {
     }
 
     @Post()
-    @UseGuards(RolesGuard)
-    @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+    @RequireConfigPermission('manage_permissions')
     async create(
         @Req() req: ExpressRequest & { user: any },
         @Body() data: any
@@ -55,8 +55,7 @@ export class TemplateController {
     }
 
     @Put(':id')
-    @UseGuards(RolesGuard)
-    @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+    @RequireConfigPermission('manage_permissions')
     async update(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string,
@@ -72,8 +71,7 @@ export class TemplateController {
     }
 
     @Delete(':id')
-    @UseGuards(RolesGuard)
-    @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+    @RequireConfigPermission('manage_permissions')
     async delete(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string

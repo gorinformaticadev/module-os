@@ -12,6 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AlertaRetiradaBadge } from '../../components/AlertaRetiradaBadge';
+import { ModulePageGuard } from '../../components/ModulePageGuard';
 import { MODULE_ROUTE_ROOT } from '../../module-manifest';
 import { ordem_servicoService } from '../../services/ordem_servico.service';
 import { OrdemServico as ApiOrdemServico, StatusOS } from '../../types/ordem-servico.types';
@@ -423,7 +424,8 @@ export default function OrdemServicoDashboardPage() {
   const ordensAprovadas = ordens.filter(o => o.status === 'aprovada');
 
   return (
-    <div className="p-6 max-w-full mx-auto space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <ModulePageGuard resource="dashboard" action="view">
+      <div className="p-6 max-w-full mx-auto space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
           Dashboard - Ordem de Servicos
@@ -518,6 +520,7 @@ export default function OrdemServicoDashboardPage() {
           <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F3</kbd> Ordens</span>
         </div>
       </div>
-    </div>
+      </div>
+    </ModulePageGuard>
   );
 }

@@ -1,14 +1,13 @@
 import { Controller, Get, Post, Body, UseGuards, Put, Req, Param, Delete } from '@nestjs/common';
-import { Roles } from '@core/decorators/roles.decorator';
-import { RolesGuard } from '@core/guards/roles.guard';
 import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
 import { PrismaService } from '@core/prisma/prisma.service';
 import { OrdemServicoCronService } from './ordem-servico-cron.service';
 import { Request as ExpressRequest } from 'express';
+import { PermissionGuard } from '../shared/guards/permission.guard';
+import { RequireConfigPermission } from '../shared/decorators/require-permission.decorator';
 
 @Controller('ordem_servico/config')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('SUPER_ADMIN')
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class OrdemServicoConfigController {
     constructor(
         private prisma: PrismaService,
@@ -16,6 +15,7 @@ export class OrdemServicoConfigController {
     ) { }
 
     @Get('notifications')
+    @RequireConfigPermission('manage_notifications')
     async getNotificationConfigs(@Req() req: ExpressRequest & { user: any }) {
         const result = await this.prisma.$queryRaw<any[]>`
             SELECT * FROM mod_ordem_servico_notification_schedules
@@ -26,6 +26,7 @@ export class OrdemServicoConfigController {
     }
 
     @Post('notifications')
+    @RequireConfigPermission('manage_notifications')
     async createNotificationConfig(@Req() req: ExpressRequest & { user: any }, @Body() body: any) {
         const result = await this.prisma.$executeRaw`
             INSERT INTO mod_ordem_servico_notification_schedules
@@ -48,6 +49,7 @@ export class OrdemServicoConfigController {
     // ==================== TIPOS DE SERVIÇO ====================
 
     @Get('tipos-servico')
+    @RequireConfigPermission('view')
     async getTiposServico(@Req() req: ExpressRequest & { user: any }) {
         const result = await this.prisma.$queryRawUnsafe<any[]>(
             `SELECT id, nome, is_default FROM mod_ordem_servico_tipos_servico 
@@ -59,6 +61,7 @@ export class OrdemServicoConfigController {
     }
 
     @Post('tipos-servico')
+    @RequireConfigPermission('edit')
     async createTipoServico(@Req() req: ExpressRequest & { user: any }, @Body() body: { nome: string }) {
         const result = await this.prisma.$queryRawUnsafe(
             `INSERT INTO mod_ordem_servico_tipos_servico (tenant_id, nome, is_default) 
@@ -71,6 +74,7 @@ export class OrdemServicoConfigController {
     }
 
     @Put('tipos-servico/:id')
+    @RequireConfigPermission('edit')
     async updateTipoServico(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string,
@@ -89,6 +93,7 @@ export class OrdemServicoConfigController {
     }
 
     @Delete('tipos-servico/:id')
+    @RequireConfigPermission('edit')
     async deleteTipoServico(@Req() req: ExpressRequest & { user: any }, @Param('id') id: string) {
         await this.prisma.$queryRawUnsafe(
             `DELETE FROM mod_ordem_servico_tipos_servico 
@@ -102,6 +107,7 @@ export class OrdemServicoConfigController {
     // ==================== TIPOS DE EQUIPAMENTO ====================
 
     @Get('tipos-equipamento')
+    @RequireConfigPermission('view')
     async getTiposEquipamento(@Req() req: ExpressRequest & { user: any }) {
         const result = await this.prisma.$queryRawUnsafe<any[]>(
             `SELECT id, nome FROM mod_ordem_servico_tipos_equipamento 
@@ -113,6 +119,7 @@ export class OrdemServicoConfigController {
     }
 
     @Post('tipos-equipamento')
+    @RequireConfigPermission('edit')
     async createTipoEquipamento(@Req() req: ExpressRequest & { user: any }, @Body() body: { nome: string }) {
         const result = await this.prisma.$queryRawUnsafe(
             `INSERT INTO mod_ordem_servico_tipos_equipamento (tenant_id, nome) 
@@ -125,6 +132,7 @@ export class OrdemServicoConfigController {
     }
 
     @Put('tipos-equipamento/:id')
+    @RequireConfigPermission('edit')
     async updateTipoEquipamento(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') id: string,
@@ -143,6 +151,7 @@ export class OrdemServicoConfigController {
     }
 
     @Delete('tipos-equipamento/:id')
+    @RequireConfigPermission('edit')
     async deleteTipoEquipamento(@Req() req: ExpressRequest & { user: any }, @Param('id') id: string) {
         await this.prisma.$queryRawUnsafe(
             `DELETE FROM mod_ordem_servico_tipos_equipamento 
@@ -156,6 +165,7 @@ export class OrdemServicoConfigController {
     // ==================== USUÁRIOS/TÉCNICOS ====================
 
     @Get('users')
+    @RequireConfigPermission('manage_permissions')
     async getUsers(@Req() req: ExpressRequest & { user: any }) {
         try {
             // Primeiro, tentar com a nova tabela de papéis
@@ -218,6 +228,7 @@ export class OrdemServicoConfigController {
     }
 
     @Get('technicians')
+    @RequireConfigPermission('manage_permissions')
     async getTechnicians(@Req() req: ExpressRequest & { user: any }) {
         const result = await this.prisma.$queryRawUnsafe<any[]>(
             `SELECT u.id, u.name, u.email 
@@ -231,6 +242,7 @@ export class OrdemServicoConfigController {
     }
 
     @Put('users/:id/technician')
+    @RequireConfigPermission('manage_permissions')
     async updateUserTechnician(
         @Req() req: ExpressRequest & { user: any },
         @Param('id') userId: string,

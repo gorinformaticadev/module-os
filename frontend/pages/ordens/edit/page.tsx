@@ -43,6 +43,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
 import ProtectedModuleImage from '../../../components/ProtectedModuleImage';
+import { ModulePageGuard } from '../../../components/ModulePageGuard';
 import { RichTextEditor } from '../../../components/ui/rich-text-editor';
 import { useAI } from '../../../hooks/useAI';
 
@@ -930,18 +931,21 @@ export default function EditOrdemPage() {
 
     if (loadingOrdem) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
+            <ModulePageGuard resource="orders" action="edit">
+                <div className="flex items-center justify-center min-h-[50vh]">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                     <p className="text-muted-foreground">Carregando ordem de serviço...</p>
                 </div>
             </div>
+            </ModulePageGuard>
         );
     }
 
     if (!ordem) {
         return (
-            <div className="p-6">
+            <ModulePageGuard resource="orders" action="edit">
+                <div className="p-6">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-4 text-destructive">Ordem não encontrada</h2>
                     <Button onClick={handleCancelNavigation}>
@@ -949,11 +953,13 @@ export default function EditOrdemPage() {
                     </Button>
                 </div>
             </div>
+            </ModulePageGuard>
         );
     }
 
     return (
-        <div className="p-4 md:p-8 w-full mx-auto space-y-6">
+        <ModulePageGuard resource="orders" action="edit">
+            <div className="p-4 md:p-8 w-full mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-3">
@@ -2175,6 +2181,7 @@ export default function EditOrdemPage() {
                     cliente: ordem.cliente
                 } as any : null}
             />
-        </div>
+            </div>
+        </ModulePageGuard>
     );
 }

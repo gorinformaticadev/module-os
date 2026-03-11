@@ -255,7 +255,7 @@ const PERMISSION_RULES: PermissionRule[] = [
     icon: <BarChart3 className="h-4 w-4" />
   },
   {
-    id: 'dashboard_export',
+    id: 'dashboard_view_statistics',
     name: 'Exportar Relatórios',
     description: 'Exportar dados e relatórios do dashboard',
     category: 'Dashboard',
@@ -268,6 +268,13 @@ const PERMISSION_RULES: PermissionRule[] = [
     name: 'Visualizar Ordens',
     description: 'Ver lista e detalhes das ordens de serviço',
     category: 'Ordens de Serviço',
+    icon: <Package className="h-4 w-4" />
+  },
+  {
+    id: 'orders_view_details',
+    name: 'Ver Detalhes das Ordens',
+    description: 'Visualizar detalhes completos das ordens de servico',
+    category: 'Ordens de Servico',
     icon: <Package className="h-4 w-4" />
   },
   {
@@ -292,18 +299,39 @@ const PERMISSION_RULES: PermissionRule[] = [
     icon: <Package className="h-4 w-4" />
   },
   {
-    id: 'orders_assign',
+    id: 'orders_change_status',
     name: 'Atribuir Técnicos',
     description: 'Designar técnicos para ordens de serviço',
     category: 'Ordens de Serviço',
     icon: <Package className="h-4 w-4" />
   },
 
+  {
+    id: 'orders_approve_budget',
+    name: 'Aprovar Orcamento',
+    description: 'Aprovar ordens em status de orcamento',
+    category: 'Ordens de Servico',
+    icon: <Package className="h-4 w-4" />
+  },
+  {
+    id: 'orders_view_history',
+    name: 'Ver Historico',
+    description: 'Visualizar historico e timeline das ordens',
+    category: 'Ordens de Servico',
+    icon: <Package className="h-4 w-4" />
+  },
   // Clientes
   {
     id: 'clients_view',
     name: 'Visualizar Clientes',
     description: 'Ver lista e detalhes dos clientes',
+    category: 'Clientes',
+    icon: <Users className="h-4 w-4" />
+  },
+  {
+    id: 'clients_view_details',
+    name: 'Ver Detalhes dos Clientes',
+    description: 'Visualizar detalhes completos dos clientes',
     category: 'Clientes',
     icon: <Users className="h-4 w-4" />
   },
@@ -329,6 +357,13 @@ const PERMISSION_RULES: PermissionRule[] = [
     icon: <Users className="h-4 w-4" />
   },
 
+  {
+    id: 'clients_upload_images',
+    name: 'Upload de Imagens de Cliente',
+    description: 'Enviar fotos e avatar dos clientes',
+    category: 'Clientes',
+    icon: <Users className="h-4 w-4" />
+  },
   // Produtos
   {
     id: 'products_view',
@@ -361,6 +396,13 @@ const PERMISSION_RULES: PermissionRule[] = [
 
   // Configurações
   {
+    id: 'products_upload_images',
+    name: 'Upload de Imagens de Produto',
+    description: 'Enviar imagens para produtos e servicos',
+    category: 'Produtos',
+    icon: <Package className="h-4 w-4" />
+  },
+  {
     id: 'config_view',
     name: 'Visualizar Configurações',
     description: 'Acessar área de configurações do módulo',
@@ -368,21 +410,21 @@ const PERMISSION_RULES: PermissionRule[] = [
     icon: <Settings className="h-4 w-4" />
   },
   {
-    id: 'config_users',
+    id: 'config_edit',
     name: 'Gerenciar Usuários',
     description: 'Configurar usuários e seus papéis',
     category: 'Configurações',
     icon: <Settings className="h-4 w-4" />
   },
   {
-    id: 'config_permissions',
+    id: 'config_manage_permissions',
     name: 'Gerenciar Permissões',
     description: 'Configurar permissões e perfis de acesso',
     category: 'Configurações',
     icon: <Settings className="h-4 w-4" />
   },
   {
-    id: 'config_system',
+    id: 'config_manage_notifications',
     name: 'Configurações do Sistema',
     description: 'Alterar configurações gerais do módulo',
     category: 'Configurações',
@@ -431,8 +473,41 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
       PERMISSION_RULES.forEach(rule => {
         defaultPermissions[rule.id] = {
           admin: true, // Admin tem tudo por padrão
-          technician: ['dashboard_view', 'orders_view', 'orders_edit', 'clients_view', 'products_view'].includes(rule.id),
-          attendant: ['dashboard_view', 'orders_view', 'clients_view', 'clients_create', 'clients_edit'].includes(rule.id)
+          technician: [
+            'dashboard_view',
+            'dashboard_view_statistics',
+            'orders_view',
+            'orders_view_details',
+            'orders_create',
+            'orders_edit',
+            'orders_change_status',
+            'orders_view_history',
+            'clients_view',
+            'clients_view_details',
+            'clients_create',
+            'clients_edit',
+            'clients_upload_images',
+            'products_view',
+            'products_create',
+            'products_edit',
+            'products_upload_images',
+            'config_view'
+          ].includes(rule.id),
+          attendant: [
+            'dashboard_view',
+            'orders_view',
+            'orders_view_details',
+            'orders_create',
+            'clients_view',
+            'clients_view_details',
+            'clients_create',
+            'clients_edit',
+            'clients_upload_images',
+            'products_view',
+            'products_create',
+            'products_edit',
+            'products_upload_images'
+          ].includes(rule.id)
         };
       });
       setPermissions(defaultPermissions);

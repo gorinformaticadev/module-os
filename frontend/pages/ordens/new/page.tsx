@@ -57,6 +57,7 @@ import ClientModal from '../../../components/ClientModal';
 import ClientEditModal from '../../../components/ClientEditModal';
 import ClientOrdersList from '../../../components/ClientOrdersList';
 import ProtectedModuleImage from '../../../components/ProtectedModuleImage';
+import { ModulePageGuard } from '../../../components/ModulePageGuard';
 import { RichTextEditor } from '../../../components/ui/rich-text-editor';
 import { useAI } from '../../../hooks/useAI';
 import { Brain } from 'lucide-react';
@@ -332,7 +333,7 @@ export default function NewOrdemRefactoredPage() {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = (event) => {
-                const img = new Image();
+                const img = new window.Image();
                 img.src = event.target?.result as string;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
@@ -550,7 +551,8 @@ export default function NewOrdemRefactoredPage() {
     }, []);
 
     return (
-        <div className="p-4 md:p-8 w-full mx-auto space-y-6">
+        <ModulePageGuard resource="orders" action="create">
+            <div className="p-4 md:p-8 w-full mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-3">
@@ -1385,7 +1387,7 @@ export default function NewOrdemRefactoredPage() {
                 </div>
                 <div className="flex gap-3">
                     <Info className="h-5 w-5 text-blue-500 shrink-0" />
-                    <p><strong>Fluxo:</strong> Ao salvar como "Orçamento", o registro não gera obrigações financeiras imediatas.</p>
+                    <p><strong>Fluxo:</strong> Ao salvar como Orçamento, o registro não gera obrigações financeiras imediatas.</p>
                 </div>
                 <div className="flex gap-3">
                     <AlertCircle className="h-5 w-5 text-orange-500 shrink-0" />
@@ -1407,6 +1409,7 @@ export default function NewOrdemRefactoredPage() {
                 client={selectedClient}
                 onClientUpdated={handleClientUpdated}
             />
-        </div>
+            </div>
+        </ModulePageGuard>
     );
 }

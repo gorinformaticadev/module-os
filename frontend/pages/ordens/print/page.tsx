@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { PrintTemplateA4 } from '../../../components/PrintTemplateA4';
 import { PrintTemplateThermal } from '../../../components/PrintTemplateThermal';
+import { ModulePageGuard } from '../../../components/ModulePageGuard';
 import { Button } from '@/components/ui/button';
 import { Printer, ArrowLeft, Loader2, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -185,18 +186,21 @@ export default function PrintPreviewPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <ModulePageGuard resource="orders" action="view_details">
+                <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
                     <p className="text-muted-foreground">Carregando dados para impressão...</p>
                 </div>
             </div>
+            </ModulePageGuard>
         );
     }
 
     if (error || !ordem || !tenantInfo) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <ModulePageGuard resource="orders" action="view_details">
+                <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-4 text-destructive">Erro</h2>
                     <p className="text-muted-foreground mb-4">{error || 'Dados não encontrados'}</p>
@@ -206,11 +210,13 @@ export default function PrintPreviewPage() {
                     </Button>
                 </div>
             </div>
+            </ModulePageGuard>
         );
     }
 
     return (
-        <div>
+        <ModulePageGuard resource="orders" action="view_details">
+            <div>
             <div className="no-print sticky top-0 z-50 bg-background border-b p-4 flex justify-between items-center shadow-sm">
                 <Button variant="outline" onClick={() => router.push('/modules/ordem_servico/pages/ordens')}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
@@ -276,6 +282,7 @@ export default function PrintPreviewPage() {
                     }
                 }
             `}} />
-        </div>
+            </div>
+        </ModulePageGuard>
     );
 }

@@ -15,6 +15,7 @@ import { X } from 'lucide-react';
 import ClientModal from '../../components/ClientModal';
 import ClientEditModal from '../../components/ClientEditModal';
 import ProtectedModuleImage from '../../components/ProtectedModuleImage';
+import { ModulePageGuard } from '../../components/ModulePageGuard';
 import { Cliente } from '../../types/ordem-servico.types';
 
 interface Client {
@@ -145,7 +146,8 @@ export default function OrdemServicoClientesPage() {
     };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <ModulePageGuard resource="clients" action="view">
+            <div className="p-8 max-w-7xl mx-auto space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">Clientes</h1>
@@ -340,6 +342,7 @@ export default function OrdemServicoClientesPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div >
+            </div >
+        </ModulePageGuard>
     );
 }

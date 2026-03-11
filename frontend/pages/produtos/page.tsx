@@ -8,13 +8,23 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Search, Plus, Edit, RefreshCw, UploadCloud, Image as ImageIcon, Trash2, XCircle } from 'lucide-react';
+import { Search, Plus, Edit, RefreshCw, Image as ImageIcon, Trash2, XCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import ProtectedModuleImage from '../../components/ProtectedModuleImage';
+import { ModulePageGuard } from '../../components/ModulePageGuard';
+import { useMultiplePermissions } from '../../hooks/usePermission';
+
+const PRODUCTS_ACTION_PERMISSIONS = [
+    { resource: 'products', action: 'create' },
+    { resource: 'products', action: 'edit' },
+    { resource: 'products', action: 'delete' },
+    { resource: 'products', action: 'upload_images' },
+];
 
 export default function OrdemServicoProdutosPage() {
     const { toast } = useToast();
+    const { hasPermission: hasProductsPermission } = useMultiplePermissions(PRODUCTS_ACTION_PERMISSIONS);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -32,6 +42,11 @@ export default function OrdemServicoProdutosPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('ALL'); // ALL | ACTIVE | INACTIVE
     const [filterType, setFilterType] = useState<string>('ALL'); // ALL | PRODUCT | SERVICE
+
+    const canCreateProduct = hasProductsPermission('products', 'create');
+    const canEditProduct = hasProductsPermission('products', 'edit');
+    const canDeleteProduct = hasProductsPermission('products', 'delete');
+    const canUploadProductImage = hasProductsPermission('products', 'upload_images');
 
     const [formData, setFormData] = useState({
         code: '',
@@ -71,6 +86,11 @@ export default function OrdemServicoProdutosPage() {
     };
 
     const handleOpenNew = () => {
+        if (!canCreateProduct) {
+            toast({ title: 'Sem permissão para criar produtos', variant: 'destructive' });
+            return;
+        }
+
         setEditingId(null);
         setFormData({
             code: '',
@@ -153,6 +173,11 @@ export default function OrdemServicoProdutosPage() {
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!canUploadProductImage) {
+            toast({ title: 'Sem permissão para upload de imagens', variant: 'destructive' });
+            return;
+        }
+
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             const data = new FormData();
@@ -175,6 +200,16 @@ export default function OrdemServicoProdutosPage() {
 
     const handleSave = async () => {
         try {
+            if (editingId && !canEditProduct) {
+                toast({ title: 'Sem permissão para editar produtos', variant: 'destructive' });
+                return;
+            }
+
+            if (!editingId && !canCreateProduct) {
+                toast({ title: 'Sem permissão para criar produtos', variant: 'destructive' });
+                return;
+            }
+
             setSaving(true);
 
             const priceVal = parseFloat(formData.price.replace(/\./g, '').replace(',', '.'));
@@ -212,11 +247,21 @@ export default function OrdemServicoProdutosPage() {
     };
 
     const handleDelete = (id: string) => {
+        if (!canDeleteProduct) {
+            toast({ title: 'Sem permissão para excluir produtos', variant: 'destructive' });
+            return;
+        }
+
         setDeleteId(id);
         setIsDeleteOpen(true);
     };
 
     const confirmDelete = async () => {
+        if (!canDeleteProduct) {
+            toast({ title: 'Sem permissão para excluir produtos', variant: 'destructive' });
+            return;
+        }
+
         if (!deleteId) return;
         try {
             await api.delete(`/api/ordem_servico/produtos/${deleteId}`);
@@ -249,7 +294,8 @@ export default function OrdemServicoProdutosPage() {
     });
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <ModulePageGuard resource="products" action="view">
+            <div className="p-8 max-w-7xl mx-auto space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">Produtos e Serviços</h1>
@@ -258,13 +304,15 @@ export default function OrdemServicoProdutosPage() {
                     </p>
                 </div>
 
-                <Button
-                    onClick={handleOpenNew}
-                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                    <Plus className="h-4 w-4" />
-                    CADASTRAR NOVO ITEM
-                </Button>
+                {canCreateProduct && (
+                    <Button
+                        onClick={handleOpenNew}
+                        className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                        <Plus className="h-4 w-4" />
+                        CADASTRAR NOVO ITEM
+                    </Button>
+                )}
             </div>
 
             <Card>
@@ -359,28 +407,32 @@ export default function OrdemServicoProdutosPage() {
                                                 </Badge>
                                             </td>
                                             <td className="p-3 text-right">
-                                                <Button size="icon" variant="ghost" onClick={() => {
-                                                    setEditingId(p.id);
-                                                    setFormData({
-                                                        code: p.code,
-                                                        name: p.name,
-                                                        price: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(p.price),
-                                                        cost_price: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(p.cost_price || 0),
-                                                        profit_margin: (p.cost_price > 0 && p.price > 0)
-                                                            ? (((Number(p.price) - Number(p.cost_price)) / Number(p.cost_price)) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
-                                                            : '',
-                                                        description: p.description || '',
-                                                        type: p.type || 'PRODUCT',
-                                                        image_url: p.image_url || '',
-                                                        is_active: p.is_active
-                                                    });
-                                                    setIsOpen(true);
-                                                }}>
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(p.id)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                {canEditProduct && (
+                                                    <Button size="icon" variant="ghost" onClick={() => {
+                                                        setEditingId(p.id);
+                                                        setFormData({
+                                                            code: p.code,
+                                                            name: p.name,
+                                                            price: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(p.price),
+                                                            cost_price: new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(p.cost_price || 0),
+                                                            profit_margin: (p.cost_price > 0 && p.price > 0)
+                                                                ? (((Number(p.price) - Number(p.cost_price)) / Number(p.cost_price)) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+                                                                : '',
+                                                            description: p.description || '',
+                                                            type: p.type || 'PRODUCT',
+                                                            image_url: p.image_url || '',
+                                                            is_active: p.is_active
+                                                        });
+                                                        setIsOpen(true);
+                                                    }}>
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                {canDeleteProduct && (
+                                                    <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(p.id)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -486,7 +538,11 @@ export default function OrdemServicoProdutosPage() {
                                             size="icon"
                                             variant="destructive"
                                             className="absolute -top-2 -right-2 h-6 w-6"
-                                            onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                                            disabled={!canUploadProductImage}
+                                            onClick={() => {
+                                                if (!canUploadProductImage) return;
+                                                setFormData(prev => ({ ...prev, image_url: '' }));
+                                            }}
                                         >
                                             ×
                                         </Button>
@@ -497,9 +553,10 @@ export default function OrdemServicoProdutosPage() {
                                         type="file"
                                         accept="image/*"
                                         onChange={handleFileChange}
-                                        disabled={uploading}
+                                        disabled={uploading || !canUploadProductImage}
                                     />
                                     {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
+                                    {!canUploadProductImage && <p className="text-xs text-muted-foreground mt-1">Sem permissÃ£o para upload de imagens.</p>}
                                     {formData.image_url && formData.image_url.trim() !== '' && (
                                         <p className="text-xs text-muted-foreground mt-1">
                                             URL: {formData.image_url}
@@ -528,7 +585,7 @@ export default function OrdemServicoProdutosPage() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSave} disabled={saving || uploading}>Salvar</Button>
+                        <Button onClick={handleSave} disabled={saving || uploading || (editingId ? !canEditProduct : !canCreateProduct)}>Salvar</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -551,7 +608,7 @@ export default function OrdemServicoProdutosPage() {
                     </div>
                     <DialogFooter className="flex gap-2 justify-center sm:justify-center">
                         <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
-                        <Button variant="destructive" onClick={confirmDelete}>Excluir Item</Button>
+                        <Button variant="destructive" onClick={confirmDelete} disabled={!canDeleteProduct}>Excluir Item</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -587,6 +644,7 @@ export default function OrdemServicoProdutosPage() {
                     )}
                 </DialogContent>
             </Dialog>
-        </div>
+            </div>
+        </ModulePageGuard>
     );
 }

@@ -1,22 +1,23 @@
 "use client";
 
 import React from 'react';
+import { ModulePageGuard } from '../../components/ModulePageGuard';
 
 export default function OrdemServicoListaPage() {
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Lista - Ordem de Serviços</h1>
-          <p className="text-muted-foreground mt-2">
-            Lista de todas as ordens de serviço
-          </p>
+    <ModulePageGuard resource="orders" action="view">
+      <div className="mx-auto max-w-7xl space-y-8 p-8">
+        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Lista - Ordem de Servicos</h1>
+            <p className="mt-2 text-muted-foreground">Lista de todas as ordens de servico</p>
+          </div>
+        </div>
+
+        <div className="py-16 text-center text-muted-foreground">
+          <p>Pagina em desenvolvimento...</p>
         </div>
       </div>
-
-      <div className="text-center py-16 text-muted-foreground">
-        <p>Página em desenvolvimento...</p>
-      </div>
-    </div>
+    </ModulePageGuard>
   );
 }
