@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import ProtectedModuleImage from '../../components/ProtectedModuleImage';
 import { ModulePageGuard } from '../../components/ModulePageGuard';
 import { useMultiplePermissions } from '../../hooks/usePermission';
+import { useSearchParams } from 'next/navigation';
 
 const PRODUCTS_ACTION_PERMISSIONS = [
     { resource: 'products', action: 'create' },
@@ -24,6 +25,7 @@ const PRODUCTS_ACTION_PERMISSIONS = [
 
 export default function OrdemServicoProdutosPage() {
     const { toast } = useToast();
+    const searchParams = useSearchParams();
     const { hasPermission: hasProductsPermission } = useMultiplePermissions(PRODUCTS_ACTION_PERMISSIONS);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -63,6 +65,13 @@ export default function OrdemServicoProdutosPage() {
     useEffect(() => {
         fetchProducts();
     }, []);
+
+    useEffect(() => {
+        const action = searchParams.get('action');
+        if (action === 'new') {
+            handleOpenNew();
+        }
+    }, [searchParams]);
 
     const fetchProducts = async () => {
         try {

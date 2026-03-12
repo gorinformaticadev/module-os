@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,7 @@ interface Client {
 export default function OrdemServicoClientesPage() {
     const { toast } = useToast();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +60,16 @@ export default function OrdemServicoClientesPage() {
 
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, statusFilter]);
+    
+    useEffect(() => {
+        const action = searchParams.get('action');
+        if (action === 'new') {
+            setIsClientModalOpen(true);
+            
+            // Opcional: Limpar o parâmetro da URL após abrir para não reabrir em refresh se indesejado
+            // router.replace('/modules/ordem_servico/pages/clientes');
+        }
+    }, [searchParams]);
 
     const fetchClients = async () => {
         try {

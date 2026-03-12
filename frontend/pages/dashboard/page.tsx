@@ -387,6 +387,15 @@ export default function OrdemServicoDashboardPage() {
       case 'ordens':
         window.location.href = `${MODULE_ROUTE_ROOT}/ordens`;
         break;
+      case 'novo-cliente':
+        window.location.href = `${MODULE_ROUTE_ROOT}/clientes?action=new`;
+        break;
+      case 'novo-produto':
+        window.location.href = `${MODULE_ROUTE_ROOT}/produtos?action=new`;
+        break;
+      case 'nova-os':
+        window.location.href = `${MODULE_ROUTE_ROOT}/ordens/new`;
+        break;
     }
   };
 
@@ -399,15 +408,27 @@ export default function OrdemServicoDashboardPage() {
       switch (event.key) {
         case 'F1':
           event.preventDefault();
-          handleShortcut('clientes');
+          if (event.shiftKey) {
+            handleShortcut('novo-cliente');
+          } else {
+            handleShortcut('clientes');
+          }
           break;
         case 'F2':
           event.preventDefault();
-          handleShortcut('produtos');
+          if (event.shiftKey) {
+            handleShortcut('novo-produto');
+          } else {
+            handleShortcut('produtos');
+          }
           break;
         case 'F3':
           event.preventDefault();
-          handleShortcut('ordens');
+          if (event.shiftKey) {
+            handleShortcut('nova-os');
+          } else {
+            handleShortcut('ordens');
+          }
           break;
       }
     };
@@ -514,10 +535,30 @@ export default function OrdemServicoDashboardPage() {
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Atalhos de Teclado:
         </h3>
-        <div className="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-400">
-          <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F1</kbd> Clientes</span>
-          <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F2</kbd> Produtos/Servicos</span>
-          <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F3</kbd> Ordens</span>
+        <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">F1</kbd> 
+            <span>Clientes</span>
+            <span className="text-gray-400 mx-1">|</span>
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">Shift+F1</kbd>
+            <span className="font-medium text-blue-600 dark:text-blue-400">Novo Cliente</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">F2</kbd> 
+            <span>Produtos</span>
+            <span className="text-gray-400 mx-1">|</span>
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">Shift+F2</kbd>
+            <span className="font-medium text-orange-600 dark:text-orange-400">Novo Produto</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">F3</kbd> 
+            <span>Ordens</span>
+            <span className="text-gray-400 mx-1">|</span>
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">Shift+F3</kbd>
+            <span className="font-medium text-pink-600 dark:text-pink-400">Nova OS</span>
+          </div>
         </div>
       </div>
       </div>
