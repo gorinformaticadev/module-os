@@ -26,7 +26,7 @@ const PRODUCTS_ACTION_PERMISSIONS = [
 export default function OrdemServicoProdutosPage() {
     const { toast } = useToast();
     const searchParams = useSearchParams();
-    const { hasPermission: hasProductsPermission } = useMultiplePermissions(PRODUCTS_ACTION_PERMISSIONS);
+    const { hasPermission: hasProductsPermission, loading: permissionsLoading } = useMultiplePermissions(PRODUCTS_ACTION_PERMISSIONS);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -68,10 +68,14 @@ export default function OrdemServicoProdutosPage() {
 
     useEffect(() => {
         const action = searchParams.get('action');
-        if (action === 'new') {
-            handleOpenNew();
+        if (action === 'new' && !permissionsLoading) {
+            // Pequeno delay para garantir que os estados de permissão refletiram corretamente
+            const timer = setTimeout(() => {
+                handleOpenNew();
+            }, 100);
+            return () => clearTimeout(timer);
         }
-    }, [searchParams]);
+    }, [searchParams, permissionsLoading]);
 
     const fetchProducts = async () => {
         try {
@@ -565,7 +569,7 @@ export default function OrdemServicoProdutosPage() {
                                         disabled={uploading || !canUploadProductImage}
                                     />
                                     {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
-                                    {!canUploadProductImage && <p className="text-xs text-muted-foreground mt-1">Sem permissÃ£o para upload de imagens.</p>}
+                                    {!canUploadProductImage && <p className="text-xs text-muted-foreground mt-1">Sem permissão para upload de imagens.</p>}
                                     {formData.image_url && formData.image_url.trim() !== '' && (
                                         <p className="text-xs text-muted-foreground mt-1">
                                             URL: {formData.image_url}
