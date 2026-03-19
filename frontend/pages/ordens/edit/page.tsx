@@ -935,7 +935,7 @@ export default function EditOrdemPage() {
                 <div className="flex items-center justify-center min-h-[50vh]">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Carregando ordem de serviço...</p>
+                    <p className="text-skin-text-muted">Carregando ordem de serviço...</p>
                 </div>
             </div>
             </ModulePageGuard>
@@ -947,7 +947,7 @@ export default function EditOrdemPage() {
             <ModulePageGuard resource="orders" action="edit">
                 <div className="p-6">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-4 text-destructive">Ordem não encontrada</h2>
+                    <h2 className="mb-4 text-2xl font-bold text-skin-danger">Ordem não encontrada</h2>
                     <Button onClick={handleCancelNavigation}>
                         Voltar para Lista
                     </Button>
@@ -1108,7 +1108,7 @@ export default function EditOrdemPage() {
 
                 {/* Section 1: CLIENTE (FIXO) - FULL WIDTH */}
                 <Card className="shadow-sm border-2 w-full">
-                    <CardHeader className="bg-muted/20 pb-4">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">1</span>
                             <CardTitle className="text-lg">Cliente</CardTitle>
@@ -1117,7 +1117,7 @@ export default function EditOrdemPage() {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <PopoverTrigger asChild>
-                                                <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" />
+                                                <Info className="h-4 w-4 cursor-pointer text-skin-text-muted transition-colors hover:text-skin-text" />
                                             </PopoverTrigger>
                                         </TooltipTrigger>
                                         <TooltipContent>
@@ -1222,7 +1222,7 @@ export default function EditOrdemPage() {
 
                 {/* Section 2: DADOS DA ORDEM DE SERVIÇO */}
                 <Card className="shadow-sm border-2">
-                    <CardHeader className="bg-muted/20 pb-4">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">2</span>
                             <CardTitle className="text-lg">Dados da Ordem de Serviço</CardTitle>
@@ -1519,7 +1519,7 @@ export default function EditOrdemPage() {
 
                 {/* Section 4: EQUIPAMENTO (Moved UP) */}
                 <Card className="shadow-sm border-2">
-                    <CardHeader className="bg-muted/20 pb-4">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">3</span>
                             <CardTitle className="text-lg">Equipamento</CardTitle>
@@ -1627,7 +1627,7 @@ export default function EditOrdemPage() {
                                     </button>
                                 </div>
                             ))}
-                            <div className="flex items-center justify-center border-2 border-dashed rounded-md w-24 h-24 hover:bg-muted/50 transition-colors">
+                            <div className="flex h-24 w-24 items-center justify-center rounded-md border-2 border-dashed border-skin-border hover:bg-skin-surface-hover transition-colors">
                                 <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
                                     <input
                                         type="file"
@@ -1640,8 +1640,8 @@ export default function EditOrdemPage() {
                                         <div className="animate-spin h-5 w-5 border-b-2 border-primary rounded-full" />
                                     ) : (
                                         <>
-                                            <Plus className="h-6 w-6 text-muted-foreground" />
-                                            <span className="text-[10px] text-muted-foreground font-medium mt-1">Add</span>
+                                            <Plus className="h-6 w-6 text-skin-text-muted" />
+                                            <span className="mt-1 text-[10px] font-medium text-skin-text-muted">Add</span>
                                         </>
                                     )}
                                 </label>
@@ -1652,7 +1652,7 @@ export default function EditOrdemPage() {
 
                 {/* Section 3: LAUDO TÉCNICO (Moved DOWN) */}
                 <Card className="shadow-sm border-2">
-                    <CardHeader className="bg-muted/20 pb-4">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">4</span>
                             <CardTitle className="text-lg">Laudo Técnico</CardTitle>
@@ -1716,7 +1716,7 @@ export default function EditOrdemPage() {
 
                         {/* Adicionar Item */}
                         {/* Adicionar Item - Layout Unificado */}
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-muted/30 p-4 rounded-lg border border-dashed">
+                        <div className="grid grid-cols-1 items-end gap-4 rounded-lg border border-dashed border-skin-border bg-skin-background-elevated/50 p-4 md:grid-cols-12">
 
                             {/* Descrição com Autocomplete */}
                             <div className="md:col-span-6 space-y-2 relative">
@@ -1765,19 +1765,19 @@ export default function EditOrdemPage() {
                                         </div>
                                     </PopoverAnchor>
                                     <PopoverContent className="p-0 w-[400px]" align="start" onOpenAutoFocus={(e: Event) => e.preventDefault()}>
-                                        <div className="max-h-[200px] overflow-y-auto p-1 bg-popover border rounded-md shadow-md">
+                                        <div className="max-h-[200px] overflow-y-auto rounded-md border border-skin-border bg-skin-surface p-1 shadow-md">
                                             {filteredProducts.length > 0 ? (
                                                 filteredProducts.map((p, index) => (
                                                     <div
                                                         key={p.id}
-                                                        className={`px-3 py-2 cursor-pointer text-sm rounded-sm flex justify-between ${index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent hover:text-accent-foreground"}`}
+                                                        className={`flex justify-between rounded-sm px-3 py-2 text-sm cursor-pointer ${index === selectedIndex ? "bg-skin-surface-hover text-skin-text" : "hover:bg-skin-surface-hover hover:text-skin-text"}`}
                                                         onClick={() => handleProductClick(p)}
                                                     >
                                                         <div className="flex flex-col">
                                                             <span className="font-medium">{p.name}</span>
-                                                            {p.description && <span className="text-xs text-muted-foreground">{p.description}</span>}
+                                                            {p.description && <span className="text-xs text-skin-text-muted">{p.description}</span>}
                                                         </div>
-                                                        <span className="text-muted-foreground font-mono ml-2">R$ {Number(p.price).toFixed(2)}</span>
+                                                        <span className="ml-2 font-mono text-skin-text-muted">R$ {Number(p.price).toFixed(2)}</span>
                                                     </div>
                                                 ))
                                             ) : (
@@ -1840,7 +1840,7 @@ export default function EditOrdemPage() {
                         {/* Lista de Itens */}
                         <div className="border rounded-md overflow-hidden">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-muted text-muted-foreground font-medium">
+                                <thead className="bg-skin-background-elevated text-skin-text-muted font-medium">
                                     <tr>
                                         <th className="p-3 w-16 text-center">Foto</th>
                                         <th className="p-3">Descrição</th>
@@ -1853,7 +1853,7 @@ export default function EditOrdemPage() {
                                 <tbody className="divide-y">
                                     {formData.itens && formData.itens.length > 0 ? (
                                         formData.itens.map((item, index) => (
-                                            <tr key={index} className="hover:bg-muted/10">
+                                            <tr key={index} className="hover:bg-skin-surface-hover/60">
                                                 <td className="p-3 text-center">
                                                     {item.image_url ? (
                                                         <ProtectedModuleImage
@@ -1863,7 +1863,7 @@ export default function EditOrdemPage() {
                                                             onClick={() => setPreviewImage(item.image_url || null)}
                                                         />
                                                     ) : (
-                                                        <div className="h-10 w-10 bg-muted rounded-md flex items-center justify-center text-muted-foreground mx-auto">
+                                                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-skin-background-elevated text-skin-text-muted">
                                                             <ImageIcon className="h-5 w-5" />
                                                         </div>
                                                     )}
@@ -1884,7 +1884,7 @@ export default function EditOrdemPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="h-8 w-8 text-destructive hover:text-destructive/90"
+                                                        className="h-8 w-8 text-skin-danger hover:text-skin-danger/90"
                                                         onClick={() => handleRemoveItem(index)}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
@@ -1894,13 +1894,13 @@ export default function EditOrdemPage() {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                                            <td colSpan={5} className="p-8 text-center text-skin-text-muted">
                                                 Nenhum item adicionado.
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
-                                <tfoot className="bg-muted/50 font-bold border-t">
+                                <tfoot className="border-t border-skin-border bg-skin-background-elevated/60 font-bold">
                                     <tr>
                                         <td colSpan={4} className="p-3 text-right">Total Geral:</td>
                                         <td className="p-3 text-right text-primary text-base">
@@ -1919,7 +1919,7 @@ export default function EditOrdemPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* VALORES */}
                     <Card className="shadow-sm border-2">
-                        <CardHeader className="bg-slate-50/50 pb-4">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">6</span>
                                 <CardTitle className="text-lg">Valores</CardTitle>
@@ -1929,7 +1929,7 @@ export default function EditOrdemPage() {
                             <div className="space-y-2">
                                 <Label>Valor do Serviço (R$)</Label>
                                 <div className="relative">
-                                    <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-skin-text-muted" />
                                     <Input
                                         placeholder="0,00"
                                         className="pl-9"
@@ -1961,7 +1961,7 @@ export default function EditOrdemPage() {
 
                     {/* OBSERVAÇÕES */}
                     <Card className="shadow-sm border-2">
-                        <CardHeader className="bg-slate-50/50 pb-4">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">7</span>
                                 <CardTitle className="text-lg">Observações</CardTitle>
@@ -1994,7 +1994,7 @@ export default function EditOrdemPage() {
 
                 {/* Histórico de Status */}
                 <Card className="shadow-sm border-2">
-                    <CardHeader className="bg-muted/20 pb-4">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
                         <div className="flex items-center gap-2">
                             <History className="h-5 w-5 text-primary" />
                             <CardTitle className="text-lg">Histórico de Status</CardTitle>
@@ -2003,7 +2003,7 @@ export default function EditOrdemPage() {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <PopoverTrigger asChild>
-                                                <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" />
+                                                <Info className="h-4 w-4 cursor-pointer text-skin-text-muted transition-colors hover:text-skin-text" />
                                             </PopoverTrigger>
                                         </TooltipTrigger>
                                         <TooltipContent>
@@ -2058,7 +2058,7 @@ export default function EditOrdemPage() {
             </div>
 
             {/* Business Rules Summary Footer */}
-            <div className="bg-muted/30 p-6 rounded-xl border border-dashed text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 rounded-xl border border-dashed border-skin-border bg-skin-background-elevated/50 p-6 text-sm text-skin-text-muted md:grid-cols-3">
                 <div className="flex gap-3">
                     <CheckCircle2 className="h-5 w-5 text-skin-success shrink-0" />
                     <p><strong>Edição:</strong> Apenas campos editáveis podem ser alterados. O cliente permanece fixo.</p>

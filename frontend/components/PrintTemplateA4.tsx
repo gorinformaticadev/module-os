@@ -378,8 +378,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         width: 100%;
                         max-width: 210mm;
                         margin: 0 auto;
-                        background: white !important; --print-ink-muted: dimgray; --print-ink-subtle: gray; --print-border-soft: gainsboro; --print-panel: lightgray; --print-brand: maroon;
-                        color: #000 !important;
+                        background: var(--print-paper) !important;
+                        color: var(--print-ink) !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
