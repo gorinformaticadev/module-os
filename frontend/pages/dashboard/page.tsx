@@ -23,7 +23,7 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+    className={`rounded-xl border border-skin-border/50 bg-skin-surface/90 backdrop-blur-sm text-skin-text shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
     {...props}
   />
 ));
@@ -65,15 +65,15 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
 }>(({ className, variant = "default", size = "default", ...props }, ref) => {
-  const baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95 hover:shadow-md";
+  const baseClasses = "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-xs font-medium ring-offset-skin-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-skin-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95 hover:shadow-md";
   const sizeClasses = size === "sm" ? "h-9 rounded-md px-3" : size === "lg" ? "h-11 rounded-md px-8" : size === "icon" ? "h-10 w-10" : "h-10 px-4 py-2";
   const variantClasses = {
-    default: "bg-primary text-primary-foreground hover:bg-primary/90",
-    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
-    link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
+    default: "bg-skin-primary text-skin-text-inverse hover:bg-skin-primary-hover",
+    destructive: "bg-skin-danger text-skin-text-inverse hover:bg-skin-danger/90",
+    outline: "border border-skin-input-border bg-skin-input-background hover:bg-skin-surface-hover hover:text-skin-text",
+    secondary: "bg-skin-background-elevated text-skin-text hover:bg-skin-surface-hover",
+    ghost: "hover:bg-skin-surface-hover hover:text-skin-text hover:shadow-none",
+    link: "text-skin-primary underline-offset-4 hover:underline hover:shadow-none",
   };
 
   return (
@@ -90,16 +90,16 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
   variant?: "default" | "secondary" | "destructive" | "outline";
 }>(({ className, variant = "default", ...props }, ref) => {
   const variantClasses = {
-    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-    outline: "text-foreground",
+    default: "border-transparent bg-skin-primary text-skin-text-inverse hover:bg-skin-primary-hover",
+    secondary: "border-transparent bg-skin-background-elevated text-skin-text hover:bg-skin-surface-hover",
+    destructive: "border-transparent bg-skin-danger text-skin-text-inverse hover:bg-skin-danger/80",
+    outline: "text-skin-text",
   };
 
   return (
     <div
       ref={ref}
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantClasses[variant]} ${className || ''}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-skin-primary focus:ring-offset-2 ${variantClasses[variant]} ${className || ''}`}
       {...props}
     />
   );
@@ -166,7 +166,7 @@ const ShortcutCard = ({
   title,
   shortcut,
   icon: Icon,
-  color,
+  accentClassName,
   onClick
 }: {
   title: string;
@@ -205,7 +205,7 @@ const OrderTable = ({
   loading: boolean;
 }) => {
   const getStatusBadge = (status: DashboardOrder['status']) => {
-    const statusConfig = {
+    const statusConfig: Record<DashboardOrder['status'], { label: string; variant: "default" | "secondary" | "destructive" | "outline"; color: string }> = {
       aberto: { label: 'Aberto', variant: 'default' as const, color: 'bg-skin-success' },
       orcamento: { label: 'Orcamento', variant: 'secondary' as const, color: 'bg-skin-warning' },
       aguardando: { label: 'Aguardando', variant: 'outline' as const, color: 'bg-skin-primary' },
@@ -451,11 +451,11 @@ export default function OrdemServicoDashboardPage() {
         <h1 className="text-3xl font-bold text-skin-text">
           Dashboard - Ordem de Servicos
         </h1>
-        <p className="text-skin-text-muted dark:text-gray-400 mt-2">
+        <p className="mt-2 text-skin-text-muted">
           Visao geral das ordens de servico e atalhos rapidos
         </p>
         {loadError ? (
-          <p className="mt-3 text-sm text-skin-danger dark:text-red-400">{loadError}</p>
+          <p className="mt-3 text-sm text-skin-danger">{loadError}</p>
         ) : null}
       </div>
 
@@ -531,33 +531,33 @@ export default function OrdemServicoDashboardPage() {
         />
       </div>
 
-      <div className="mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <div className="mt-8 rounded-lg border border-skin-border bg-skin-surface p-4">
+        <h3 className="mb-2 text-sm font-semibold text-skin-text">
           Atalhos de Teclado:
         </h3>
-        <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs text-skin-text-muted dark:text-gray-400">
+        <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs text-skin-text-muted">
           <div className="flex items-center gap-2">
-            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">F1</kbd> 
+            <kbd className="rounded border border-skin-border bg-skin-background-elevated px-2 py-1 font-sans font-bold text-skin-text">F1</kbd> 
             <span>Clientes</span>
-            <span className="text-gray-400 mx-1">|</span>
-            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">Shift+F1</kbd>
-            <span className="font-medium text-skin-info dark:text-blue-400">Novo Cliente</span>
+            <span className="mx-1 text-skin-text-muted">|</span>
+            <kbd className="rounded border border-skin-border bg-skin-background-elevated px-2 py-1 font-sans font-bold text-skin-text">Shift+F1</kbd>
+            <span className="font-medium text-skin-info">Novo Cliente</span>
           </div>
           
           <div className="flex items-center gap-2">
-            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">F2</kbd> 
+            <kbd className="rounded border border-skin-border bg-skin-background-elevated px-2 py-1 font-sans font-bold text-skin-text">F2</kbd> 
             <span>Produtos</span>
-            <span className="text-gray-400 mx-1">|</span>
-            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">Shift+F2</kbd>
-            <span className="font-medium text-orange-600 dark:text-orange-400">Novo Produto</span>
+            <span className="mx-1 text-skin-text-muted">|</span>
+            <kbd className="rounded border border-skin-border bg-skin-background-elevated px-2 py-1 font-sans font-bold text-skin-text">Shift+F2</kbd>
+            <span className="font-medium text-skin-warning">Novo Produto</span>
           </div>
           
           <div className="flex items-center gap-2">
-            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">F3</kbd> 
+            <kbd className="rounded border border-skin-border bg-skin-background-elevated px-2 py-1 font-sans font-bold text-skin-text">F3</kbd> 
             <span>Ordens</span>
-            <span className="text-gray-400 mx-1">|</span>
-            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">Shift+F3</kbd>
-            <span className="font-medium text-pink-600 dark:text-pink-400">Nova OS</span>
+            <span className="mx-1 text-skin-text-muted">|</span>
+            <kbd className="rounded border border-skin-border bg-skin-background-elevated px-2 py-1 font-sans font-bold text-skin-text">Shift+F3</kbd>
+            <span className="font-medium text-skin-primary">Nova OS</span>
           </div>
         </div>
       </div>
