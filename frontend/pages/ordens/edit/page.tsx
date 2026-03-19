@@ -1110,7 +1110,7 @@ export default function EditOrdemPage() {
                 <Card className="shadow-sm border-2 w-full">
                     <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">1</span>
                             <CardTitle className="text-lg">Cliente</CardTitle>
                             <TooltipProvider>
                                 <Popover>
@@ -1162,7 +1162,7 @@ export default function EditOrdemPage() {
                                                     Cliente Fixo
                                                 </Badge>
                                                 {ordem.cliente.is_active ? (
-                                                    <Badge variant="outline" className="text-[10px] h-5 border-emerald-500/50 text-emerald-600 bg-emerald-50/50">
+                                                    <Badge variant="outline" className="text-[10px] h-5 border-skin-success/40 text-skin-success bg-skin-success/10">
                                                         Ativo
                                                     </Badge>
                                                 ) : (
@@ -1224,7 +1224,7 @@ export default function EditOrdemPage() {
                 <Card className="shadow-sm border-2">
                     <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">2</span>
                             <CardTitle className="text-lg">Dados da Ordem de Serviço</CardTitle>
                         </div>
                     </CardHeader>
@@ -1521,7 +1521,7 @@ export default function EditOrdemPage() {
                 <Card className="shadow-sm border-2">
                     <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">3</span>
                             <CardTitle className="text-lg">Equipamento</CardTitle>
                         </div>
                     </CardHeader>
@@ -1654,7 +1654,7 @@ export default function EditOrdemPage() {
                 <Card className="shadow-sm border-2">
                     <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">4</span>
                             <CardTitle className="text-lg">Laudo Técnico</CardTitle>
                             <TooltipProvider>
                                 <Popover>
@@ -1708,7 +1708,7 @@ export default function EditOrdemPage() {
                 <Card className="shadow-sm border-2">
                     <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">5</span>
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">5</span>
                             <CardTitle className="text-lg">Produtos e Serviços</CardTitle>
                         </div>
                     </CardHeader>
@@ -1758,8 +1758,8 @@ export default function EditOrdemPage() {
                                             />
                                             {debouncedSearch.length >= 2 && filteredProducts.length === 0 && !itemTemp.produto_id && (
                                                 <div className="absolute right-3 top-2.5 flex items-center gap-2" title="Item personalizado (não cadastrado)">
-                                                    <span className="text-xs text-blue-500 font-medium hidden sm:inline-block">Item personalizado</span>
-                                                    <Info className="h-5 w-5 text-blue-500 cursor-help" />
+                                                    <span className="text-xs text-skin-info font-medium hidden sm:inline-block">Item personalizado</span>
+                                                    <Info className="h-5 w-5 text-skin-info cursor-help" />
                                                 </div>
                                             )}
                                         </div>
@@ -1782,7 +1782,7 @@ export default function EditOrdemPage() {
                                                 ))
                                             ) : (
                                                 <div className="p-3 text-sm text-muted-foreground bg-blue-50/50 flex items-center gap-2">
-                                                    <Info className="h-4 w-4 text-blue-500" />
+                                                    <Info className="h-4 w-4 text-skin-info" />
                                                     <span>Item personalizado (não cadastrado)</span>
                                                 </div>
                                             )}
@@ -1921,7 +1921,7 @@ export default function EditOrdemPage() {
                     <Card className="shadow-sm border-2">
                         <CardHeader className="bg-slate-50/50 pb-4">
                             <div className="flex items-center gap-2">
-                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">6</span>
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">6</span>
                                 <CardTitle className="text-lg">Valores</CardTitle>
                             </div>
                         </CardHeader>
@@ -1963,7 +1963,7 @@ export default function EditOrdemPage() {
                     <Card className="shadow-sm border-2">
                         <CardHeader className="bg-slate-50/50 pb-4">
                             <div className="flex items-center gap-2">
-                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">7</span>
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">7</span>
                                 <CardTitle className="text-lg">Observações</CardTitle>
                             </div>
                         </CardHeader>
@@ -2060,26 +2060,26 @@ export default function EditOrdemPage() {
             {/* Business Rules Summary Footer */}
             <div className="bg-muted/30 p-6 rounded-xl border border-dashed text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-5 w-5 text-skin-success shrink-0" />
                     <p><strong>Edição:</strong> Apenas campos editáveis podem ser alterados. O cliente permanece fixo.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-blue-500 shrink-0" />
+                    <Info className="h-5 w-5 text-skin-info shrink-0" />
                     <p><strong>Status:</strong> Apenas transições válidas são permitidas conforme regras de negócio.</p>
                 </div>
                 <div className="flex gap-3">
-                    <AlertCircle className="h-5 w-5 text-orange-500 shrink-0" />
+                    <AlertCircle className="h-5 w-5 text-skin-warning shrink-0" />
                     <p><strong>Histórico:</strong> Todas as alterações são registradas no histórico da ordem.</p>
                 </div>
             </div>
 
             {/* Image Preview Modal */}
             {previewImage && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-skin-background/80 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
                     <div className="relative max-w-4xl max-h-[90vh] p-2 animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
 
                         <button
-                            className="absolute -top-4 -right-4 bg-white text-black rounded-full p-1 shadow-lg hover:bg-gray-200 transition-colors z-10"
+                            className="absolute -top-4 -right-4 bg-skin-surface text-skin-text border border-skin-border rounded-full p-1 shadow-lg hover:bg-skin-surface-hover transition-colors z-10"
                             onClick={() => setPreviewImage(null)}
                         >
                             <X className="h-6 w-6" />
@@ -2089,7 +2089,7 @@ export default function EditOrdemPage() {
                             {/* Previous Button */}
                             {formData.equipamento_fotos && formData.equipamento_fotos.length > 1 && (
                                 <button
-                                    className="absolute left-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                                    className="absolute left-2 bg-skin-background/75 hover:bg-skin-background/90 text-skin-text-inverse rounded-full p-2 transition-colors"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         const currentPhotos = formData.equipamento_fotos || [];
@@ -2111,7 +2111,7 @@ export default function EditOrdemPage() {
                             {/* Next Button */}
                             {formData.equipamento_fotos && formData.equipamento_fotos.length > 1 && (
                                 <button
-                                    className="absolute right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                                    className="absolute right-2 bg-skin-background/75 hover:bg-skin-background/90 text-skin-text-inverse rounded-full p-2 transition-colors"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         const currentPhotos = formData.equipamento_fotos || [];

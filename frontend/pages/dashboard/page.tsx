@@ -172,20 +172,20 @@ const ShortcutCard = ({
   title: string;
   shortcut: string;
   icon: React.ElementType;
-  color: string;
+  accentClassName: string;
   onClick: () => void;
 }) => {
   return (
     <Card
-      className={`cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg ${color}`}
+      className={`cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg ${accentClassName}`}
       onClick={onClick}
     >
       <CardContent className="flex items-center justify-between p-6">
         <div className="flex items-center gap-3">
-          <Icon className="h-8 w-8 text-white" />
+          <Icon className="h-8 w-8 text-skin-text-inverse" />
           <div>
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
-            <p className="text-sm text-white/80">{shortcut}</p>
+            <h3 className="text-lg font-semibold text-skin-text-inverse">{title}</h3>
+            <p className="text-sm text-skin-text-inverse/80">{shortcut}</p>
           </div>
         </div>
       </CardContent>
@@ -206,17 +206,17 @@ const OrderTable = ({
 }) => {
   const getStatusBadge = (status: DashboardOrder['status']) => {
     const statusConfig = {
-      aberto: { label: 'Aberto', variant: 'default' as const, color: 'bg-green-500' },
-      orcamento: { label: 'Orcamento', variant: 'secondary' as const, color: 'bg-yellow-500' },
-      aguardando: { label: 'Aguardando', variant: 'outline' as const, color: 'bg-blue-500' },
-      execucao: { label: 'Em Execucao', variant: 'default' as const, color: 'bg-purple-500' },
-      finalizada: { label: 'Finalizada', variant: 'secondary' as const, color: 'bg-gray-500' },
-      aprovada: { label: 'Aprovada', variant: 'default' as const, color: 'bg-green-600' }
+      aberto: { label: 'Aberto', variant: 'default' as const, color: 'bg-skin-success' },
+      orcamento: { label: 'Orcamento', variant: 'secondary' as const, color: 'bg-skin-warning' },
+      aguardando: { label: 'Aguardando', variant: 'outline' as const, color: 'bg-skin-primary' },
+      execucao: { label: 'Em Execucao', variant: 'default' as const, color: 'bg-skin-info' },
+      finalizada: { label: 'Finalizada', variant: 'secondary' as const, color: 'bg-skin-text-muted' },
+      aprovada: { label: 'Aprovada', variant: 'default' as const, color: 'bg-skin-success' }
     };
 
     const config = statusConfig[status];
     return (
-      <Badge variant={config.variant} className={`${config.color} text-white`}>
+      <Badge variant="outline" className={`${config.color} text-skin-text-inverse`}>
         {config.label}
       </Badge>
     );
@@ -229,92 +229,92 @@ const OrderTable = ({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        <CardTitle className="text-lg font-semibold text-skin-text">
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="py-8 text-center text-skin-text-muted">
             Carregando dados do dashboard...
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="py-8 text-center text-skin-text-muted">
             {emptyMessage}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">No</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Cliente</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Data Prev. Final</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Status</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Acoes</th>
+                <tr className="border-b border-skin-border">
+                  <th className="px-2 py-3 text-left font-medium text-skin-text-muted">No</th>
+                  <th className="px-2 py-3 text-left font-medium text-skin-text-muted">Cliente</th>
+                  <th className="px-2 py-3 text-left font-medium text-skin-text-muted">Data Prev. Final</th>
+                  <th className="px-2 py-3 text-left font-medium text-skin-text-muted">Status</th>
+                  <th className="px-2 py-3 text-left font-medium text-skin-text-muted">Acoes</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((ordem) => (
-                  <tr key={ordem.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="py-3 px-2 text-sm font-medium text-blue-600 dark:text-blue-400">
+                  <tr key={ordem.id} className="border-b border-skin-border/60 hover:bg-skin-surface-hover">
+                    <td className="px-2 py-3 text-sm font-medium text-skin-info">
                       {ordem.numero}
                     </td>
-                    <td className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">
+                    <td className="px-2 py-3 text-sm text-skin-text">
                       {ordem.cliente}
                     </td>
-                    <td className="py-3 px-2 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-2 py-3 text-sm text-skin-text-muted">
                       {ordem.dataPrevisaoFinal}
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="px-2 py-3">
                       {getStatusBadge(ordem.status)}
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="px-2 py-3">
                       <div className="flex items-center gap-1">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+                          className="h-8 w-8 p-0 hover:bg-skin-info/15"
                           onClick={() => handleAction('visualizar', ordem)}
                           title="Visualizar"
                         >
-                          <Eye className="h-4 w-4 text-blue-600" />
+                          <Eye className="h-4 w-4 text-skin-info" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          className="h-8 w-8 p-0 hover:bg-skin-surface-hover"
                           onClick={() => handleAction('imprimir', ordem)}
                           title="Imprimir"
                         >
-                          <Printer className="h-4 w-4 text-gray-600" />
+                          <Printer className="h-4 w-4 text-skin-text-muted" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900"
+                          className="h-8 w-8 p-0 hover:bg-skin-success/15"
                           onClick={() => handleAction('whatsapp', ordem)}
                           title="WhatsApp"
                         >
-                          <MessageCircle className="h-4 w-4 text-green-600" />
+                          <MessageCircle className="h-4 w-4 text-skin-success" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                          className="h-8 w-8 p-0 hover:bg-skin-warning/15"
                           onClick={() => handleAction('editar', ordem)}
                           title="Editar"
                         >
-                          <Edit className="h-4 w-4 text-yellow-600" />
+                          <Edit className="h-4 w-4 text-skin-warning" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900"
+                          className="h-8 w-8 p-0 hover:bg-skin-danger/15"
                           onClick={() => handleAction('excluir', ordem)}
                           title="Excluir"
                         >
-                          <Trash2 className="h-4 w-4 text-red-600" />
+                          <Trash2 className="h-4 w-4 text-skin-danger" />
                         </Button>
                       </div>
                     </td>
@@ -446,16 +446,16 @@ export default function OrdemServicoDashboardPage() {
 
   return (
     <ModulePageGuard resource="dashboard" action="view">
-      <div className="p-6 max-w-full mx-auto space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="p-6 max-w-full mx-auto space-y-6 bg-skin-background min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+        <h1 className="text-3xl font-bold text-skin-text">
           Dashboard - Ordem de Servicos
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <p className="text-skin-text-muted dark:text-gray-400 mt-2">
           Visao geral das ordens de servico e atalhos rapidos
         </p>
         {loadError ? (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{loadError}</p>
+          <p className="mt-3 text-sm text-skin-danger dark:text-red-400">{loadError}</p>
         ) : null}
       </div>
 
@@ -464,21 +464,21 @@ export default function OrdemServicoDashboardPage() {
           title="Clientes"
           shortcut="F1"
           icon={Users}
-          color="bg-gradient-to-r from-blue-500 to-blue-600"
+          accentClassName="bg-gradient-to-r from-skin-info to-skin-primary"
           onClick={() => handleShortcut('clientes')}
         />
         <ShortcutCard
           title="Produtos/Servicos"
           shortcut="F2"
           icon={Package}
-          color="bg-gradient-to-r from-orange-500 to-orange-600"
+          accentClassName="bg-gradient-to-r from-skin-warning to-skin-primary"
           onClick={() => handleShortcut('produtos')}
         />
         <ShortcutCard
           title="Ordens"
           shortcut="F3"
           icon={FileText}
-          color="bg-gradient-to-r from-pink-500 to-pink-600"
+          accentClassName="bg-gradient-to-r from-skin-primary to-skin-info"
           onClick={() => handleShortcut('ordens')}
         />
       </div>
@@ -535,13 +535,13 @@ export default function OrdemServicoDashboardPage() {
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Atalhos de Teclado:
         </h3>
-        <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs text-gray-600 dark:text-gray-400">
+        <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs text-skin-text-muted dark:text-gray-400">
           <div className="flex items-center gap-2">
             <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">F1</kbd> 
             <span>Clientes</span>
             <span className="text-gray-400 mx-1">|</span>
             <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded shadow-sm border border-gray-300 dark:border-gray-600 font-sans font-bold">Shift+F1</kbd>
-            <span className="font-medium text-blue-600 dark:text-blue-400">Novo Cliente</span>
+            <span className="font-medium text-skin-info dark:text-blue-400">Novo Cliente</span>
           </div>
           
           <div className="flex items-center gap-2">

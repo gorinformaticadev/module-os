@@ -576,7 +576,7 @@ export default function NewOrdemRefactoredPage() {
                     <Button variant="outline" onClick={() => window.history.back()} disabled={loading}>
                         Cancelar
                     </Button>
-                    <Button onClick={handleSave} disabled={loading} className="gap-2 bg-primary hover:bg-primary/90" title="Salvar (Ctrl+S)">
+                    <Button onClick={handleSave} disabled={loading} className="gap-2 bg-skin-primary hover:bg-skin-primary-hover" title="Salvar (Ctrl+S)">
                         {loading ? 'Processando...' : <><Save className="h-4 w-4" /> Salvar Ordem de Serviço</>}
                     </Button>
                 </div>
@@ -588,7 +588,7 @@ export default function NewOrdemRefactoredPage() {
                 <Card className="lg:col-span-1 shadow-sm border-2">
                     <CardHeader className="bg-muted/20 pb-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">1</span>
                             <CardTitle className="text-lg">Cliente</CardTitle>
                         </div>
                         <CardDescription>Busque ou selecione o cliente</CardDescription>
@@ -658,14 +658,14 @@ export default function NewOrdemRefactoredPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-card rounded-lg border-2 border-primary/20 p-5 space-y-4 relative shadow-sm overflow-hidden bg-gradient-to-br from-primary/5 to-transparent">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-10 -mt-10 pointer-events-none" />
+                            <div className="bg-card rounded-lg border-2 border-skin-primary/20 p-5 space-y-4 relative shadow-sm overflow-hidden bg-gradient-to-br from-skin-primary/5 to-transparent">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-skin-primary/5 rounded-bl-full -mr-10 -mt-10 pointer-events-none" />
 
                                 <div className="absolute -top-1 right-1 flex gap-1 z-10">
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-6 w-6 rounded-full hover:bg-blue-500/10 hover:text-blue-600 transition-colors"
+                                        className="h-6 w-6 rounded-full hover:bg-skin-info/10 hover:text-skin-info transition-colors"
                                         onClick={() => setIsEditClientModalOpen(true)}
                                         title="Editar cliente"
                                     >
@@ -687,7 +687,7 @@ export default function NewOrdemRefactoredPage() {
                                 </div>
 
                                 <div className="flex gap-4 items-start pt-2">
-                                    <div className="h-20 w-20 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-inner shrink-0 overflow-hidden">
+                                    <div className="h-20 w-20 rounded-xl bg-primary/10 flex items-center justify-center border border-skin-primary/20 shadow-inner shrink-0 overflow-hidden">
                                         {selectedClient.image_url ? (
                                             <ProtectedModuleImage
                                                 src={selectedClient.image_url}
@@ -842,7 +842,7 @@ export default function NewOrdemRefactoredPage() {
                     <Card className="shadow-sm border-2">
                         <CardHeader className="bg-muted/20 pb-4">
                             <div className="flex items-center gap-2">
-                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">2</span>
                                 <CardTitle className="text-lg">Dados da Ordem de Serviço</CardTitle>
                             </div>
                         </CardHeader>
@@ -946,7 +946,7 @@ export default function NewOrdemRefactoredPage() {
 
                             {/* Campos Condicionais: FORMATAÇÃO */}
                             {formData.tipo_servico === 'Formatação' && (
-                                <div className="col-span-full mt-4 p-4 border-2 border-primary/20 bg-primary/5 rounded-lg space-y-4">
+                                <div className="col-span-full mt-4 p-4 border-2 border-skin-primary/20 bg-skin-primary/5 rounded-lg space-y-4">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Wrench className="h-4 w-4 text-primary" />
                                         <h4 className="text-sm font-semibold uppercase tracking-wider">Detalhes da Formatação</h4>
@@ -1035,7 +1035,7 @@ export default function NewOrdemRefactoredPage() {
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        className="h-8 gap-2 text-primary border-primary/20 hover:bg-primary/5"
+                                        className="h-8 gap-2 text-primary border-skin-primary/20 hover:bg-skin-primary/5"
                                         onClick={handleAIAnalyze}
                                         disabled={analyzing || !formData.descricao}
                                     >
@@ -1062,7 +1062,7 @@ export default function NewOrdemRefactoredPage() {
                                 />
 
                                 {aiAnalysis && (
-                                    <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2">
+                                    <div className="mt-4 p-4 rounded-lg bg-skin-primary/5 border border-skin-primary/20 animate-in fade-in slide-in-from-top-2">
                                         <div className="flex items-center gap-2 mb-3 text-primary font-semibold text-sm">
                                             <Brain className="h-4 w-4" />
                                             Sugestão da Inteligência Artificial
@@ -1117,7 +1117,7 @@ export default function NewOrdemRefactoredPage() {
                     <Card className="shadow-sm border-2">
                         <CardHeader className="bg-muted/20 pb-4">
                             <div className="flex items-center gap-2">
-                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">3</span>
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">3</span>
                                 <CardTitle className="text-lg">Equipamento (Se aplicável)</CardTitle>
                             </div>
                         </CardHeader>
@@ -1216,7 +1216,7 @@ export default function NewOrdemRefactoredPage() {
                                                         className="h-full w-full object-cover"
                                                         onClick={() => setSelectedPhoto(photo)}
                                                     />
-                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                                    <div className="absolute inset-0 bg-skin-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                                                         <Button
                                                             type="button"
                                                             variant="secondary"
@@ -1257,7 +1257,7 @@ export default function NewOrdemRefactoredPage() {
                                                         type="button"
                                                         variant="outline"
                                                         size="icon"
-                                                        className="absolute top-0 right-0 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 border-white/20 text-white"
+                                                        className="absolute top-0 right-0 h-10 w-10 rounded-full bg-skin-surface text-skin-text border border-skin-border hover:bg-skin-surface-hover"
                                                         onClick={() => setSelectedPhoto(null)}
                                                     >
                                                         <X className="h-6 w-6" />
@@ -1268,7 +1268,7 @@ export default function NewOrdemRefactoredPage() {
                                     </>
                                 ) : (
                                     <div
-                                        className="border-2 border-dashed border-muted rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary/30 hover:bg-primary/5 cursor-pointer transition-all"
+                                        className="border-2 border-dashed border-muted rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary/30 hover:bg-skin-primary/5 cursor-pointer transition-all"
                                         onClick={() => document.getElementById('photo-upload')?.click()}
                                     >
                                         <Camera className="h-8 w-8 mb-2 opacity-20" />
@@ -1285,7 +1285,7 @@ export default function NewOrdemRefactoredPage() {
                         <Card className="shadow-sm border-2">
                             <CardHeader className="bg-slate-50/50 pb-4">
                                 <div className="flex items-center gap-2">
-                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
+                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">4</span>
                                     <CardTitle className="text-lg">Valores</CardTitle>
                                 </div>
                             </CardHeader>
@@ -1322,7 +1322,7 @@ export default function NewOrdemRefactoredPage() {
                         <Card className="shadow-sm border-2">
                             <CardHeader className="bg-slate-50/50 pb-4">
                                 <div className="flex items-center gap-2">
-                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">5</span>
+                                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-skin-primary text-skin-text-inverse text-xs font-bold">5</span>
                                     <CardTitle className="text-lg">Observações</CardTitle>
                                 </div>
                             </CardHeader>

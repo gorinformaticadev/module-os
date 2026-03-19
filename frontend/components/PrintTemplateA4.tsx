@@ -121,7 +121,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     {tenantInfo.logo_url ? (
                         <img src={tenantInfo.logo_url} alt="Logo" />
                     ) : (
-                        <div style={{ fontSize: '11px', color: '#ccc', fontWeight: 600 }}>LOGO</div>
+                        <div className="print-logo-placeholder">LOGO</div>
                     )}
                 </div>
                 <div className="company-data">
@@ -190,14 +190,14 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         {ordem.equipamento_marca && <span> | <strong>Marca:</strong> {ordem.equipamento_marca}</span>}
                         {ordem.equipamento_modelo && <span> | <strong>Modelo:</strong> {ordem.equipamento_modelo}</span>}
                         {ordem.equipamento_serie && <span> | <strong>Série:</strong> {ordem.equipamento_serie}</span>}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginTop: '4px' }}>
+                        <div className="equipment-meta-grid">
                             {ordem.equipamento_acessorios && (
-                                <div style={{ flexShrink: 0 }}>
+                                <div className="equipment-meta-block">
                                     <strong>Acessórios / Outros:</strong> {ordem.equipamento_acessorios}
                                 </div>
                             )}
                             {ordem.equipamento_estado && (
-                                <div style={{ flexShrink: 0 }}>
+                                <div className="equipment-meta-block">
                                     <strong>Estado de Entrega / Obs:</strong> {ordem.equipamento_estado}
                                 </div>
                             )}
@@ -211,7 +211,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
             <div className="section-content">
                 {/* Linha com campos de formatação */}
                 {(ordem.tipo_servico || ordem.formatacao_so || ordem.formatacao_backup !== undefined || ordem.formatacao_senha) && (
-                    <div style={{ marginBottom: '12px', fontWeight: 600 }}>
+                    <div className="service-summary-line">
                         {ordem.tipo_servico}
                         {ordem.formatacao_so && <span> - {ordem.formatacao_so}</span>}
                         {ordem.formatacao_backup !== undefined && (
@@ -348,7 +348,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         font-family: Arial, sans-serif;
                         font-size: 10pt;
                         color: #000 !important;
-                        background: white !important;
+                        background: white !important; --print-ink-muted: dimgray; --print-ink-subtle: gray; --print-border-soft: gainsboro; --print-panel: lightgray; --print-brand: maroon;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
@@ -368,7 +368,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         width: 100%;
                         max-width: 210mm;
                         margin: 0 auto;
-                        background: white !important;
+                        background: white !important; --print-ink-muted: dimgray; --print-ink-subtle: gray; --print-border-soft: gainsboro; --print-panel: lightgray; --print-brand: maroon;
                         color: #000 !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
@@ -381,7 +381,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         min-height: 297mm;
                         margin: 10px auto;
                         padding: 10mm; /* Ajustado para 10mm para coincidir com a impressão */
-                        background: white !important;
+                        background: white !important; --print-ink-muted: dimgray; --print-ink-subtle: gray; --print-border-soft: gainsboro; --print-panel: lightgray; --print-brand: maroon;
                         color: #000 !important;
                         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                         position: relative;
@@ -396,7 +396,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                         border-bottom: 1px dashed #ccc;
                         margin: 20px 0;
                         text-align: center;
-                        color: #666;
+                        color: var(--print-ink-muted);
                         font-size: 12px;
                         display: flex;
                         align-items: center;
@@ -424,11 +424,11 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    border-right: 1px solid #e0e0e0;
+                    border-right: 1px solid var(--print-border-soft);
                     padding-right: 20px;
                 }
 
-                .logo-section img {
+                .print-logo-placeholder { font-size: 11px; color: silver; font-weight: 600; } .print-signature-caption { font-size: 9px; color: var(--print-ink-subtle); } .logo-section img {
                     max-width: 130px;
                     max-height: 55px;
                     object-fit: contain;
@@ -449,20 +449,20 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .company-info {
                     font-size: 10px;
-                    color: #682525ff !important;
+                    color: var(--print-brand) !important;
                     line-height: 1.5;
                 }
 
                 .contact-section {
                     text-align: right;
                     font-size: 10px;
-                    color: #682525ff !important;
+                    color: var(--print-brand) !important;
                     min-width: 140px;
                 }
 
                 /* Título da OS */
                 .os-title-bar {
-                    background: #d8d7d7ff;
+                    background: var(--print-panel);
                     border: 1px solid #a5a5a5ff;
                     border-radius: 4px;
                     padding: 8px 12px;
@@ -480,7 +480,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .os-emission {
                     font-size: 9px;
-                    color: #666 !important;
+                    color: var(--print-ink-muted) !important;
                 }
 
                 /* Tabela de informações */
@@ -495,7 +495,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .info-table th {
                     background: #f8f8f8;
-                    border: 1px solid #dfdedeff;
+                    border: 1px solid var(--print-border-soft);
                     padding: 4px 10px;
                     font-size: 9px;
                     font-weight: 600;
@@ -506,7 +506,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 }
 
                 .info-table td {
-                    border: 1px solid #dfdedeff;
+                    border: 1px solid var(--print-border-soft);
                     padding: 4px 10px;
                     font-size: 9px;
                     color: #000 !important;
@@ -515,7 +515,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 /* Seções */
                 .section-header {
-                    background: #d8d7d7ff;
+                    background: var(--print-panel);
                     border: 1px solid #a5a5a5ff;
                     border-bottom: none;
                     border-radius: 4px 4px 0 0;
@@ -605,7 +605,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     margin-top: 25px;
                     font-size: 10px;
                     font-weight: 600;
-                    color: #666 !important;
+                    color: var(--print-ink-muted) !important;
                 }
 
                 /* Rodapé com marca d'água */
@@ -670,7 +670,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 }
                 .declaration-label {
                     font-size: 8px;
-                    color: #666;
+                    color: var(--print-ink-muted);
                     margin-top: 2px;
                 }
 
