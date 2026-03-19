@@ -561,7 +561,7 @@ export default function NewOrdemRefactoredPage() {
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Nova Ordem de Serviço</h1>
-                        <p className="text-muted-foreground">Registre um novo atendimento ou gere um orçamento.</p>
+                        <p className="text-skin-text-muted">Registre um novo atendimento ou gere um orçamento.</p>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -586,7 +586,7 @@ export default function NewOrdemRefactoredPage() {
 
                 {/* Section 1: IDENTIFICAÇÃO DO CLIENTE */}
                 <Card className="lg:col-span-1 shadow-sm border-2">
-                    <CardHeader className="bg-muted/20 pb-4">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
                             <CardTitle className="text-lg">Cliente</CardTitle>
@@ -599,7 +599,7 @@ export default function NewOrdemRefactoredPage() {
                                 <div className="space-y-2">
                                     <Label htmlFor="search-client">Buscar Cliente</Label>
                                     <div className="relative">
-                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-skin-text-muted" />
                                         <Input
                                             id="search-client"
                                             placeholder="Digite 2+ letras para buscar..."
@@ -626,7 +626,7 @@ export default function NewOrdemRefactoredPage() {
                                         />
                                         {searchingClients && (
                                             <div className="absolute right-2.5 top-2.5">
-                                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                                <Loader2 className="h-4 w-4 animate-spin text-skin-text-muted" />
                                             </div>
                                         )}
                                     </div>
@@ -637,12 +637,12 @@ export default function NewOrdemRefactoredPage() {
                                         {clients.map((c, index) => (
                                             <div
                                                 key={c.id}
-                                                className={`p-3 flex flex-col transition-colors ${index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted/50 cursor-pointer"}`}
+                                                className={`p-3 flex flex-col transition-colors ${index === selectedIndex ? "bg-skin-surface-hover text-skin-text" : "hover:bg-skin-surface-hover cursor-pointer"}`}
                                                 onMouseDown={(e) => e.preventDefault()}
                                                 onClick={() => handleClientSelection(c)}
                                             >
                                                 <span className="font-medium text-sm">{c.name}</span>
-                                                <span className="text-xs text-muted-foreground">{c.document || 'Sem documento'} • {c.phone_primary}</span>
+                                                <span className="text-xs text-skin-text-muted">{c.document || 'Sem documento'} • {c.phone_primary}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -674,7 +674,7 @@ export default function NewOrdemRefactoredPage() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-6 w-6 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                        className="h-6 w-6 rounded-full hover:bg-skin-danger/10 hover:text-skin-danger transition-colors"
                                         onClick={() => {
                                             setSelectedClient(null);
                                             setIsObservationsExpanded(false);
@@ -739,9 +739,9 @@ export default function NewOrdemRefactoredPage() {
                                     <ClientOrdersList clientId={selectedClient.id} clientName={selectedClient.name} />
 
                                     {selectedClient.observations && (
-                                        <div className="mt-2 p-3 bg-muted/40 rounded-md border border-muted-foreground/10">
+                                        <div className="mt-2 rounded-md border border-skin-border/40 bg-skin-background-elevated/50 p-3">
                                             <div
-                                                className="flex items-center justify-between cursor-pointer hover:bg-muted/20 -m-1 p-1 rounded transition-colors"
+                                                className="flex items-center justify-between cursor-pointer hover:bg-skin-surface-hover -m-1 p-1 rounded transition-colors"
                                                 onClick={() => setIsObservationsExpanded(!isObservationsExpanded)}
                                             >
                                                 <div className="flex items-center gap-2">
@@ -1380,17 +1380,17 @@ export default function NewOrdemRefactoredPage() {
             </div>
 
             {/* Business Rules Summary Footer */}
-            <div className="bg-muted/30 p-6 rounded-xl border border-dashed text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 rounded-xl border border-dashed border-skin-border bg-skin-background-elevated/50 p-6 text-sm text-skin-text-muted md:grid-cols-3">
                 <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-skin-success" />
                     <p><strong>Validação:</strong> Todos os campos com asterisco são obrigatórios. O sistema verifica a validade do CPF/CNPJ se informado.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-blue-500 shrink-0" />
+                    <Info className="h-5 w-5 shrink-0 text-skin-info" />
                     <p><strong>Fluxo:</strong> Ao salvar como Orçamento, o registro não gera obrigações financeiras imediatas.</p>
                 </div>
                 <div className="flex gap-3">
-                    <AlertCircle className="h-5 w-5 text-orange-500 shrink-0" />
+                    <AlertCircle className="h-5 w-5 shrink-0 text-skin-warning" />
                     <p><strong>Restrição:</strong> Clientes inativos não podem abrir novas ordens de serviço. Reative o cliente para prosseguir.</p>
                 </div>
             </div>
