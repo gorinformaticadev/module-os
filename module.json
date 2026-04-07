@@ -13,30 +13,35 @@
                       "label":  "Dashboard",
                       "route":  "/modules/ordem_servico/pages/dashboard",
                       "icon":  "BarChart3",
+                      "permission":  "ordem_servico.dashboard.view",
                       "order":  1
                   },
                   {
                       "label":  "Ordens de Serviço",
                       "route":  "/modules/ordem_servico/pages/ordens",
                       "icon":  "ClipboardList",
+                      "permission":  "ordem_servico.orders.view",
                       "order":  2
                   },
                   {
                       "label":  "Clientes",
                       "route":  "/modules/ordem_servico/pages/clientes",
                       "icon":  "Users",
+                      "permission":  "ordem_servico.clients.view",
                       "order":  3
                   },
                   {
                       "label":  "Produtos / Serviços",
                       "route":  "/modules/ordem_servico/pages/produtos",
                       "icon":  "Package",
+                      "permission":  "ordem_servico.products.view",
                       "order":  4
                   },
                   {
                       "label":  "Configurações",
                       "route":  "/modules/ordem_servico/pages/configuracoes",
                       "icon":  "Settings",
+                      "permission":  "ordem_servico.config.admin",
                       "order":  5
                   }
               ],

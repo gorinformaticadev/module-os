@@ -13,8 +13,7 @@ WHERE t.ativo = true
     FROM mod_ordem_servico_configs c
     WHERE c.tenant_id = t.id
       AND c.key = 'module_enabled'
-  )
-LIMIT 1;
+  );
 
 INSERT INTO mod_ordem_servico_configs (id, tenant_id, key, value)
 SELECT
@@ -29,5 +28,4 @@ WHERE t.ativo = true
     FROM mod_ordem_servico_configs c
     WHERE c.tenant_id = t.id
       AND c.key = 'version'
-  )
-LIMIT 1;
+  );

@@ -1,75 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, X, Shield, Users, Package, Settings, BarChart3, CheckCircle, XCircle, Info } from 'lucide-react';
-
-// Função auxiliar para recuperar token de forma segura
-const getToken = () => {
-  if (typeof window === 'undefined') return '';
-
-  // 1. Tentar ler do cookie
-  const cookies = document.cookie.split(';');
-  const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
-  if (tokenCookie) return tokenCookie.split('=')[1];
-
-  // 2. Fallback para sessionStorage (criptografado em base64)
-  const encrypted = sessionStorage.getItem("@App:token");
-  if (encrypted) {
-    try { return atob(encrypted); } catch { return ''; }
-  }
-
-  return '';
-};
-
-// Cliente API customizado para o módulo raiz
-const api = {
-  get: async (url: string) => {
-    // Usar NEXT_PUBLIC_API_URL se disponível, senão fallback (evitar localhost:3001)
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    console.log(`📡 [ProfileMatrix] GET ${baseUrl}${url}`);
-
-    const token = getToken();
-
-    const response = await fetch(`${baseUrl}${url}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    if (!response.ok) {
-      console.error(`❌ [ProfileMatrix] GET Error: ${response.status}`);
-      throw new Error(`HTTP ${response.status}`);
-    }
-    return { data: await response.json() };
-  },
-  post: async (url: string, data: any) => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    const token = getToken();
-    const response = await fetch(`${baseUrl}${url}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return { data: await response.json() };
-  },
-  put: async (url: string, data: any) => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    const token = getToken();
-    const response = await fetch(`${baseUrl}${url}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return { data: await response.json() };
-  }
-};
+import api from '@/lib/api';
 
 // Definição dos perfis
 type Profile = 'admin' | 'technician' | 'attendant';
@@ -273,8 +204,8 @@ const PERMISSION_RULES: PermissionRule[] = [
   {
     id: 'orders_view_details',
     name: 'Ver Detalhes das Ordens',
-    description: 'Visualizar detalhes completos das ordens de servico',
-    category: 'Ordens de Servico',
+    description: 'Visualizar detalhes completos das ordens de serviço',
+    category: 'Ordens de Serviço',
     icon: <Package className="h-4 w-4" />
   },
   {
@@ -308,16 +239,16 @@ const PERMISSION_RULES: PermissionRule[] = [
 
   {
     id: 'orders_approve_budget',
-    name: 'Aprovar Orcamento',
-    description: 'Aprovar ordens em status de orcamento',
-    category: 'Ordens de Servico',
+    name: 'Aprovar Orçamento',
+    description: 'Aprovar ordens em status de orçamento',
+    category: 'Ordens de Serviço',
     icon: <Package className="h-4 w-4" />
   },
   {
     id: 'orders_view_history',
-    name: 'Ver Historico',
-    description: 'Visualizar historico e timeline das ordens',
-    category: 'Ordens de Servico',
+    name: 'Ver Histórico',
+    description: 'Visualizar histórico e timeline das ordens',
+    category: 'Ordens de Serviço',
     icon: <Package className="h-4 w-4" />
   },
   // Clientes
@@ -398,7 +329,7 @@ const PERMISSION_RULES: PermissionRule[] = [
   {
     id: 'products_upload_images',
     name: 'Upload de Imagens de Produto',
-    description: 'Enviar imagens para produtos e servicos',
+    description: 'Enviar imagens para produtos e serviços',
     category: 'Produtos',
     icon: <Package className="h-4 w-4" />
   },
@@ -448,7 +379,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
   const loadPermissions = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Carregando permissões de perfil...');
+       console.log('🔍 Carregando permissões de perfil...');
 
       const response = await api.get('/api/ordem_servico/config/profile-permissions');
       console.log('📦 Permissões carregadas:', response.data);
@@ -458,7 +389,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
 
       PERMISSION_RULES.forEach(rule => {
         initialPermissions[rule.id] = {
-          admin: response.data?.[rule.id]?.admin ?? true, // Admin tem tudo por padrão
+          admin: response.data?.[rule.id]?.admin ?? true,
           technician: response.data?.[rule.id]?.technician ?? false,
           attendant: response.data?.[rule.id]?.attendant ?? false
         };
@@ -466,13 +397,12 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
 
       setPermissions(initialPermissions);
     } catch (error) {
-      console.error('❌ Erro ao carregar permissões:', error);
+      console.error('Erro ao carregar permissões:', error);
 
-      // Inicializar com valores padrão em caso de erro
       const defaultPermissions: Record<string, ProfilePermissions> = {};
       PERMISSION_RULES.forEach(rule => {
         defaultPermissions[rule.id] = {
-          admin: true, // Admin tem tudo por padrão
+          admin: true,
           technician: [
             'dashboard_view',
             'dashboard_view_statistics',
@@ -535,7 +465,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
   const handleSave = async () => {
     try {
       setSaving(true);
-      console.log('💾 Salvando permissões de perfil...', permissions);
+      console.log('Salvando permissões de perfil...', permissions);
 
       await api.post('/api/ordem_servico/config/profile-permissions', {
         permissions
@@ -549,7 +479,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
       onSave();
       onClose();
     } catch (error) {
-      console.error('❌ Erro ao salvar permissões:', error);
+      console.error('Erro ao salvar permissões:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível salvar as permissões.',
@@ -581,7 +511,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'Dashboard': return <BarChart3 className="h-4 w-4" />;
-      case 'Ordens de Serviço': return <Package className="h-4 w-4" />;
+      case 'Ordens de serviço': return <Package className="h-4 w-4" />;
       case 'Clientes': return <Users className="h-4 w-4" />;
       case 'Produtos': return <Package className="h-4 w-4" />;
       case 'Configurações': return <Settings className="h-4 w-4" />;
@@ -600,7 +530,6 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
     }
   };
 
-  // Agrupar regras por categoria
   const groupedRules = PERMISSION_RULES.reduce((acc, rule) => {
     if (!acc[rule.category]) {
       acc[rule.category] = [];
@@ -620,7 +549,6 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
 
   return (
     <div className="space-y-6 p-1">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Matriz de Permissões por Perfil</h3>
@@ -640,7 +568,6 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
         </div>
       </div>
 
-      {/* Legenda dos Perfis */}
       <Card>
         <CardHeader>
           <CardTitle>Perfis de Usuário</CardTitle>
@@ -675,7 +602,6 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
         </CardContent>
       </Card>
 
-      {/* Matriz de Permissões */}
       <div className="space-y-4">
         {Object.entries(groupedRules).map(([category, rules]) => (
           <Card key={category}>
@@ -756,7 +682,6 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
         ))}
       </div>
 
-      {/* Resumo */}
       <Card>
         <CardHeader>
           <CardTitle>Resumo das Permissões</CardTitle>

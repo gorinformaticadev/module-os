@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, X, Shield, Users, Package, Settings, BarChart3, Zap } from 'lucide-react';
 import { AvailablePermission, UserPermission, PermissionUpdate } from '../types/permission.types';
 import { PermissionService } from '../services/permissionService';
-import { TemplateService } from '../services/templateService';
+import { TemplateService, type PermissionTemplate } from '../services/templateService';
 
 interface PermissionMatrixProps {
   userId: string;
@@ -162,7 +162,7 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
   const { toast } = useToast();
   const [availablePermissions, setAvailablePermissions] = useState<AvailablePermission[]>([]);
   const [userPermissions, setUserPermissions] = useState<UserPermission[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<PermissionTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
@@ -174,12 +174,24 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      const [permissions, userPerms, templateList] = await Promise.all([
+
+      const [permissions, userPerms] = await Promise.all([
         PermissionService.getAvailablePermissions(),
         PermissionService.getUserPermissions(userId),
-        TemplateService.getAllTemplates()
       ]);
+
+      let templateList: PermissionTemplate[] = [];
+
+      try {
+        templateList = await TemplateService.getAllTemplates();
+      } catch (templateError) {
+        console.warn('Templates não puderam ser carregados:', templateError);
+        toast({
+          title: 'Aviso',
+          description: 'Os templates não puderam ser carregados, mas a matriz de permissões continua disponível.',
+          variant: 'warning'
+        });
+      }
 
       setAvailablePermissions(permissions);
       setUserPermissions(userPerms);

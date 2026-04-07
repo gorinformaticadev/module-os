@@ -2137,9 +2137,7 @@ export default function EditOrdemPage() {
                         ordem={{
                             id: ordem.id,
                             numero: ordem.numero,
-                            valor_servico: parseFloat(formData.valor_servico) || 0,
-                            valor_conservacao: (ordem as any).valor_conservacao,
-                            dias_atraso: (ordem as any).dias_atraso
+                            valor_servico: parseFloat(formData.valor_servico) || 0
                         }}
                         onSuccess={() => {
                             setIsRetiradaModalOpen(false);

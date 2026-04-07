@@ -8,11 +8,7 @@
   "category": "custom",
   "enabled": true,
   "dependencies": [
-    {
-      "type": "core",
-      "name": "core",
-      "version": ">=1.0.0"
-    }
+    "core"
   ],
   "config": {
     "defaultSettings": {

@@ -1,146 +1,168 @@
-// API client simples
-const api = {
-  get: async (url: string) => {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  },
-  
-  post: async (url: string, data?: any) => {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: data ? JSON.stringify(data) : undefined,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  },
-  
-  put: async (url: string, data: any) => {
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  },
-  
-  delete: async (url: string) => {
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return {
-      data: await response.json(),
-      status: response.status
-    };
-  }
+import api from '@/lib/api';
+import type { PermissionUpdate } from '../types/permission.types';
+import { PermissionService } from './permissionService';
+
+type BackendTemplate = {
+  id: string;
+  name: string;
+  content: string;
+  type?: string | null;
 };
 
-const API_BASE = '/api/modules/ordem_servico/templates';
+export interface PermissionTemplate {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  permissions: PermissionUpdate[];
+  rawContent: string;
+}
 
-export class TemplateService {
-  static async getAllTemplates() {
-    try {
-      const response = await api.get(API_BASE);
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao buscar templates:', error);
-      throw error;
-    }
+const API_BASE = '/api/ordem_servico/templates';
+
+const parsePermissionId = (permissionId: string): PermissionUpdate | null => {
+  const normalized = permissionId.trim();
+  if (!normalized.includes('_')) {
+    return null;
   }
 
-  static async getTemplateWithPermissions(templateId: string) {
-    try {
-      const response = await api.get(`${API_BASE}/${templateId}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Erro ao buscar template ${templateId}:`, error);
-      throw error;
+  const [resource, ...actionParts] = normalized.split('_');
+  if (!resource || actionParts.length === 0) {
+    return null;
+  }
+
+  return {
+    resource,
+    action: actionParts.join('_'),
+    allowed: true,
+  };
+};
+
+const normalizePermissions = (value: unknown): PermissionUpdate[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry): PermissionUpdate | null => {
+      if (typeof entry === 'string') {
+        return parsePermissionId(entry);
+      }
+
+      if (!entry || typeof entry !== 'object') {
+        return null;
+      }
+
+      const record = entry as Record<string, unknown>;
+      if (typeof record.resource === 'string' && typeof record.action === 'string') {
+        return {
+          resource: record.resource,
+          action: record.action,
+          allowed: record.allowed !== false,
+        };
+      }
+
+      if (typeof record.permissionId === 'string') {
+        return parsePermissionId(record.permissionId);
+      }
+
+      if (typeof record.id === 'string') {
+        return parsePermissionId(record.id);
+      }
+
+      return null;
+    })
+    .filter((permission): permission is PermissionUpdate => Boolean(permission));
+};
+
+const parseTemplatePermissions = (content: string): PermissionUpdate[] => {
+  if (!content) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(content) as unknown;
+
+    if (Array.isArray(parsed)) {
+      return normalizePermissions(parsed);
     }
+
+    if (parsed && typeof parsed === 'object') {
+      const record = parsed as Record<string, unknown>;
+      return normalizePermissions(record.permissions);
+    }
+  } catch (error) {
+    console.warn('Não foi possível interpretar o conteúdo do template:', error);
+  }
+
+  return [];
+};
+
+const mapTemplate = (template: BackendTemplate): PermissionTemplate => ({
+  id: template.id,
+  name: template.name,
+  description: template.type || 'Template geral',
+  type: template.type || 'GENERAL',
+  permissions: parseTemplatePermissions(template.content),
+  rawContent: template.content,
+});
+
+export class TemplateService {
+  static async getAllTemplates(): Promise<PermissionTemplate[]> {
+    const response = await api.get(API_BASE);
+    const templates: BackendTemplate[] = Array.isArray(response.data) ? response.data : [];
+    return templates.map(mapTemplate);
+  }
+
+  static async getTemplateWithPermissions(templateId: string): Promise<PermissionTemplate | null> {
+    const response = await api.get(`${API_BASE}/${templateId}`);
+    if (!response.data) {
+      return null;
+    }
+
+    return mapTemplate(response.data as BackendTemplate);
   }
 
   static async applyTemplateToUser(templateId: string, userId: string) {
-    try {
-      const response = await api.post(`${API_BASE}/${templateId}/apply/${userId}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Erro ao aplicar template ${templateId} ao usuário ${userId}:`, error);
-      throw error;
+    const template = await this.getTemplateWithPermissions(templateId);
+
+    if (!template) {
+      throw new Error('Template não encontrado.');
     }
+
+    if (template.permissions.length === 0) {
+      throw new Error('Template sem permissões válidas para aplicação.');
+    }
+
+    await PermissionService.updateUserPermissions(userId, template.permissions);
+
+    return {
+      success: true,
+      template,
+    };
   }
 
   static async createCustomTemplate(name: string, description: string, permissions: any[]) {
-    try {
-      const response = await api.post(API_BASE, {
-        name,
-        description,
-        permissions
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao criar template customizado:', error);
-      throw error;
-    }
+    const response = await api.post(API_BASE, {
+      name,
+      type: description || 'GENERAL',
+      content: JSON.stringify(permissions),
+    });
+    return response.data;
   }
 
   static async updateTemplate(templateId: string, permissions: any[]) {
-    try {
-      const response = await api.put(`${API_BASE}/${templateId}`, {
-        permissions
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Erro ao atualizar template ${templateId}:`, error);
-      throw error;
-    }
+    const currentTemplate = await this.getTemplateWithPermissions(templateId);
+    const response = await api.put(`${API_BASE}/${templateId}`, {
+      name: currentTemplate?.name || 'Template',
+      type: currentTemplate?.type || 'GENERAL',
+      content: JSON.stringify(permissions),
+    });
+    return response.data;
   }
 
   static async deleteTemplate(templateId: string) {
-    try {
-      const response = await api.delete(`${API_BASE}/${templateId}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Erro ao excluir template ${templateId}:`, error);
-      throw error;
-    }
+    const response = await api.delete(`${API_BASE}/${templateId}`);
+    return response.data;
   }
 }

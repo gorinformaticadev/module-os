@@ -40,7 +40,7 @@ import {
 interface PagamentosModalProps {
     isOpen: boolean;
     onClose: () => void;
-    ordem: OrdemServico | null;
+    ordem: Pick<OrdemServico, 'id' | 'numero' | 'valor_servico'> | null;
     onSuccess?: () => void;
 }
 

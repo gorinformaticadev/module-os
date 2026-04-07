@@ -6,7 +6,7 @@ import ordem_servicoProdutosPage from './pages/produtos';
 import ordem_servicoOrdensPage from './pages/ordens';
 import ordem_servicoNovaOrdemPage from './pages/ordens/new/page';
 
-const MODULE_ROOT = '/ordem_servico';
+const MODULE_ROOT = '/modules/ordem_servico/pages';
 
 export const ModuleRoutes = [
     { path: `${MODULE_ROOT}/dashboard`, component: ordem_servicoDashboardPage },
