@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { TiposServicoService } from './tipos-servico.service';
 import { PermissionGuard } from '../shared/guards/permission.guard';
@@ -13,36 +13,31 @@ export class TiposServicoController {
 
   @Get()
   @RequireConfigPermission('view')
-  async findAll(@Request() req: any) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposServicoService.findAll(tenantId);
+  async findAll() {
+    return this.tiposServicoService.findAll();
   }
 
   @Get(':id')
   @RequireConfigPermission('view')
-  async findOne(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposServicoService.findOne(tenantId, id);
+  async findOne(@Param('id') id: string) {
+    return this.tiposServicoService.findOne(id);
   }
 
   @Post()
   @RequireConfigPermission('edit')
-  async create(@Request() req: any, @Body() createDto: { nome: string }) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposServicoService.create(tenantId, createDto);
+  async create(@Body() createDto: { nome: string }) {
+    return this.tiposServicoService.create(createDto);
   }
 
   @Put(':id')
   @RequireConfigPermission('edit')
-  async update(@Request() req: any, @Param('id') id: string, @Body() updateDto: { nome: string }) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposServicoService.update(tenantId, id, updateDto);
+  async update(@Param('id') id: string, @Body() updateDto: { nome: string }) {
+    return this.tiposServicoService.update(id, updateDto);
   }
 
   @Delete(':id')
   @RequireConfigPermission('edit')
-  async remove(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposServicoService.remove(tenantId, id);
+  async remove(@Param('id') id: string) {
+    return this.tiposServicoService.remove(id);
   }
 }

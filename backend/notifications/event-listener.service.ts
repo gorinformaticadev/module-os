@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { RequestSecurityContextService, type SecurityActor } from '@common/services/request-security-context.service';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 import { NotificationDispatcherService } from './dispatcher.service';
 
 @Injectable()
@@ -9,49 +11,51 @@ export class NotificationEventListenerService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly dispatcher: NotificationDispatcherService
+        private readonly modulePrisma: ModuleOsPrismaService,
+        private readonly dispatcher: NotificationDispatcherService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
     ) { }
 
     @OnEvent('os.created')
     async handleOsCreated(payload: { tenantId: string; osId: string; data: any }) {
         this.logger.log(`Evento os.created recebido para OS: ${payload.osId}`);
-        await this.processEventRules(payload.tenantId, 'CREATED', payload.osId, payload.data);
+        await this.runForTenant(payload.tenantId, () => this.processEventRules('CREATED', payload.osId, payload.data));
     }
 
     @OnEvent('os.status_changed')
     async handleOsStatusChanged(payload: { tenantId: string; osId: string; oldStatus: string; newStatus: string; data: any }) {
         this.logger.log(`Evento os.status_changed recebido para OS: ${payload.osId} (${payload.oldStatus} -> ${payload.newStatus})`);
-        await this.processEventRules(payload.tenantId, 'STATUS_CHANGED', payload.osId, payload.data);
+        await this.runForTenant(payload.tenantId, () => this.processEventRules('STATUS_CHANGED', payload.osId, payload.data));
     }
 
-    private async processEventRules(tenantId: string, eventType: string, osId: string, osData: any) {
+    private async processEventRules(eventType: string, osId: string, osData: any) {
         try {
-            const rules: any[] = await this.prisma.$queryRawUnsafe(
-                `SELECT * FROM mod_ordem_servico_notif_rules
-                 WHERE tenant_id = $1 AND enabled = true AND trigger_type = 'EVENT'`,
-                tenantId
-            );
+            const rules = await this.modulePrisma.mod_ordem_servico_notif_rules.findMany({
+                where: {
+                    enabled: true,
+                    triggerType: 'EVENT',
+                },
+            });
 
             for (const rule of rules) {
-                const config = typeof rule.trigger_config === 'string' ? JSON.parse(rule.trigger_config) : rule.trigger_config;
+                const config = this.normalizeJson(rule.triggerConfig, {});
+                if (!Array.isArray(config.events) || !config.events.includes(eventType)) {
+                    continue;
+                }
 
-                if (config.events && config.events.includes(eventType)) {
-                    this.logger.log(`Regra [${rule.title}] disparada para evento ${eventType}. Canal: ${rule.channel}`);
+                this.logger.log(`Regra [${rule.title}] disparada para evento ${eventType}. Canal: ${rule.channel}`);
+                const recipients = await this.resolveRecipients(osData, rule.recipients, rule.channel, rule.tenantId);
 
-                    const recipients = await this.resolveRecipients(tenantId, osData, rule.recipients, rule.channel);
-                    this.logger.log(`Disparando regra [${rule.title}] para evento ${eventType} (Recipients: ${recipients.length}, Raw: ${JSON.stringify(rule.recipients)})`);
-
-                    for (const recipient of recipients) {
-                        await this.dispatcher.dispatch({
-                            tenantId,
-                            ruleId: rule.id,
-                            ordemServicoId: osId,
-                            channel: rule.channel,
-                            recipient,
-                            content: this.formatMessage(rule.message_template, osData),
-                            fingerprint: `event-${eventType}-${osId}-${rule.id}-${recipient}`,
-                        });
-                    }
+                for (const recipient of recipients) {
+                    await this.dispatcher.dispatch({
+                        tenantId: rule.tenantId,
+                        ruleId: rule.id,
+                        ordemServicoId: osId,
+                        channel: rule.channel,
+                        recipient,
+                        content: this.formatMessage(rule.messageTemplate, osData),
+                        fingerprint: `event-${eventType}-${osId}-${rule.id}-${recipient}`,
+                    });
                 }
             }
         } catch (error: any) {
@@ -59,8 +63,8 @@ export class NotificationEventListenerService {
         }
     }
 
-    private async resolveRecipients(tenantId: string, os: any, recipients: any, channel: string): Promise<string[]> {
-        const parsedRecipients = typeof recipients === 'string' ? JSON.parse(recipients) : recipients;
+    private async resolveRecipients(os: any, recipients: any, channel: string, tenantId: string): Promise<string[]> {
+        const parsedRecipients = this.normalizeJson(recipients, []);
         if (!Array.isArray(parsedRecipients)) {
             return [];
         }
@@ -97,15 +101,14 @@ export class NotificationEventListenerService {
     }
 
     private async appendClientTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
-        let clientEmail = os.cliente_email;
+        let clientEmail = os?.cliente?.email || os?.cliente_email || null;
 
-        if (!clientEmail && os.cliente_id) {
-            const client = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT email FROM mod_ordem_servico_clients WHERE id = $1::uuid AND tenant_id = $2`,
-                os.cliente_id,
-                tenantId
-            );
-            clientEmail = client[0]?.email;
+        if (!clientEmail && os?.cliente_id) {
+            const client = await this.modulePrisma.mod_ordem_servico_clients.findFirst({
+                where: { id: os.cliente_id },
+                select: { email: true },
+            });
+            clientEmail = client?.email || null;
         }
 
         if (!clientEmail) {
@@ -124,13 +127,14 @@ export class NotificationEventListenerService {
     }
 
     private async appendTechnicianTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
-        if (!os.usuario_responsavel_id) {
+        const responsibleId = os?.usuario_responsavel_id || os?.usuarioResponsavelId;
+        if (!responsibleId) {
             return;
         }
 
         const user = await this.prisma.user.findFirst({
             where: {
-                id: os.usuario_responsavel_id,
+                id: responsibleId,
                 isLocked: false,
                 OR: [
                     { tenantId },
@@ -250,18 +254,46 @@ export class NotificationEventListenerService {
 
     private formatMessage(template: string, os: any): string {
         let msg = template;
-        const map: any = {
+        const map: Record<string, string | number> = {
             '{{id}}': os.id,
-            '{{numero}}': os.numero || os.id.split('-')[0],
-            '{{cliente}}': os.cliente_nome || 'Cliente',
+            '{{numero}}': os.numero || String(os.id).split('-')[0],
+            '{{cliente}}': os?.cliente?.name || os?.cliente_nome || 'Cliente',
             '{{status}}': os.status,
             '{{data_previsao}}': os.data_previsao ? new Date(os.data_previsao).toLocaleDateString() : 'N/A',
             '{{valor}}': os.valor_servico || '0,00',
         };
 
-        for (const key in map) {
-            msg = msg.replace(new RegExp(key, 'g'), map[key]);
+        for (const [key, value] of Object.entries(map)) {
+            msg = msg.replace(new RegExp(key, 'g'), String(value));
         }
         return msg;
+    }
+
+    private normalizeJson<T>(value: unknown, fallback: T): T {
+        if (value == null) {
+            return fallback;
+        }
+
+        if (typeof value === 'string') {
+            try {
+                return JSON.parse(value) as T;
+            } catch {
+                return fallback;
+            }
+        }
+
+        return value as T;
+    }
+
+    private runForTenant<T>(tenantId: string, callback: () => Promise<T>): Promise<T> {
+        const actor: SecurityActor = {
+            tenantId,
+            role: 'ADMIN',
+            email: 'module-os-events@local',
+            name: 'module-os event-listener',
+            id: `module-os-event-listener:${tenantId}`,
+        };
+
+        return this.requestSecurityContext.runWithActor(actor, callback);
     }
 }

@@ -1,39 +1,28 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../../core/prisma/prisma.service';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class NotificationHistoryService {
+    // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
     private readonly logger = new Logger(NotificationHistoryService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly modulePrisma: ModuleOsPrismaService) { }
 
-    async findAll(tenantId: string, filters?: any) {
+    async findAll(filters?: any) {
         const { ruleId, ordemServicoId, status } = filters || {};
 
-        let query = `SELECT * FROM mod_ordem_servico_notif_history WHERE tenant_id = $1`;
-        const values: any[] = [tenantId];
-        let placeholder = 2;
-
-        if (ruleId) {
-            query += ` AND rule_id = $${placeholder++}`;
-            values.push(ruleId);
-        }
-        if (ordemServicoId) {
-            query += ` AND ordem_servico_id = $${placeholder++}`;
-            values.push(ordemServicoId);
-        }
-        if (status) {
-            query += ` AND status = $${placeholder++}`;
-            values.push(status);
-        }
-
-        query += ` ORDER BY sent_at DESC LIMIT 100`;
-
-        return this.prisma.$queryRawUnsafe(query, ...values);
+        return this.modulePrisma.mod_ordem_servico_notif_history.findMany({
+            where: {
+                ...(ruleId ? { ruleId } : {}),
+                ...(ordemServicoId ? { ordemServicoId } : {}),
+                ...(status ? { status } : {}),
+            },
+            orderBy: { sentAt: 'desc' },
+            take: 100,
+        });
     }
 
     async log(data: {
-        tenantId: string;
         ruleId: string;
         ordemServicoId?: string;
         channel: string;
@@ -44,16 +33,20 @@ export class NotificationHistoryService {
         fingerprint?: string;
     }) {
         try {
-            await this.prisma.$queryRawUnsafe(
-                `INSERT INTO mod_ordem_servico_notif_history (
-                    tenant_id, rule_id, ordem_servico_id, channel, 
-                    recipient, content, status, error_message, fingerprint
-                ) VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9)`,
-                data.tenantId, data.ruleId, data.ordemServicoId, data.channel,
-                data.recipient, data.content, data.status, data.errorMessage, data.fingerprint
-            );
+            await this.modulePrisma.mod_ordem_servico_notif_history.create({
+                data: {
+                    ruleId: data.ruleId,
+                    ordemServicoId: data.ordemServicoId || null,
+                    channel: data.channel,
+                    recipient: data.recipient,
+                    content: data.content,
+                    status: data.status,
+                    errorMessage: data.errorMessage || null,
+                    fingerprint: data.fingerprint || null,
+                },
+            });
         } catch (error) {
-            this.logger.error('Erro ao logar histórico de notificação:', error);
+            this.logger.error('Erro ao logar historico de notificacao:', error);
         }
     }
 }

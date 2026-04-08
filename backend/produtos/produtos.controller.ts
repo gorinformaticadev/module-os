@@ -43,15 +43,15 @@ export class ProdutosController {
   @Get()
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequireProductsPermission('view')
-  async findAll(@Query() filters: any, @Req() req: ExpressRequest & { user: any }) {
-    return this.produtosService.findAll(req.user?.tenantId, filters);
+  async findAll(@Query() filters: any) {
+    return this.produtosService.findAll(filters);
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequireProductsPermission('view')
-  async findById(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
-    return this.produtosService.findById(req.user?.tenantId, id);
+  async findById(@Param('id') id: string) {
+    return this.produtosService.findById(id);
   }
 
   @Get('uploads/:tenantId/:filename')
@@ -86,28 +86,22 @@ export class ProdutosController {
   @Post()
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequireProductsPermission('create')
-  async create(@Body() data: any, @Req() req: ExpressRequest & { user: any }) {
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.id;
-    return this.produtosService.create(tenantId, data, userId);
+  async create(@Body() data: any) {
+    return this.produtosService.create(data);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequireProductsPermission('edit')
-  async update(@Param('id') id: string, @Body() data: any, @Req() req: ExpressRequest & { user: any }) {
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.id;
-    return this.produtosService.update(tenantId, id, data, userId);
+  async update(@Param('id') id: string, @Body() data: any) {
+    return this.produtosService.update(id, data);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @RequireProductsPermission('delete')
-  async delete(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.id;
-    return this.produtosService.delete(tenantId, id, userId);
+  async delete(@Param('id') id: string) {
+    return this.produtosService.delete(id);
   }
 
   @Post('upload')

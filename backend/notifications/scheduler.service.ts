@@ -1,9 +1,23 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { NotificationDispatcherService } from './dispatcher.service';
-import { NotificationRuleService } from './rules.service';
-import { NotificationStateService } from './state.service';
 import { CronService } from '../../../core/cron/cron.service';
+import { RequestSecurityContextService, type SecurityActor } from '@common/services/request-security-context.service';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
+import { NotificationDispatcherService } from './dispatcher.service';
+import { NotificationStateService } from './state.service';
+
+type RuntimeRule = {
+    id: string;
+    tenantId: string;
+    title: string;
+    channel: string;
+    triggerType: string;
+    triggerConfig: any;
+    recipients: any;
+    messageTemplate: string;
+    currentExecutions?: number | null;
+    maxExecutions?: number | null;
+};
 
 @Injectable()
 export class NotificationSchedulerService implements OnModuleInit {
@@ -12,10 +26,11 @@ export class NotificationSchedulerService implements OnModuleInit {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly rules: NotificationRuleService,
+        private readonly modulePrisma: ModuleOsPrismaService,
         private readonly dispatcher: NotificationDispatcherService,
         private readonly states: NotificationStateService,
-        private readonly cronService: CronService
+        private readonly cronService: CronService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
     ) { }
 
     async onModuleInit() {
@@ -41,17 +56,32 @@ export class NotificationSchedulerService implements OnModuleInit {
         this.isProcessing = true;
 
         try {
-            const activeRules: any[] = await this.prisma.$queryRawUnsafe(
-                `SELECT * FROM mod_ordem_servico_notif_rules
-                 WHERE enabled = true
-                 AND (trigger_type = 'CRON' OR trigger_type = 'CONDITION' OR trigger_type = 'OFFSET')
-                 AND (next_execution_at IS NULL OR next_execution_at <= CURRENT_TIMESTAMP)
-                 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-                 AND (max_executions IS NULL OR current_executions < max_executions)`
+            const now = new Date();
+            const activeRules = await this.requestSecurityContext.runWithoutTenantEnforcement(
+                'module-os notification scheduler sweep',
+                () => this.modulePrisma.mod_ordem_servico_notif_rules.findMany({
+                    where: {
+                        enabled: true,
+                        triggerType: { in: ['CRON', 'CONDITION', 'OFFSET'] },
+                        OR: [
+                            { nextExecutionAt: null },
+                            { nextExecutionAt: { lte: now } },
+                        ],
+                        AND: [
+                            {
+                                OR: [
+                                    { expiresAt: null },
+                                    { expiresAt: { gt: now } },
+                                ],
+                            },
+                        ],
+                    },
+                    orderBy: { createdAt: 'desc' },
+                }),
             );
 
             for (const rule of activeRules) {
-                await this.processRule(rule);
+                await this.runForTenant(rule.tenantId, () => this.processRule(rule as RuntimeRule));
             }
         } catch (error: any) {
             this.logger.error(`Worker error: ${error.message}`);
@@ -60,113 +90,138 @@ export class NotificationSchedulerService implements OnModuleInit {
         }
     }
 
-    private async processRule(rule: any) {
-        if (rule.trigger_type === 'CONDITION') {
-            await this.processConditionRule(rule);
-        } else if (rule.trigger_type === 'CRON') {
+    private async processRule(rule: RuntimeRule) {
+        if (rule.maxExecutions && (rule.currentExecutions || 0) >= rule.maxExecutions) {
             return;
-        } else if (rule.trigger_type === 'OFFSET') {
+        }
+
+        if (rule.triggerType === 'CONDITION') {
+            await this.processConditionRule(rule);
+            return;
+        }
+
+        if (rule.triggerType === 'OFFSET') {
             await this.processOffsetRule(rule);
         }
     }
 
-    private formatInterval(duration: any): string {
-        if (!duration) return '0 minutes';
-        if (duration.value && duration.unit) {
-            return `${duration.value} ${duration.unit}`;
-        }
-        const parts = [];
-        if (duration.days) parts.push(`${duration.days} days`);
-        if (duration.hours) parts.push(`${duration.hours} hours`);
-        if (duration.minutes) parts.push(`${duration.minutes} minutes`);
-        if (duration.seconds) parts.push(`${duration.seconds} seconds`);
-
-        return parts.length > 0 ? parts.join(' ') : '0 minutes';
-    }
-
-    private async processOffsetRule(rule: any) {
-        const config = typeof rule.trigger_config === 'string' ? JSON.parse(rule.trigger_config) : rule.trigger_config;
+    private async processOffsetRule(rule: RuntimeRule) {
+        const config = this.normalizeJson(rule.triggerConfig, {});
 
         if (config.reference === 'BEFORE_DEADLINE' || config.reference === 'AFTER_DEADLINE') {
             await this.processRelativeDeadline(rule, config);
         }
     }
 
-    private async processRelativeDeadline(rule: any, config: any) {
-        const intervalStr = this.formatInterval(config.offset_duration || { value: config.value, unit: config.unit });
-        const operator = config.reference === 'BEFORE_DEADLINE' ? '-' : '+';
-        const comparison = config.reference === 'BEFORE_DEADLINE' ? '<=' : '>=';
+    private async processRelativeDeadline(rule: RuntimeRule, config: any) {
+        const orders = await this.modulePrisma.mod_ordem_servico_ordens.findMany({
+            where: {
+                status: { notIn: [3, 4, 6] },
+                dataPrevisao: { not: null },
+            },
+            include: {
+                cliente: {
+                    select: {
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
+        });
 
-        const query = `
-            SELECT os.* FROM "mod_ordem_servico_ordens" os
-            WHERE os.tenant_id = $1
-            AND os.status NOT IN (3, 4, 6)
-            AND os.data_previsao IS NOT NULL
-            AND os.data_previsao ${operator} INTERVAL '${intervalStr}' ${comparison} CURRENT_TIMESTAMP
-        `;
+        for (const ordem of orders) {
+            if (!this.matchesOffsetRule(ordem.dataPrevisao, config)) {
+                continue;
+            }
 
-        const targetOrders: any[] = await this.prisma.$queryRawUnsafe(query, rule.tenant_id);
-
-        for (const os of targetOrders) {
-            const fingerprint = `offset-${rule.id}-${os.id}`;
-            const alreadySent = await this.states.getState(rule.tenant_id, rule.id, os.id);
+            const fingerprint = `offset-${rule.id}-${ordem.id}`;
+            const alreadySent = await this.states.getState(rule.id, ordem.id);
 
             if (!alreadySent) {
-                const success = await this.dispatchNotification(rule, os, fingerprint);
+                const success = await this.dispatchNotification(rule, ordem, fingerprint);
                 if (success) {
                     await this.states.saveState({
-                        tenantId: rule.tenant_id,
                         ruleId: rule.id,
-                        ordemServicoId: os.id,
-                        lastState: { notified_at: new Date() },
+                        ordemServicoId: ordem.id,
+                        lastState: { notified_at: new Date().toISOString() },
                     });
                 }
             }
         }
     }
 
-    private async processConditionRule(rule: any) {
-        const config = typeof rule.trigger_config === 'string' ? JSON.parse(rule.trigger_config) : rule.trigger_config;
+    private async processConditionRule(rule: RuntimeRule) {
+        const config = this.normalizeJson(rule.triggerConfig, {});
 
         if (config.condition === 'OVERDUE') {
             await this.processOverdueOS(rule, config);
         }
     }
 
-    private async dispatchNotification(rule: any, os: any, fingerprint: string): Promise<boolean> {
-        const config = typeof rule.trigger_config === 'string' ? JSON.parse(rule.trigger_config) : rule.trigger_config;
+    private async processOverdueOS(rule: RuntimeRule, config: any) {
+        const overdueOrders = await this.modulePrisma.mod_ordem_servico_ordens.findMany({
+            where: {
+                status: { notIn: [3, 4, 6] },
+                dataPrevisao: { lt: new Date() },
+            },
+            include: {
+                cliente: {
+                    select: {
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
+        });
 
-        if (config.silence_window?.start && config.silence_window?.end) {
-            const now = new Date();
-            const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+        for (const ordem of overdueOrders) {
+            const state = await this.states.getState(rule.id, ordem.id);
+            const lastNotifiedAt = state?.updatedAt ? new Date(state.updatedAt) : null;
 
-            const [startH, startM] = config.silence_window.start.split(':').map(Number);
-            const [endH, endM] = config.silence_window.end.split(':').map(Number);
+            let shouldNotify = false;
+            if (!state) {
+                shouldNotify = true;
+            } else if (config.frequency) {
+                const ms = ((config.frequency.days || 0) * 86400 + (config.frequency.hours || 0) * 3600 + (config.frequency.minutes || 0) * 60 + (config.frequency.seconds || 0)) * 1000;
+                if (ms > 0 && lastNotifiedAt && Date.now() >= lastNotifiedAt.getTime() + ms) {
+                    shouldNotify = true;
+                }
+            }
 
-            const startTotal = startH * 60 + startM;
-            const endTotal = endH * 60 + endM;
+            if (!shouldNotify) {
+                continue;
+            }
 
-            const isSilenced = startTotal <= endTotal
-                ? (currentTotalMinutes >= startTotal && currentTotalMinutes <= endTotal)
-                : (currentTotalMinutes >= startTotal || currentTotalMinutes <= endTotal);
-
-            if (isSilenced) {
-                this.logger.log(`Regra [${rule.title}] silenciada pela Janela de Silencio`);
-                return false;
+            const success = await this.dispatchNotification(rule, ordem, `overdue-${ordem.id}-${Date.now()}`);
+            if (success) {
+                await this.states.saveState({
+                    ruleId: rule.id,
+                    ordemServicoId: ordem.id,
+                    lastState: { status: ordem.status, notified_at: new Date().toISOString() },
+                });
             }
         }
+    }
 
-        const recipientsList = await this.resolveRecipients(os, rule.recipients, rule.channel, rule.tenant_id);
+    private async dispatchNotification(rule: RuntimeRule, ordem: any, fingerprint: string): Promise<boolean> {
+        const config = this.normalizeJson(rule.triggerConfig, {});
+
+        if (this.isInSilenceWindow(config.silence_window)) {
+            this.logger.log(`Regra [${rule.title}] silenciada pela Janela de Silencio`);
+            return false;
+        }
+
+        const recipientsList = await this.resolveRecipients(ordem, rule.recipients, rule.channel, rule.tenantId);
         let atLeastOneSuccess = false;
 
         for (const recipient of recipientsList) {
             const result = await this.dispatcher.dispatch({
-                tenantId: rule.tenant_id,
+                tenantId: rule.tenantId,
                 ruleId: rule.id,
-                ordemServicoId: os.id,
+                ordemServicoId: ordem.id,
                 channel: rule.channel,
                 recipient,
-                content: this.formatMessage(rule.message_template, os),
+                content: this.formatMessage(rule.messageTemplate, ordem),
                 fingerprint: `${fingerprint}-${recipient}`,
             });
             if (result.success) {
@@ -175,60 +230,21 @@ export class NotificationSchedulerService implements OnModuleInit {
         }
 
         if (atLeastOneSuccess) {
-            await this.prisma.$queryRawUnsafe(
-                `UPDATE mod_ordem_servico_notif_rules SET current_executions = current_executions + 1, last_execution_at = CURRENT_TIMESTAMP WHERE id = $1`,
-                rule.id
-            );
+            await this.modulePrisma.mod_ordem_servico_notif_rules.updateMany({
+                where: { id: rule.id },
+                data: {
+                    currentExecutions: { increment: 1 },
+                    lastExecutionAt: new Date(),
+                    updatedAt: new Date(),
+                },
+            });
         }
 
         return atLeastOneSuccess;
     }
 
-    private async processOverdueOS(rule: any, config: any) {
-        const overdueOrders: any[] = await this.prisma.$queryRawUnsafe(
-            `SELECT os.* FROM "mod_ordem_servico_ordens" os
-             WHERE os.tenant_id = $1
-             AND os.status NOT IN (3, 4, 6)
-             AND os.data_previsao < CURRENT_TIMESTAMP`,
-            rule.tenant_id
-        );
-
-        for (const os of overdueOrders) {
-            const state = await this.states.getState(rule.tenant_id, rule.id, os.id);
-            const lastNotifiedAt = state?.updated_at ? new Date(state.updated_at) : null;
-
-            let shouldNotify = false;
-
-            if (!state) {
-                shouldNotify = true;
-            } else if (config.frequency) {
-                const ms = ((config.frequency.days || 0) * 86400 + (config.frequency.hours || 0) * 3600 + (config.frequency.minutes || 0) * 60 + (config.frequency.seconds || 0)) * 1000;
-
-                if (ms > 0 && lastNotifiedAt) {
-                    if (new Date().getTime() >= lastNotifiedAt.getTime() + ms) {
-                        shouldNotify = true;
-                    }
-                }
-            }
-
-            if (shouldNotify) {
-                this.logger.log(`Processando OS Atrasada: ${os.id}`);
-                const success = await this.dispatchNotification(rule, os, `overdue-${os.id}-${Date.now()}`);
-
-                if (success) {
-                    await this.states.saveState({
-                        tenantId: rule.tenant_id,
-                        ruleId: rule.id,
-                        ordemServicoId: os.id,
-                        lastState: { status: os.status, notified_at: new Date() },
-                    });
-                }
-            }
-        }
-    }
-
-    private async resolveRecipients(os: any, recipients: any, channel: string, tenantId: string): Promise<string[]> {
-        const config = typeof recipients === 'string' ? JSON.parse(recipients) : recipients;
+    private async resolveRecipients(ordem: any, recipients: any, channel: string, tenantId: string): Promise<string[]> {
+        const config = this.normalizeJson(recipients, []);
         if (!Array.isArray(config)) return [];
 
         const targets = new Set<string>();
@@ -237,10 +253,10 @@ export class NotificationSchedulerService implements OnModuleInit {
         for (const recipient of config) {
             switch (recipient.type) {
                 case 'CLIENT':
-                    await this.appendClientTargets(targets, os, tenantId, internalDelivery);
+                    await this.appendClientTargets(targets, ordem, tenantId, internalDelivery);
                     break;
                 case 'TECHNICIAN':
-                    await this.appendTechnicianTargets(targets, os, tenantId, internalDelivery);
+                    await this.appendTechnicianTargets(targets, ordem, tenantId, internalDelivery);
                     break;
                 case 'ADMIN':
                     await this.appendTenantRoleTargets(targets, tenantId, ['ADMIN'], internalDelivery);
@@ -262,18 +278,8 @@ export class NotificationSchedulerService implements OnModuleInit {
         return normalizedChannel === 'SYSTEM' || normalizedChannel === 'PUSH';
     }
 
-    private async appendClientTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
-        let clientEmail = os.cliente_email;
-
-        if (!clientEmail && os.cliente_id) {
-            const client = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT email FROM mod_ordem_servico_clients WHERE id = $1::uuid AND tenant_id = $2`,
-                os.cliente_id,
-                tenantId
-            );
-            clientEmail = client[0]?.email;
-        }
-
+    private async appendClientTargets(targets: Set<string>, ordem: any, tenantId: string, internalDelivery: boolean) {
+        const clientEmail = ordem?.cliente?.email || null;
         if (!clientEmail) {
             return;
         }
@@ -289,14 +295,14 @@ export class NotificationSchedulerService implements OnModuleInit {
         targets.add(clientEmail);
     }
 
-    private async appendTechnicianTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
-        if (!os.usuario_responsavel_id) {
+    private async appendTechnicianTargets(targets: Set<string>, ordem: any, tenantId: string, internalDelivery: boolean) {
+        if (!ordem.usuarioResponsavelId) {
             return;
         }
 
         const user = await this.prisma.user.findFirst({
             where: {
-                id: os.usuario_responsavel_id,
+                id: ordem.usuarioResponsavelId,
                 isLocked: false,
                 OR: [
                     { tenantId },
@@ -414,19 +420,113 @@ export class NotificationSchedulerService implements OnModuleInit {
         return user?.id ?? null;
     }
 
-    private formatMessage(template: string, os: any): string {
+    private formatMessage(template: string, ordem: any): string {
         let msg = template;
-        const map: any = {
-            '{{id}}': os.id,
-            '{{numero}}': os.numero || os.id.split('-')[0],
-            '{{cliente}}': os.cliente_nome || 'Cliente',
-            '{{status}}': os.status,
-            '{{data_previsao}}': os.data_previsao ? new Date(os.data_previsao).toLocaleDateString() : 'N/A',
+        const map: Record<string, string | number> = {
+            '{{id}}': ordem.id,
+            '{{numero}}': ordem.numero || String(ordem.id).split('-')[0],
+            '{{cliente}}': ordem?.cliente?.name || 'Cliente',
+            '{{status}}': ordem.status,
+            '{{data_previsao}}': ordem.dataPrevisao ? new Date(ordem.dataPrevisao).toLocaleDateString() : 'N/A',
         };
 
-        for (const key in map) {
-            msg = msg.replace(new RegExp(key, 'g'), map[key]);
+        for (const [key, value] of Object.entries(map)) {
+            msg = msg.replace(new RegExp(key, 'g'), String(value));
         }
         return msg;
+    }
+
+    private matchesOffsetRule(dataPrevisao: Date | null, config: any): boolean {
+        if (!dataPrevisao) {
+            return false;
+        }
+
+        const duration = config.offset_duration || { value: config.value, unit: config.unit };
+        const offsetMs = this.durationToMs(duration);
+        const now = Date.now();
+        const target = new Date(dataPrevisao).getTime();
+
+        if (config.reference === 'BEFORE_DEADLINE') {
+            return target - offsetMs <= now;
+        }
+
+        if (config.reference === 'AFTER_DEADLINE') {
+            return target + offsetMs <= now;
+        }
+
+        return false;
+    }
+
+    private durationToMs(duration: any): number {
+        if (!duration) {
+            return 0;
+        }
+
+        if (duration.value && duration.unit) {
+            const value = Number(duration.value) || 0;
+            switch (String(duration.unit).toLowerCase()) {
+                case 'day':
+                case 'days':
+                    return value * 86400000;
+                case 'hour':
+                case 'hours':
+                    return value * 3600000;
+                case 'minute':
+                case 'minutes':
+                    return value * 60000;
+                case 'second':
+                case 'seconds':
+                    return value * 1000;
+                default:
+                    return 0;
+            }
+        }
+
+        return ((duration.days || 0) * 86400 + (duration.hours || 0) * 3600 + (duration.minutes || 0) * 60 + (duration.seconds || 0)) * 1000;
+    }
+
+    private isInSilenceWindow(windowConfig: any): boolean {
+        if (!windowConfig?.start || !windowConfig?.end) {
+            return false;
+        }
+
+        const now = new Date();
+        const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+        const [startH, startM] = String(windowConfig.start).split(':').map(Number);
+        const [endH, endM] = String(windowConfig.end).split(':').map(Number);
+        const startTotal = startH * 60 + startM;
+        const endTotal = endH * 60 + endM;
+
+        return startTotal <= endTotal
+            ? currentTotalMinutes >= startTotal && currentTotalMinutes <= endTotal
+            : currentTotalMinutes >= startTotal || currentTotalMinutes <= endTotal;
+    }
+
+    private normalizeJson<T>(value: unknown, fallback: T): T {
+        if (value == null) {
+            return fallback;
+        }
+
+        if (typeof value === 'string') {
+            try {
+                return JSON.parse(value) as T;
+            } catch {
+                return fallback;
+            }
+        }
+
+        return value as T;
+    }
+
+    private runForTenant<T>(tenantId: string, callback: () => Promise<T>): Promise<T> {
+        const actor: SecurityActor = {
+            tenantId,
+            role: 'ADMIN',
+            email: 'module-os-scheduler@local',
+            name: 'module-os scheduler',
+            id: `module-os-scheduler:${tenantId}`,
+        };
+
+        return this.requestSecurityContext.runWithActor(actor, callback);
     }
 }

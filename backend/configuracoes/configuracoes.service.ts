@@ -3,9 +3,11 @@ import { PrismaService } from '@core/prisma/prisma.service';
 import { OrdemServicoCronService } from '../core/ordem-servico-cron.service';
 import { AiService } from '../shared/services/ai.service';
 import { AVAILABLE_PERMISSIONS } from '../shared/constants/available-permissions';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class ConfiguracoesService {
+    // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
     private readonly logger = new Logger(ConfiguracoesService.name);
     private readonly LEGACY_PROFILE_PERMISSION_MAP: Record<string, string> = {
         dashboard_export: 'dashboard_view_statistics',
@@ -17,8 +19,9 @@ export class ConfiguracoesService {
 
     constructor(
         private readonly prisma: PrismaService,
+        private readonly modulePrisma: ModuleOsPrismaService,
         private readonly aiService: AiService,
-        private readonly cronService: OrdemServicoCronService
+        private readonly cronService: OrdemServicoCronService,
     ) { }
 
     private getDefaultPermissions() {
@@ -80,53 +83,50 @@ export class ConfiguracoesService {
         return this.LEGACY_PROFILE_PERMISSION_MAP[key] || key;
     }
 
-    async getUsers(tenantId: string) {
+    async getUsers() {
         try {
-            this.logger.log(`Buscando usuarios para tenant ${tenantId}`);
-
-            const users = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT id, name, email, role
-                 FROM users
-                 WHERE "tenantId" = $1 AND "isLocked" = false
-                 ORDER BY name ASC`,
-                tenantId
-            );
+            const users = await this.prisma.user.findMany({
+                where: {
+                    isLocked: false,
+                },
+                orderBy: { name: 'asc' },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                },
+            });
 
             this.logger.log(`Usuarios encontrados: ${users.length}`);
             return users;
         } catch (error) {
-            this.logger.error(`Erro ao buscar usuarios:`, error);
+            this.logger.error('Erro ao buscar usuarios:', error);
             throw error;
         }
     }
 
-    async toggleTechnician(tenantId: string, userId: string, isTechnician: boolean) {
+    async toggleTechnician(userId: string, isTechnician: boolean) {
         try {
             this.logger.log(`Alterando status de tecnico para usuario ${userId}: ${isTechnician}`);
             return { success: true, userId, isTechnician };
         } catch (error) {
-            this.logger.error(`Erro ao alterar status de tecnico:`, error);
+            this.logger.error('Erro ao alterar status de tecnico:', error);
             throw error;
         }
     }
 
-    async getProfilePermissions(tenantId: string) {
+    async getProfilePermissions() {
         try {
-            this.logger.log(`Buscando permissoes de perfil para tenant ${tenantId}`);
-
-            const permissions = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT tenant_id, profile, permission_id, allowed
-                 FROM mod_ordem_servico_profile_permissions
-                 WHERE tenant_id = $1 OR tenant_id = 'default'
-                 ORDER BY CASE WHEN tenant_id = 'default' THEN 0 ELSE 1 END, profile ASC, permission_id ASC`,
-                tenantId
-            );
+            const permissions = await this.modulePrisma.mod_ordem_servico_profile_permissions.findMany({
+                orderBy: [{ profile: 'asc' }, { permissionId: 'asc' }],
+            });
 
             const structuredPermissions: Record<string, Record<string, boolean>> = {};
             const defaults = this.getDefaultPermissions();
 
             permissions.forEach((perm) => {
-                const normalizedPermissionId = this.normalizePermissionId(perm.permission_id);
+                const normalizedPermissionId = this.normalizePermissionId(perm.permissionId);
                 if (!normalizedPermissionId) {
                     return;
                 }
@@ -134,7 +134,7 @@ export class ConfiguracoesService {
                 if (!structuredPermissions[normalizedPermissionId]) {
                     structuredPermissions[normalizedPermissionId] = {};
                 }
-                structuredPermissions[normalizedPermissionId][perm.profile] = perm.allowed;
+                structuredPermissions[normalizedPermissionId][perm.profile] = perm.allowed === true;
             });
 
             const mergedPermissions: Record<string, Record<string, boolean>> = { ...defaults };
@@ -148,183 +148,132 @@ export class ConfiguracoesService {
 
             return mergedPermissions;
         } catch (error) {
-            this.logger.error(`Erro ao buscar permissoes de perfil:`, error);
+            this.logger.error('Erro ao buscar permissoes de perfil:', error);
             return this.getDefaultPermissions();
         }
     }
 
-    async updateProfilePermissions(tenantId: string, permissions: any) {
+    async updateProfilePermissions(permissions: any) {
         try {
-            this.logger.log(`Atualizando permissoes de perfil para tenant ${tenantId}`);
-
-            await this.prisma.$executeRawUnsafe(
-                `DELETE FROM mod_ordem_servico_profile_permissions WHERE tenant_id = $1`,
-                tenantId
-            );
-
-            const insertPromises = [];
+            await this.modulePrisma.mod_ordem_servico_profile_permissions.deleteMany();
+            const rows = [];
 
             for (const [permissionId, profiles] of Object.entries(permissions)) {
                 const normalizedPermissionId = this.normalizePermissionId(permissionId);
                 for (const [profileName, allowed] of Object.entries(profiles as Record<string, boolean>)) {
-                    insertPromises.push(
-                        this.prisma.$executeRawUnsafe(
-                            `INSERT INTO mod_ordem_servico_profile_permissions
-                             (tenant_id, profile, permission_id, allowed, created_at, updated_at)
-                             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-                            tenantId,
-                            profileName,
-                            normalizedPermissionId,
-                            allowed
-                        )
-                    );
+                    rows.push({
+                        profile: profileName,
+                        permissionId: normalizedPermissionId,
+                        allowed,
+                    });
                 }
             }
 
-            await Promise.all(insertPromises);
+            if (rows.length > 0) {
+                await this.modulePrisma.mod_ordem_servico_profile_permissions.createMany({
+                    data: rows,
+                });
+            }
 
             return { success: true, permissions };
         } catch (error) {
-            this.logger.error(`Erro ao atualizar permissoes de perfil:`, error);
+            this.logger.error('Erro ao atualizar permissoes de perfil:', error);
             throw error;
         }
     }
 
-    async getNotifications(tenantId: string) {
+    async getNotifications() {
         try {
-            this.logger.log(`Buscando notificacoes para tenant ${tenantId}`);
-
-            const notifications = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT * FROM mod_ordem_servico_notification_schedules
-                 WHERE tenant_id = $1
-                 ORDER BY created_at DESC`,
-                tenantId
-            );
-
-            return notifications;
+            return await this.modulePrisma.mod_ordem_servico_notification_schedules.findMany({
+                orderBy: { createdAt: 'desc' },
+            });
         } catch (error) {
-            this.logger.error(`Erro ao buscar notificacoes:`, error);
+            this.logger.error('Erro ao buscar notificacoes:', error);
             return [];
         }
     }
 
-    async createNotification(tenantId: string, data: any) {
+    async createNotification(data: any) {
         try {
-            this.logger.log(`Criando notificacao para tenant ${tenantId}`);
-
-            const result = await this.prisma.$executeRawUnsafe(
-                `INSERT INTO mod_ordem_servico_notification_schedules
-                (tenant_id, title, content, audience, cron_expression, enabled)
-                VALUES ($1, $2, $3, $4, $5, $6)`,
-                tenantId,
-                data.title,
-                data.content,
-                data.audience || 'all',
-                data.cronExpression,
-                data.enabled ?? true
-            );
+            const result = await this.modulePrisma.mod_ordem_servico_notification_schedules.create({
+                data: {
+                    title: data.title,
+                    content: data.content,
+                    audience: data.audience || 'all',
+                    cronExpression: data.cronExpression,
+                    enabled: data.enabled ?? true,
+                },
+            });
 
             await this.cronService.registerNotificationJob();
-
             return { success: true, result };
         } catch (error) {
-            this.logger.error(`Erro ao criar notificacao:`, error);
+            this.logger.error('Erro ao criar notificacao:', error);
             throw error;
         }
     }
 
-    async getAiConfig(tenantId: string) {
+    async getAiConfig() {
         try {
-            this.logger.log(`Buscando configuracao de IA para tenant ${tenantId}`);
-
-            const results = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT value FROM mod_ordem_servico_configs WHERE tenant_id = $1 AND key = 'ai_integration'`,
-                tenantId
-            );
-
-            if (results.length === 0) {
+            const config = await this.readConfigValue('ai_integration');
+            if (!config || typeof config !== 'object') {
                 return { enabled: false };
             }
 
-            const config = JSON.parse(results[0].value);
-            if (config.apiKey) {
-                config.apiKey = '********' + config.apiKey.slice(-4);
+            const maskedConfig = { ...config };
+            if (maskedConfig.apiKey) {
+                maskedConfig.apiKey = '********' + String(maskedConfig.apiKey).slice(-4);
             }
 
-            return config;
+            return maskedConfig;
         } catch (error) {
-            this.logger.error(`Erro ao buscar configuracao de IA:`, error);
+            this.logger.error('Erro ao buscar configuracao de IA:', error);
             return { enabled: false };
         }
     }
 
-    async updateAiConfig(tenantId: string, config: any) {
+    async updateAiConfig(config: any) {
         try {
-            this.logger.log(`Atualizando configuracao de IA para tenant ${tenantId}`);
-
             if (config.apiKey && config.apiKey.startsWith('********')) {
-                const currentConfig = await this.getAiConfigInternal(tenantId);
+                const currentConfig = await this.getAiConfigInternal();
                 if (currentConfig && currentConfig.apiKey) {
                     config.apiKey = currentConfig.apiKey;
                 }
             }
 
-            const configValue = JSON.stringify(config);
-
-            const updateResult = await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordem_servico_configs SET value = $1, updated_at = CURRENT_TIMESTAMP
-                 WHERE tenant_id = $2 AND key = 'ai_integration'`,
-                configValue,
-                tenantId
-            );
-
-            if (updateResult === 0) {
-                await this.prisma.$executeRawUnsafe(
-                    `INSERT INTO mod_ordem_servico_configs (tenant_id, key, value) VALUES ($1, 'ai_integration', $2)`,
-                    tenantId,
-                    configValue
-                );
-            }
-
+            await this.upsertConfigValue('ai_integration', config);
             return { success: true };
         } catch (error) {
-            this.logger.error(`Erro ao atualizar configuracao de IA:`, error);
+            this.logger.error('Erro ao atualizar configuracao de IA:', error);
             throw error;
         }
     }
 
-    private async getAiConfigInternal(tenantId: string) {
+    private async getAiConfigInternal() {
         try {
-            const results = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT value FROM mod_ordem_servico_configs WHERE tenant_id = $1 AND key = 'ai_integration'`,
-                tenantId
-            );
-            return results.length > 0 ? JSON.parse(results[0].value) : null;
+            return this.readConfigValue('ai_integration');
         } catch {
             return null;
         }
     }
 
-    async testAiConfig(tenantId: string, testConfig: any) {
+    async testAiConfig(testConfig: any) {
         try {
-            this.logger.log(`Testando configuracao de IA para tenant ${tenantId}`);
-
             if (testConfig.apiKey && testConfig.apiKey.startsWith('********')) {
-                const currentConfig = await this.getAiConfigInternal(tenantId);
+                const currentConfig = await this.getAiConfigInternal();
                 if (currentConfig && currentConfig.apiKey) {
                     testConfig.apiKey = currentConfig.apiKey;
                 }
             }
 
             const response = await this.aiService.callAI(
-                tenantId,
                 { prompt: 'Ola! Por favor, responda confirmando que voce esta funcionando corretamente.' },
-                testConfig
+                testConfig,
             );
 
             return { success: true, response };
         } catch (error: any) {
-            this.logger.error(`Erro no teste de IA:`, error);
+            this.logger.error('Erro no teste de IA:', error);
             return {
                 success: false,
                 message: error.message || 'Erro desconhecido ao testar IA',
@@ -333,50 +282,71 @@ export class ConfiguracoesService {
         }
     }
 
-    async getConfigurations(tenantId: string) {
+    async getConfigurations() {
         try {
-            this.logger.log(`Buscando configuracoes genericas para tenant ${tenantId}`);
+            const results = await this.modulePrisma.mod_ordem_servico_configs.findMany({
+                orderBy: { key: 'asc' },
+                select: {
+                    key: true,
+                    value: true,
+                },
+            });
 
-            const results = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT key as config_key, value as config_value FROM mod_ordem_servico_configs WHERE tenant_id = $1`,
-                tenantId
-            );
-
-            return results;
+            return results.map((item) => ({
+                config_key: item.key,
+                config_value: item.value,
+            }));
         } catch (error) {
-            this.logger.error(`Erro ao buscar configuracoes genericas:`, error);
+            this.logger.error('Erro ao buscar configuracoes genericas:', error);
             return [];
         }
     }
 
-    async saveConfiguration(tenantId: string, key: string, value: any) {
+    async saveConfiguration(key: string, value: any) {
         try {
-            this.logger.log(`Salvando configuracao: ${key} para tenant ${tenantId}`);
-
-            const configValue = typeof value === 'string' ? value : JSON.stringify(value);
-
-            const updateResult = await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordem_servico_configs SET value = $1, updated_at = CURRENT_TIMESTAMP
-                 WHERE tenant_id = $2 AND key = $3`,
-                configValue,
-                tenantId,
-                key
-            );
-
-            if (updateResult === 0) {
-                await this.prisma.$executeRawUnsafe(
-                    `INSERT INTO mod_ordem_servico_configs (tenant_id, key, value, created_at, updated_at)
-                     VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-                    tenantId,
-                    key,
-                    configValue
-                );
-            }
-
+            await this.upsertConfigValue(key, value);
             return { success: true };
         } catch (error) {
-            this.logger.error(`Erro ao salvar configuracao:`, error);
+            this.logger.error('Erro ao salvar configuracao:', error);
             throw error;
+        }
+    }
+
+    private async readConfigValue(key: string) {
+        const config = await this.modulePrisma.mod_ordem_servico_configs.findFirst({
+            where: { key },
+            select: { value: true },
+        });
+
+        if (!config?.value) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(config.value);
+        } catch {
+            return config.value;
+        }
+    }
+
+    private async upsertConfigValue(key: string, value: any) {
+        const configValue = typeof value === 'string' ? value : JSON.stringify(value);
+
+        const updateResult = await this.modulePrisma.mod_ordem_servico_configs.updateMany({
+            where: { key },
+            data: {
+                value: configValue,
+                updatedAt: new Date(),
+            },
+        });
+
+        if (updateResult.count === 0) {
+            await this.modulePrisma.mod_ordem_servico_configs.create({
+                data: {
+                    key,
+                    value: configValue,
+                },
+            });
         }
     }
 }

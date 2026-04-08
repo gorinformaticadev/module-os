@@ -1,268 +1,224 @@
-import { Controller, Get, Post, Body, UseGuards, Put, Req, Param, Delete } from '@nestjs/common';
-import { JwtAuthGuard } from '@core/guards/jwt-auth.guard';
+import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { PrismaService } from '@core/prisma/prisma.service';
 import { OrdemServicoCronService } from './ordem-servico-cron.service';
 import { Request as ExpressRequest } from 'express';
 import { PermissionGuard } from '../shared/guards/permission.guard';
 import { RequireConfigPermission } from '../shared/decorators/require-permission.decorator';
 import { Permissions } from '../shared/decorators/permissions.decorator';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Controller('ordem_servico/config')
 @Permissions('ordem_servico.config')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class OrdemServicoConfigController {
+    // tenantId e resolvido via ALS nas services e no ModuleOsPrismaService.
     constructor(
-        private prisma: PrismaService,
-        private cronService: OrdemServicoCronService
+        private readonly prisma: PrismaService,
+        private readonly modulePrisma: ModuleOsPrismaService,
+        private readonly cronService: OrdemServicoCronService,
     ) { }
 
     @Get('notifications')
     @RequireConfigPermission('manage_notifications')
-    async getNotificationConfigs(@Req() req: ExpressRequest & { user: any }) {
-        const result = await this.prisma.$queryRaw<any[]>`
-            SELECT * FROM mod_ordem_servico_notification_schedules
-            WHERE tenant_id = ${req.user.tenantId}
-            ORDER BY created_at DESC
-        `;
-        return result;
+    async getNotificationConfigs() {
+        return this.modulePrisma.mod_ordem_servico_notification_schedules.findMany({
+            orderBy: { createdAt: 'desc' },
+        });
     }
 
     @Post('notifications')
     @RequireConfigPermission('manage_notifications')
-    async createNotificationConfig(@Req() req: ExpressRequest & { user: any }, @Body() body: any) {
-        const result = await this.prisma.$executeRaw`
-            INSERT INTO mod_ordem_servico_notification_schedules
-            (tenant_id, title, content, audience, cron_expression, enabled)
-            VALUES (
-                ${req.user.tenantId},
-                ${body.title},
-                ${body.content},
-                ${body.audience},
-                ${body.cronExpression},
-                ${body.enabled ?? true}
-            )
-        `;
+    async createNotificationConfig(@Body() body: any) {
+        const result = await this.modulePrisma.mod_ordem_servico_notification_schedules.create({
+            data: {
+                title: body.title,
+                content: body.content,
+                audience: body.audience,
+                cronExpression: body.cronExpression,
+                enabled: body.enabled ?? true,
+            },
+        });
 
         await this.cronService.registerNotificationJob();
-
         return result;
     }
 
-    // ==================== TIPOS DE SERVIÇO ====================
-
     @Get('tipos-servico')
     @RequireConfigPermission('view')
-    async getTiposServico(@Req() req: ExpressRequest & { user: any }) {
-        const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT id, nome, is_default FROM mod_ordem_servico_tipos_servico 
-             WHERE tenant_id = $1 
-             ORDER BY is_default DESC, nome ASC`,
-            req.user.tenantId
-        );
-        return result;
+    async getTiposServico() {
+        return this.modulePrisma.mod_ordem_servico_tipos_servico.findMany({
+            orderBy: [{ isDefault: 'desc' }, { nome: 'asc' }],
+        });
     }
 
     @Post('tipos-servico')
     @RequireConfigPermission('edit')
-    async createTipoServico(@Req() req: ExpressRequest & { user: any }, @Body() body: { nome: string }) {
-        const result = await this.prisma.$queryRawUnsafe(
-            `INSERT INTO mod_ordem_servico_tipos_servico (tenant_id, nome, is_default) 
-             VALUES ($1, $2, false) 
-             RETURNING id, nome, is_default`,
-            req.user.tenantId,
-            body.nome
-        );
-        return result[0];
+    async createTipoServico(@Body() body: { nome: string }) {
+        return this.modulePrisma.mod_ordem_servico_tipos_servico.create({
+            data: {
+                nome: body.nome,
+                isDefault: false,
+            },
+        });
     }
 
     @Put('tipos-servico/:id')
     @RequireConfigPermission('edit')
-    async updateTipoServico(
-        @Req() req: ExpressRequest & { user: any },
-        @Param('id') id: string,
-        @Body() body: { nome: string }
-    ) {
-        const result = await this.prisma.$queryRawUnsafe(
-            `UPDATE mod_ordem_servico_tipos_servico 
-             SET nome = $1 
-             WHERE id = $2 AND tenant_id = $3 AND is_default = false
-             RETURNING id, nome, is_default`,
-            body.nome,
-            id,
-            req.user.tenantId
-        );
-        return result[0];
+    async updateTipoServico(@Param('id') id: string, @Body() body: { nome: string }) {
+        await this.modulePrisma.mod_ordem_servico_tipos_servico.updateMany({
+            where: {
+                id,
+                isDefault: false,
+            },
+            data: { nome: body.nome },
+        });
+
+        return this.modulePrisma.mod_ordem_servico_tipos_servico.findFirst({
+            where: { id },
+        });
     }
 
     @Delete('tipos-servico/:id')
     @RequireConfigPermission('edit')
-    async deleteTipoServico(@Req() req: ExpressRequest & { user: any }, @Param('id') id: string) {
-        await this.prisma.$queryRawUnsafe(
-            `DELETE FROM mod_ordem_servico_tipos_servico 
-             WHERE id = $1 AND tenant_id = $2 AND is_default = false`,
-            id,
-            req.user.tenantId
-        );
+    async deleteTipoServico(@Param('id') id: string) {
+        await this.modulePrisma.mod_ordem_servico_tipos_servico.deleteMany({
+            where: {
+                id,
+                isDefault: false,
+            },
+        });
         return { success: true };
     }
 
-    // ==================== TIPOS DE EQUIPAMENTO ====================
-
     @Get('tipos-equipamento')
     @RequireConfigPermission('view')
-    async getTiposEquipamento(@Req() req: ExpressRequest & { user: any }) {
-        const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT id, nome FROM mod_ordem_servico_tipos_equipamento 
-             WHERE tenant_id = $1 
-             ORDER BY nome ASC`,
-            req.user.tenantId
-        );
-        return result;
+    async getTiposEquipamento() {
+        return this.modulePrisma.mod_ordem_servico_tipos_equipamento.findMany({
+            orderBy: { nome: 'asc' },
+        });
     }
 
     @Post('tipos-equipamento')
     @RequireConfigPermission('edit')
-    async createTipoEquipamento(@Req() req: ExpressRequest & { user: any }, @Body() body: { nome: string }) {
-        const result = await this.prisma.$queryRawUnsafe(
-            `INSERT INTO mod_ordem_servico_tipos_equipamento (tenant_id, nome) 
-             VALUES ($1, $2) 
-             RETURNING id, nome`,
-            req.user.tenantId,
-            body.nome
-        );
-        return result[0];
+    async createTipoEquipamento(@Body() body: { nome: string }) {
+        return this.modulePrisma.mod_ordem_servico_tipos_equipamento.create({
+            data: { nome: body.nome },
+        });
     }
 
     @Put('tipos-equipamento/:id')
     @RequireConfigPermission('edit')
-    async updateTipoEquipamento(
-        @Req() req: ExpressRequest & { user: any },
-        @Param('id') id: string,
-        @Body() body: { nome: string }
-    ) {
-        const result = await this.prisma.$queryRawUnsafe(
-            `UPDATE mod_ordem_servico_tipos_equipamento 
-             SET nome = $1 
-             WHERE id = $2 AND tenant_id = $3
-             RETURNING id, nome`,
-            body.nome,
-            id,
-            req.user.tenantId
-        );
-        return result[0];
+    async updateTipoEquipamento(@Param('id') id: string, @Body() body: { nome: string }) {
+        await this.modulePrisma.mod_ordem_servico_tipos_equipamento.updateMany({
+            where: { id },
+            data: { nome: body.nome },
+        });
+
+        return this.modulePrisma.mod_ordem_servico_tipos_equipamento.findFirst({
+            where: { id },
+        });
     }
 
     @Delete('tipos-equipamento/:id')
     @RequireConfigPermission('edit')
-    async deleteTipoEquipamento(@Req() req: ExpressRequest & { user: any }, @Param('id') id: string) {
-        await this.prisma.$queryRawUnsafe(
-            `DELETE FROM mod_ordem_servico_tipos_equipamento 
-             WHERE id = $1 AND tenant_id = $2`,
-            id,
-            req.user.tenantId
-        );
+    async deleteTipoEquipamento(@Param('id') id: string) {
+        await this.modulePrisma.mod_ordem_servico_tipos_equipamento.deleteMany({
+            where: { id },
+        });
         return { success: true };
     }
-
-    // ==================== USUÁRIOS/TÉCNICOS ====================
 
     @Get('users')
     @RequireConfigPermission('manage_permissions')
     async getUsers(@Req() req: ExpressRequest & { user: any }) {
-        try {
-            // Primeiro, tentar com a nova tabela de papéis
-            const result = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT 
-                    u.id, 
-                    u.name, 
-                    u.email, 
-                    u.role as system_role,
-                    COALESCE(osr.is_technician, false) as is_technician,
-                    COALESCE(osr.is_attendant, true) as is_attendant,
-                    COALESCE(osr.is_admin, (u.role = 'SUPER_ADMIN' OR u.role = 'ADMIN')) as is_admin
-                 FROM users u
-                 LEFT JOIN mod_ordem_servico_user_roles osr ON u.id = osr.user_id AND u."tenantId" = osr.tenant_id
-                 WHERE u."tenantId" = $1 AND u."isLocked" = false
-                 ORDER BY u.name ASC`,
-                req.user.tenantId
-            );
+        const users = await this.prisma.user.findMany({
+            where: {
+                isLocked: false,
+            },
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+            },
+        });
 
-            // Formatar dados para o frontend
-            const usersWithOSRoles = result.map(user => ({
+        const roles = await this.modulePrisma.mod_ordem_servico_user_roles.findMany();
+        const rolesByUserId = new Map(roles.map((role) => [role.userId, role]));
+
+        return users.map((user) => {
+            const role = rolesByUserId.get(user.id);
+            return {
                 id: user.id,
                 name: user.name,
                 email: user.email,
-                system_role: user.system_role,
+                system_role: user.role,
                 os_roles: {
-                    admin: user.is_admin,
-                    attendant: user.is_attendant,
-                    technician: user.is_technician
-                }
-            }));
-
-            return usersWithOSRoles;
-        } catch (error) {
-            console.error('Erro ao buscar usuários com papéis OS, tentando fallback:', error);
-
-            // Fallback: usar apenas a tabela users
-            const result = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT id, name, email, role as system_role FROM users 
-                 WHERE "tenantId" = $1 AND "isLocked" = false
-                 ORDER BY name ASC`,
-                req.user.tenantId
-            );
-
-            // Formatar dados para o frontend (sem papéis específicos do módulo)
-            const usersWithOSRoles = result.map(user => ({
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                system_role: user.system_role,
-                os_roles: {
-                    admin: user.system_role === 'SUPER_ADMIN' || user.system_role === 'ADMIN',
-                    attendant: true, // Por padrão, todos podem ser atendentes
-                    technician: false // Por padrão, ninguém é técnico até executar a migração
-                }
-            }));
-
-            return usersWithOSRoles;
-        }
+                    admin: role?.isAdmin ?? (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'),
+                    attendant: role?.isAttendant ?? true,
+                    technician: role?.isTechnician ?? false,
+                },
+            };
+        });
     }
 
     @Get('technicians')
     @RequireConfigPermission('manage_permissions')
-    async getTechnicians(@Req() req: ExpressRequest & { user: any }) {
-        const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT u.id, u.name, u.email 
-             FROM users u
-             INNER JOIN mod_ordem_servico_user_roles osr ON u.id = osr.user_id AND u."tenantId" = osr.tenant_id
-             WHERE u."tenantId" = $1 AND u."isLocked" = false AND osr.is_technician = true
-             ORDER BY u.name ASC`,
-            req.user.tenantId
-        );
-        return result;
+    async getTechnicians() {
+        const technicians = await this.modulePrisma.mod_ordem_servico_user_roles.findMany({
+            where: { isTechnician: true },
+            select: { userId: true },
+        });
+
+        if (technicians.length === 0) {
+            return [];
+        }
+
+        return this.prisma.user.findMany({
+            where: {
+                id: { in: technicians.map((item) => item.userId) },
+                isLocked: false,
+            },
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+            },
+        });
     }
 
     @Put('users/:id/technician')
     @RequireConfigPermission('manage_permissions')
     async updateUserTechnician(
-        @Req() req: ExpressRequest & { user: any },
         @Param('id') userId: string,
-        @Body() body: { is_technician: boolean }
+        @Body() body: { is_technician: boolean },
     ) {
-        // Inserir ou atualizar o papel do usuário
-        await this.prisma.$queryRawUnsafe(
-            `INSERT INTO mod_ordem_servico_user_roles (tenant_id, user_id, is_technician, is_attendant, is_admin)
-             VALUES ($1, $2, $3, true, false)
-             ON CONFLICT (tenant_id, user_id) 
-             DO UPDATE SET 
-                is_technician = $3,
-                updated_at = CURRENT_TIMESTAMP`,
-            req.user.tenantId,
-            userId,
-            body.is_technician
-        );
+        const existing = await this.modulePrisma.mod_ordem_servico_user_roles.findFirst({
+            where: { userId },
+        });
 
-        return { success: true, message: 'Configuração de técnico atualizada' };
+        if (existing) {
+            await this.modulePrisma.mod_ordem_servico_user_roles.updateMany({
+                where: { userId },
+                data: {
+                    isTechnician: body.is_technician,
+                    updatedAt: new Date(),
+                },
+            });
+        } else {
+            await this.modulePrisma.mod_ordem_servico_user_roles.create({
+                data: {
+                    userId,
+                    isTechnician: body.is_technician,
+                    isAttendant: true,
+                    isAdmin: false,
+                },
+            });
+        }
+
+        return { success: true, message: 'Configuracao de tecnico atualizada' };
     }
 }

@@ -1,5 +1,5 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ModuleOsPrismaService } from '../../prisma/module-os-prisma.service';
 
 interface AIRequest {
     prompt: string;
@@ -10,39 +10,39 @@ interface AIRequest {
 export class AiService {
     private readonly logger = new Logger(AiService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: ModuleOsPrismaService) { }
 
-    private async getAiConfig(tenantId: string) {
+    private async getAiConfig() {
         try {
-            const results = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT value FROM mod_ordem_servico_configs WHERE tenant_id = $1 AND key = 'ai_integration'`,
-                tenantId
-            );
+            const result = await this.prisma.mod_ordem_servico_configs.findFirst({
+                where: { key: 'ai_integration' },
+                select: { value: true },
+            });
 
-            if (results.length === 0) {
+            if (!result?.value) {
                 return null;
             }
 
-            return JSON.parse(results[0].value);
+            return JSON.parse(result.value);
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar configuração de IA:`, error);
+            this.logger.error('Erro ao buscar configuracao de IA:', error);
             return null;
         }
     }
 
-    async callAI(tenantId: string, { prompt, system }: AIRequest, configOverride?: any) {
+    async callAI({ prompt, system }: AIRequest, configOverride?: any) {
         let config = configOverride;
 
         if (!config) {
-            config = await this.getAiConfig(tenantId);
+            config = await this.getAiConfig();
         }
 
         if (!config || (config.enabled === false && !configOverride)) {
-            throw new BadRequestException('IA não habilitada para este tenant');
+            throw new BadRequestException('IA nao habilitada para este tenant');
         }
 
         if (!config.apiKey) {
-            throw new BadRequestException('API Key da IA não configurada');
+            throw new BadRequestException('API Key da IA nao configurada');
         }
 
         const url = config.provider === 'openrouter'
@@ -83,7 +83,7 @@ export class AiService {
             const data = await response.json();
             return data.choices[0].message.content;
         } catch (error) {
-            this.logger.error(`Erro ao chamar IA:`, error);
+            this.logger.error('Erro ao chamar IA:', error);
             throw error;
         }
     }

@@ -1,123 +1,100 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class TiposEquipamentoService {
-  constructor(private prisma: PrismaService) {}
+  // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
+  constructor(private readonly prisma: ModuleOsPrismaService) {}
 
-  async findAll(tenantId: string) {
-    const tipos = await this.prisma.$queryRaw`
-      SELECT id, nome, created_at
-      FROM mod_ordem_servico_tipos_equipamento
-      WHERE tenant_id = ${tenantId}
-      ORDER BY nome ASC
-    `;
-
-    return tipos;
+  async findAll() {
+    return this.prisma.mod_ordem_servico_tipos_equipamento.findMany({
+      orderBy: { nome: 'asc' },
+    });
   }
 
-  async findOne(tenantId: string, id: string) {
-    const tipo = await this.prisma.$queryRaw`
-      SELECT id, nome, created_at
-      FROM mod_ordem_servico_tipos_equipamento
-      WHERE tenant_id = ${tenantId} AND id = ${id}::uuid
-    `;
+  async findOne(id: string) {
+    const tipo = await this.prisma.mod_ordem_servico_tipos_equipamento.findFirst({
+      where: { id },
+    });
 
-    if (!tipo || (Array.isArray(tipo) && tipo.length === 0)) {
-      throw new NotFoundException('Tipo de equipamento não encontrado');
+    if (!tipo) {
+      throw new NotFoundException('Tipo de equipamento nao encontrado');
     }
 
-    return Array.isArray(tipo) ? tipo[0] : tipo;
+    return tipo;
   }
 
-  async create(tenantId: string, createDto: any) {
-    const { nome } = createDto;
-
-    if (!nome || nome.trim() === '') {
-      throw new BadRequestException('Nome é obrigatório');
+  async create(createDto: any) {
+    const normalizedNome = String(createDto?.nome || '').trim();
+    if (!normalizedNome) {
+      throw new BadRequestException('Nome e obrigatorio');
     }
 
-    // Verificar se já existe um tipo com o mesmo nome
-    const existing = await this.prisma.$queryRaw`
-      SELECT id FROM mod_ordem_servico_tipos_equipamento
-      WHERE tenant_id = ${tenantId} AND LOWER(nome) = LOWER(${nome.trim()})
-    `;
+    const existing = await this.prisma.mod_ordem_servico_tipos_equipamento.findFirst({
+      where: { nome: { equals: normalizedNome, mode: 'insensitive' } },
+      select: { id: true },
+    });
 
-    if (existing && Array.isArray(existing) && existing.length > 0) {
-      throw new BadRequestException('Já existe um tipo de equipamento com este nome');
+    if (existing) {
+      throw new BadRequestException('Ja existe um tipo de equipamento com este nome');
     }
 
-    const result = await this.prisma.$queryRaw`
-      INSERT INTO mod_ordem_servico_tipos_equipamento (tenant_id, nome)
-      VALUES (${tenantId}, ${nome.trim()})
-      RETURNING id, nome, created_at
-    `;
-
-    return Array.isArray(result) ? result[0] : result;
+    return this.prisma.mod_ordem_servico_tipos_equipamento.create({
+      data: { nome: normalizedNome },
+    });
   }
 
-  async update(tenantId: string, id: string, updateDto: any) {
-    const { nome } = updateDto;
+  async update(id: string, updateDto: any) {
+    const existing = await this.findOne(id);
+    const normalizedNome = String(updateDto?.nome || '').trim();
 
-    // Verificar se o tipo existe
-    const existing = await this.findOne(tenantId, id);
-    
-    if (!existing) {
-      throw new NotFoundException('Tipo de equipamento não encontrado');
+    if (!normalizedNome) {
+      throw new BadRequestException('Nome e obrigatorio');
     }
 
-    if (!nome || nome.trim() === '') {
-      throw new BadRequestException('Nome é obrigatório');
-    }
+    if (normalizedNome !== existing.nome) {
+      const duplicate = await this.prisma.mod_ordem_servico_tipos_equipamento.findFirst({
+        where: {
+          id: { not: id },
+          nome: { equals: normalizedNome, mode: 'insensitive' },
+        },
+        select: { id: true },
+      });
 
-    // Se está alterando o nome, verificar duplicatas
-    if (nome.trim() !== existing.nome) {
-      const duplicate = await this.prisma.$queryRaw`
-        SELECT id FROM mod_ordem_servico_tipos_equipamento
-        WHERE tenant_id = ${tenantId} AND LOWER(nome) = LOWER(${nome.trim()}) AND id != ${id}::uuid
-      `;
-
-      if (duplicate && Array.isArray(duplicate) && duplicate.length > 0) {
-        throw new BadRequestException('Já existe um tipo de equipamento com este nome');
+      if (duplicate) {
+        throw new BadRequestException('Ja existe um tipo de equipamento com este nome');
       }
     }
 
-    const result = await this.prisma.$queryRaw`
-      UPDATE mod_ordem_servico_tipos_equipamento
-      SET nome = ${nome.trim()}
-      WHERE tenant_id = ${tenantId} AND id = ${id}::uuid
-      RETURNING id, nome, created_at
-    `;
+    const updateResult = await this.prisma.mod_ordem_servico_tipos_equipamento.updateMany({
+      where: { id },
+      data: { nome: normalizedNome },
+    });
 
-    return Array.isArray(result) ? result[0] : result;
+    if (updateResult.count === 0) {
+      throw new NotFoundException('Tipo de equipamento nao encontrado');
+    }
+
+    return this.findOne(id);
   }
 
-  async remove(tenantId: string, id: string) {
-    // Verificar se o tipo existe
-    const existing = await this.findOne(tenantId, id);
-    
-    if (!existing) {
-      throw new NotFoundException('Tipo de equipamento não encontrado');
+  async remove(id: string) {
+    const existing = await this.findOne(id);
+
+    const inUseCount = await this.prisma.mod_ordem_servico_ordens.count({
+      where: { equipamentoTipo: existing.nome },
+    });
+
+    if (inUseCount > 0) {
+      throw new BadRequestException(
+        'Este tipo de equipamento nao pode ser excluido pois esta sendo usado em ordens de servico',
+      );
     }
 
-    // Verificar se está sendo usado em alguma ordem de serviço
-    const inUse = await this.prisma.$queryRaw`
-      SELECT COUNT(*) as count
-      FROM mod_ordem_servico_ordens
-      WHERE tenant_id = ${tenantId} AND tipo_equipamento = ${existing.nome}
-    `;
+    await this.prisma.mod_ordem_servico_tipos_equipamento.deleteMany({
+      where: { id },
+    });
 
-    const count = Array.isArray(inUse) ? (inUse[0] as any)?.count : (inUse as any)?.count;
-    
-    if (count && parseInt(count) > 0) {
-      throw new BadRequestException('Este tipo de equipamento não pode ser excluído pois está sendo usado em ordens de serviço');
-    }
-
-    await this.prisma.$queryRaw`
-      DELETE FROM mod_ordem_servico_tipos_equipamento
-      WHERE tenant_id = ${tenantId} AND id = ${id}::uuid
-    `;
-
-    return { message: 'Tipo de equipamento excluído com sucesso' };
+    return { message: 'Tipo de equipamento excluido com sucesso' };
   }
 }

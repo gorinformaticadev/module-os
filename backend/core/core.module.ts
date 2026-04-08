@@ -5,9 +5,10 @@ import { CronModule } from '@core/cron/cron.module';
 import { PrismaModule } from '@core/prisma/prisma.module';
 import { NotificationsModule as RootNotificationsModule } from '../../../notifications/notifications.module';
 import { SharedModule } from '../shared/shared.module';
+import { ModuleOsPrismaModule } from '../prisma/module-os-prisma.module';
 
 @Module({
-    imports: [CronModule, PrismaModule, RootNotificationsModule, SharedModule],
+    imports: [CronModule, PrismaModule, ModuleOsPrismaModule, RootNotificationsModule, SharedModule],
     controllers: [OrdemServicoConfigController],
     providers: [OrdemServicoCronService],
     exports: [OrdemServicoCronService],

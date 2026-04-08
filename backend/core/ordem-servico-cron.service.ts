@@ -1,18 +1,22 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CronService } from '@core/cron/cron.service';
 import { PrismaService } from '@core/prisma/prisma.service';
+import { RequestSecurityContextService, type SecurityActor } from '@common/services/request-security-context.service';
 import { NotificationGateway } from '../../../notifications/notification.gateway';
 import { NotificationService } from '../../../notifications/notification.service';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class OrdemServicoCronService implements OnModuleInit {
     private readonly logger = new Logger(OrdemServicoCronService.name);
 
     constructor(
-        private cronService: CronService,
-        private prisma: PrismaService,
-        private notificationService: NotificationService,
-        private notificationGateway: NotificationGateway
+        private readonly cronService: CronService,
+        private readonly prisma: PrismaService,
+        private readonly modulePrisma: ModuleOsPrismaService,
+        private readonly notificationService: NotificationService,
+        private readonly notificationGateway: NotificationGateway,
+        private readonly requestSecurityContext: RequestSecurityContextService,
     ) { }
 
     async onModuleInit() {
@@ -22,9 +26,10 @@ export class OrdemServicoCronService implements OnModuleInit {
 
     async registerNotificationJob() {
         try {
-            const schedules = await this.prisma.$queryRawUnsafe<any[]>(`
-                SELECT * FROM mod_ordem_servico_notification_schedules
-            `);
+            const schedules = await this.requestSecurityContext.runWithoutTenantEnforcement(
+                'module-os notification schedules sweep',
+                () => this.modulePrisma.mod_ordem_servico_notification_schedules.findMany(),
+            );
 
             const activeKeys = new Set<string>();
 
@@ -34,9 +39,9 @@ export class OrdemServicoCronService implements OnModuleInit {
                 if (config.enabled) {
                     await this.cronService.register(
                         key,
-                        config.cron_expression,
+                        config.cronExpression,
                         async () => {
-                            await this.executeNotificationJob(config);
+                            await this.runForTenant(config.tenantId, () => this.executeNotificationJob(config));
                         },
                         {
                             name: 'Notif: ' + config.title,
@@ -85,7 +90,7 @@ export class OrdemServicoCronService implements OnModuleInit {
                     },
                     source: 'module',
                     module: 'ordem_servico',
-                    tenantId: config.tenant_id,
+                    tenantId: config.tenantId,
                     userId,
                     targetUserId: userId,
                     targetRole: null,
@@ -107,12 +112,11 @@ export class OrdemServicoCronService implements OnModuleInit {
     }
 
     private async resolveScheduleRecipients(config: any): Promise<string[]> {
-        const tenantId = String(config?.tenant_id || '').trim();
+        const audience = String(config?.audience || 'all').trim().toLowerCase();
+        const tenantId = String(config?.tenantId || '').trim();
         if (!tenantId) {
             return [];
         }
-
-        const audience = String(config?.audience || 'all').trim().toLowerCase();
 
         if (audience.startsWith('user:')) {
             const userId = audience.slice(5).trim();
@@ -170,15 +174,27 @@ export class OrdemServicoCronService implements OnModuleInit {
     }
 
     private async getTechnicianUserIds(tenantId: string): Promise<string[]> {
-        const technicians = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT u.id
-             FROM users u
-             INNER JOIN mod_ordem_servico_user_roles osr ON u.id = osr.user_id AND u."tenantId" = osr.tenant_id
-             WHERE u."tenantId" = $1 AND u."isLocked" = false AND osr.is_technician = true`,
-            tenantId
-        );
+        const technicians = await this.modulePrisma.mod_ordem_servico_user_roles.findMany({
+            where: {
+                isTechnician: true,
+            },
+            select: { userId: true },
+        });
 
-        return technicians.map((technician) => technician.id);
+        if (technicians.length === 0) {
+            return [];
+        }
+
+        const users = await this.prisma.user.findMany({
+            where: {
+                id: { in: technicians.map((item) => item.userId) },
+                tenantId,
+                isLocked: false,
+            },
+            select: { id: true },
+        });
+
+        return users.map((user) => user.id);
     }
 
     private async resolveExplicitUserIds(userIds: string[], tenantId: string): Promise<string[]> {
@@ -205,5 +221,17 @@ export class OrdemServicoCronService implements OnModuleInit {
         });
 
         return user?.id ?? null;
+    }
+
+    private runForTenant<T>(tenantId: string, callback: () => Promise<T>): Promise<T> {
+        const actor: SecurityActor = {
+            tenantId,
+            role: 'ADMIN',
+            email: 'module-os-cron@local',
+            name: 'module-os cron',
+            id: `module-os-cron:${tenantId}`,
+        };
+
+        return this.requestSecurityContext.runWithActor(actor, callback);
     }
 }

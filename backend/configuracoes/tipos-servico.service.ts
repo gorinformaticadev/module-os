@@ -1,128 +1,107 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class TiposServicoService {
-  constructor(private prisma: PrismaService) {}
+  // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
+  constructor(private readonly prisma: ModuleOsPrismaService) {}
 
-  async findAll(tenantId: string) {
-    const tipos = await this.prisma.$queryRaw`
-      SELECT id, nome, is_default, created_at
-      FROM mod_ordem_servico_tipos_servico
-      WHERE tenant_id = ${tenantId}
-      ORDER BY is_default DESC, nome ASC
-    `;
-
-    return tipos;
+  async findAll() {
+    return this.prisma.mod_ordem_servico_tipos_servico.findMany({
+      orderBy: [{ isDefault: 'desc' }, { nome: 'asc' }],
+    });
   }
 
-  async findOne(tenantId: string, id: string) {
-    const tipo = await this.prisma.$queryRaw`
-      SELECT id, nome, is_default, created_at
-      FROM mod_ordem_servico_tipos_servico
-      WHERE tenant_id = ${tenantId} AND id = ${id}::uuid
-    `;
+  async findOne(id: string) {
+    const tipo = await this.prisma.mod_ordem_servico_tipos_servico.findFirst({
+      where: { id },
+    });
 
-    if (!tipo || (Array.isArray(tipo) && tipo.length === 0)) {
-      throw new NotFoundException('Tipo de serviço não encontrado');
+    if (!tipo) {
+      throw new NotFoundException('Tipo de servico nao encontrado');
     }
 
-    return Array.isArray(tipo) ? tipo[0] : tipo;
+    return tipo;
   }
 
-  async create(tenantId: string, createDto: any) {
-    const { nome } = createDto;
-
-    if (!nome || nome.trim() === '') {
-      throw new BadRequestException('Nome é obrigatório');
+  async create(createDto: any) {
+    const normalizedNome = String(createDto?.nome || '').trim();
+    if (!normalizedNome) {
+      throw new BadRequestException('Nome e obrigatorio');
     }
 
-    // Verificar se já existe um tipo com o mesmo nome
-    const existing = await this.prisma.$queryRaw`
-      SELECT id FROM mod_ordem_servico_tipos_servico
-      WHERE tenant_id = ${tenantId} AND LOWER(nome) = LOWER(${nome.trim()})
-    `;
+    const existing = await this.prisma.mod_ordem_servico_tipos_servico.findFirst({
+      where: { nome: { equals: normalizedNome, mode: 'insensitive' } },
+      select: { id: true },
+    });
 
-    if (existing && Array.isArray(existing) && existing.length > 0) {
-      throw new BadRequestException('Já existe um tipo de serviço com este nome');
+    if (existing) {
+      throw new BadRequestException('Ja existe um tipo de servico com este nome');
     }
 
-    const result = await this.prisma.$queryRaw`
-      INSERT INTO mod_ordem_servico_tipos_servico (tenant_id, nome, is_default)
-      VALUES (${tenantId}, ${nome.trim()}, false)
-      RETURNING id, nome, is_default, created_at
-    `;
-
-    return Array.isArray(result) ? result[0] : result;
+    return this.prisma.mod_ordem_servico_tipos_servico.create({
+      data: {
+        nome: normalizedNome,
+        isDefault: false,
+      },
+    });
   }
 
-  async update(tenantId: string, id: string, updateDto: any) {
-    const { nome } = updateDto;
+  async update(id: string, updateDto: any) {
+    const existing = await this.findOne(id);
+    const normalizedNome = String(updateDto?.nome || '').trim();
 
-    // Verificar se o tipo existe
-    const existing = await this.findOne(tenantId, id);
-    
-    if (!existing) {
-      throw new NotFoundException('Tipo de serviço não encontrado');
+    if (!normalizedNome) {
+      throw new BadRequestException('Nome e obrigatorio');
     }
 
-    if (!nome || nome.trim() === '') {
-      throw new BadRequestException('Nome é obrigatório');
-    }
+    if (normalizedNome !== existing.nome) {
+      const duplicate = await this.prisma.mod_ordem_servico_tipos_servico.findFirst({
+        where: {
+          id: { not: id },
+          nome: { equals: normalizedNome, mode: 'insensitive' },
+        },
+        select: { id: true },
+      });
 
-    // Se está alterando o nome, verificar duplicatas
-    if (nome.trim() !== existing.nome) {
-      const duplicate = await this.prisma.$queryRaw`
-        SELECT id FROM mod_ordem_servico_tipos_servico
-        WHERE tenant_id = ${tenantId} AND LOWER(nome) = LOWER(${nome.trim()}) AND id != ${id}::uuid
-      `;
-
-      if (duplicate && Array.isArray(duplicate) && duplicate.length > 0) {
-        throw new BadRequestException('Já existe um tipo de serviço com este nome');
+      if (duplicate) {
+        throw new BadRequestException('Ja existe um tipo de servico com este nome');
       }
     }
 
-    const result = await this.prisma.$queryRaw`
-      UPDATE mod_ordem_servico_tipos_servico
-      SET nome = ${nome.trim()}
-      WHERE tenant_id = ${tenantId} AND id = ${id}::uuid
-      RETURNING id, nome, is_default, created_at
-    `;
+    const updateResult = await this.prisma.mod_ordem_servico_tipos_servico.updateMany({
+      where: { id },
+      data: { nome: normalizedNome },
+    });
 
-    return Array.isArray(result) ? result[0] : result;
+    if (updateResult.count === 0) {
+      throw new NotFoundException('Tipo de servico nao encontrado');
+    }
+
+    return this.findOne(id);
   }
 
-  async remove(tenantId: string, id: string) {
-    // Verificar se o tipo existe
-    const existing = await this.findOne(tenantId, id);
-    
-    if (!existing) {
-      throw new NotFoundException('Tipo de serviço não encontrado');
+  async remove(id: string) {
+    const existing = await this.findOne(id);
+
+    if (existing.isDefault) {
+      throw new BadRequestException('Tipos de servico padrao nao podem ser excluidos');
     }
 
-    // Verificar se é um tipo padrão
-    if (existing.is_default) {
-      throw new BadRequestException('Tipos de serviço padrão não podem ser excluídos');
+    const inUseCount = await this.prisma.mod_ordem_servico_ordens.count({
+      where: { tipoServico: existing.nome },
+    });
+
+    if (inUseCount > 0) {
+      throw new BadRequestException(
+        'Este tipo de servico nao pode ser excluido pois esta sendo usado em ordens de servico',
+      );
     }
 
-    // Verificar se está sendo usado em alguma ordem de serviço
-    const inUse = await this.prisma.$queryRaw`
-      SELECT COUNT(*) as count
-      FROM mod_ordem_servico_ordens
-      WHERE tenant_id = ${tenantId} AND tipo_servico = ${existing.nome}
-    `;
+    await this.prisma.mod_ordem_servico_tipos_servico.deleteMany({
+      where: { id },
+    });
 
-    const count = Array.isArray(inUse) ? (inUse[0] as any)?.count : (inUse as any)?.count;
-    
-    if (count && parseInt(count) > 0) {
-      throw new BadRequestException('Este tipo de serviço não pode ser excluído pois está sendo usado em ordens de serviço');
-    }
-
-    await this.prisma.$queryRaw`
-      DELETE FROM mod_ordem_servico_tipos_servico
-      WHERE tenant_id = ${tenantId} AND id = ${id}::uuid
-    `;
-
-    return { message: 'Tipo de serviço excluído com sucesso' };
+    return { message: 'Tipo de servico excluido com sucesso' };
   }
 }

@@ -6,6 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
+import { ModuleOsPrismaService } from '../../prisma/module-os-prisma.service';
 import {
   AvailablePermission,
   IPermissionService,
@@ -34,11 +36,15 @@ export class PermissionService implements IPermissionService {
     config_system: 'config_edit',
   };
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly modulePrisma: ModuleOsPrismaService,
+    private readonly requestSecurityContext: RequestSecurityContextService,
+  ) {}
 
-  async getUserPermissions(tenantId: string, userId: string): Promise<UserPermission[]> {
-    await this.assertTenantContext(tenantId);
-    await this.getTenantUserOrThrow(tenantId, userId);
+  async getUserPermissions(userId: string): Promise<UserPermission[]> {
+    const tenantId = this.getTenantIdOrThrow();
+    await this.getTenantUserOrThrow(userId);
 
     const cacheKey = `${tenantId}:${userId}`;
     if (this.permissionCache.has(cacheKey)) {
@@ -46,27 +52,21 @@ export class PermissionService implements IPermissionService {
     }
 
     try {
-      const permissions = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT
-          id, user_id, tenant_id, resource, action, allowed,
-          created_at, updated_at, created_by
-         FROM mod_ordem_servico_user_permissions
-         WHERE tenant_id = $1 AND user_id = $2
-         ORDER BY resource, action`,
-        tenantId,
-        userId,
-      );
+      const permissions = await this.modulePrisma.mod_ordem_servico_user_permissions.findMany({
+        where: { userId },
+        orderBy: [{ resource: 'asc' }, { action: 'asc' }],
+      });
 
       const userPermissions: UserPermission[] = permissions.map((permission) => ({
         id: permission.id,
-        userId: permission.user_id,
-        tenantId: permission.tenant_id,
+        userId: permission.userId,
+        tenantId: permission.tenantId,
         resource: permission.resource,
         action: permission.action,
-        allowed: permission.allowed,
-        createdAt: permission.created_at,
-        updatedAt: permission.updated_at,
-        createdBy: permission.created_by,
+        allowed: permission.allowed === true,
+        createdAt: permission.createdAt || new Date(),
+        updatedAt: permission.updatedAt || new Date(),
+        createdBy: permission.createdBy,
       }));
 
       this.permissionCache.set(cacheKey, userPermissions);
@@ -82,20 +82,20 @@ export class PermissionService implements IPermissionService {
   }
 
   async updateUserPermissions(
-    tenantId: string,
     userId: string,
     permissions: PermissionUpdate[],
     changedBy: string,
   ): Promise<void> {
+    const tenantId = this.getTenantIdOrThrow();
+
     try {
-      await this.assertTenantContext(tenantId);
-      const targetUser = await this.getTenantUserOrThrow(tenantId, userId);
+      const targetUser = await this.getTenantUserOrThrow(userId);
 
       if (targetUser.role === 'ADMIN' || targetUser.role === 'SUPER_ADMIN') {
         throw new ForbiddenException('Permissoes explicitas nao podem sobrescrever papeis administrativos');
       }
 
-      const currentPermissions = await this.getUserPermissions(tenantId, userId);
+      const currentPermissions = await this.getUserPermissions(userId);
 
       for (const permission of permissions) {
         const current = currentPermissions.find(
@@ -104,19 +104,19 @@ export class PermissionService implements IPermissionService {
 
         if (current) {
           if (current.allowed !== permission.allowed) {
-            await this.prisma.$executeRawUnsafe(
-              `UPDATE mod_ordem_servico_user_permissions
-               SET allowed = $3, updated_at = NOW()
-               WHERE tenant_id = $1 AND user_id = $2 AND resource = $4 AND action = $5`,
-              tenantId,
-              userId,
-              permission.allowed,
-              permission.resource,
-              permission.action,
-            );
+            await this.modulePrisma.mod_ordem_servico_user_permissions.updateMany({
+              where: {
+                userId,
+                resource: permission.resource,
+                action: permission.action,
+              },
+              data: {
+                allowed: permission.allowed,
+                updatedAt: new Date(),
+              },
+            });
 
             await this.logPermissionChange(
-              tenantId,
               userId,
               permission.resource,
               permission.action,
@@ -126,20 +126,17 @@ export class PermissionService implements IPermissionService {
             );
           }
         } else {
-          await this.prisma.$executeRawUnsafe(
-            `INSERT INTO mod_ordem_servico_user_permissions
-             (tenant_id, user_id, resource, action, allowed, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            tenantId,
-            userId,
-            permission.resource,
-            permission.action,
-            permission.allowed,
-            changedBy,
-          );
+          await this.modulePrisma.mod_ordem_servico_user_permissions.create({
+            data: {
+              userId,
+              resource: permission.resource,
+              action: permission.action,
+              allowed: permission.allowed,
+              createdBy: changedBy,
+            },
+          });
 
           await this.logPermissionChange(
-            tenantId,
             userId,
             permission.resource,
             permission.action,
@@ -158,47 +155,41 @@ export class PermissionService implements IPermissionService {
     }
   }
 
-  async hasPermission(tenantId: string, userId: string, resource: string, action: string): Promise<boolean> {
+  async hasPermission(userId: string, resource: string, action: string): Promise<boolean> {
     try {
-      const users = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT role, name, email
-         FROM users
-         WHERE id = $1 AND "tenantId" = $2`,
-        userId,
-        tenantId,
-      );
-
-      const user = users[0];
-      if (!user) {
-        return false;
-      }
+      const user = await this.getTenantUserOrThrow(userId, {
+        id: true,
+        role: true,
+        name: true,
+        email: true,
+      });
 
       if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
         return true;
       }
 
-      const permissions = await this.getUserPermissions(tenantId, userId);
+      const permissions = await this.getUserPermissions(userId);
       const explicitPermission = permissions.find(
         (item) => item.resource === resource && item.action === action,
       );
 
       if (explicitPermission) {
         if (!explicitPermission.allowed) {
-          await this.logAccessDenied(tenantId, userId, resource, action);
+          await this.logAccessDenied(userId, resource, action);
         }
         return explicitPermission.allowed;
       }
 
       const permissionKey = this.buildProfilePermissionKey(resource, action);
-      const profilePermissions = await this.getProfilePermissionsMatrix(tenantId);
-      const userProfiles = await this.resolveUserProfiles(tenantId, userId);
+      const profilePermissions = await this.getProfilePermissionsMatrix();
+      const userProfiles = await this.resolveUserProfiles(userId);
       const permissionConfig = profilePermissions[permissionKey];
       const hasAccess = permissionConfig
         ? userProfiles.some((profile) => permissionConfig[profile] === true)
         : false;
 
       if (!hasAccess) {
-        await this.logAccessDenied(tenantId, userId, resource, action);
+        await this.logAccessDenied(userId, resource, action);
       }
 
       return hasAccess;
@@ -212,17 +203,17 @@ export class PermissionService implements IPermissionService {
     return AVAILABLE_PERMISSIONS;
   }
 
-  async getUsersWithPermissions(tenantId: string): Promise<UserWithPermissions[]> {
+  async getUsersWithPermissions(): Promise<UserWithPermissions[]> {
     try {
-      await this.assertTenantContext(tenantId);
-
-      const users = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT id, name, email, role
-         FROM users
-         WHERE "tenantId" = $1
-         ORDER BY name ASC`,
-        tenantId,
-      );
+      const users = await this.prisma.user.findMany({
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      });
 
       const allPermissionActions = AVAILABLE_PERMISSIONS.flatMap((group) =>
         group.actions.map((action) => ({ resource: group.resource, action: action.action })),
@@ -231,7 +222,7 @@ export class PermissionService implements IPermissionService {
       const usersWithPermissions: UserWithPermissions[] = [];
 
       for (const user of users) {
-        const permissions = await this.getUserPermissions(tenantId, user.id);
+        const permissions = await this.getUserPermissions(user.id);
         const totalAvailablePermissions = allPermissionActions.length;
 
         if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
@@ -252,8 +243,7 @@ export class PermissionService implements IPermissionService {
 
         let allowed = 0;
         for (const permission of allPermissionActions) {
-          // eslint-disable-next-line no-await-in-loop
-          const granted = await this.hasPermission(tenantId, user.id, permission.resource, permission.action);
+          const granted = await this.hasPermission(user.id, permission.resource, permission.action);
           if (granted) {
             allowed += 1;
           }
@@ -281,56 +271,41 @@ export class PermissionService implements IPermissionService {
   }
 
   async getPermissionAudit(
-    tenantId: string,
     userId?: string,
     startDate?: Date,
     endDate?: Date,
   ): Promise<PermissionAudit[]> {
     try {
-      await this.assertTenantContext(tenantId);
-
       if (userId) {
-        await this.getTenantUserOrThrow(tenantId, userId);
+        await this.getTenantUserOrThrow(userId);
       }
 
-      let query = `
-        SELECT id, tenant_id, user_id, resource, action, old_value, new_value,
-               changed_by, changed_at, reason
-        FROM mod_ordem_servico_permission_audit
-        WHERE tenant_id = $1
-      `;
-      const params: any[] = [tenantId];
-
-      if (userId) {
-        query += ` AND user_id = $${params.length + 1}`;
-        params.push(userId);
+      const where: any = {};
+      if (userId) where.userId = userId;
+      if (startDate || endDate) {
+        where.changedAt = {
+          ...(startDate ? { gte: startDate } : {}),
+          ...(endDate ? { lte: endDate } : {}),
+        };
       }
 
-      if (startDate) {
-        query += ` AND changed_at >= $${params.length + 1}`;
-        params.push(startDate);
-      }
-
-      if (endDate) {
-        query += ` AND changed_at <= $${params.length + 1}`;
-        params.push(endDate);
-      }
-
-      query += ` ORDER BY changed_at DESC LIMIT 1000`;
-
-      const audits = await this.prisma.$queryRawUnsafe<any[]>(query, ...params);
+      const audits = await this.modulePrisma.mod_ordem_servico_permission_audit.findMany({
+        where,
+        orderBy: { changedAt: 'desc' },
+        take: 1000,
+      });
 
       return audits.map((audit) => ({
         id: audit.id,
-        tenantId: audit.tenant_id,
-        userId: audit.user_id,
+        tenantId: audit.tenantId,
+        userId: audit.userId,
         resource: audit.resource,
         action: audit.action,
-        oldValue: audit.old_value,
-        newValue: audit.new_value,
-        changedBy: audit.changed_by,
-        changedAt: audit.changed_at,
-        reason: audit.reason,
+        oldValue: audit.oldValue ?? null,
+        newValue: audit.newValue,
+        changedBy: audit.changedBy,
+        changedAt: audit.changedAt || new Date(),
+        reason: audit.reason || undefined,
       }));
     } catch (error) {
       this.logger.error('Erro ao buscar auditoria de permissoes', error as Error);
@@ -339,7 +314,6 @@ export class PermissionService implements IPermissionService {
   }
 
   private async logPermissionChange(
-    tenantId: string,
     userId: string,
     resource: string,
     action: string,
@@ -349,49 +323,50 @@ export class PermissionService implements IPermissionService {
     reason?: string,
   ): Promise<void> {
     try {
-      await this.prisma.$executeRawUnsafe(
-        `INSERT INTO mod_ordem_servico_permission_audit
-         (tenant_id, user_id, resource, action, old_value, new_value, changed_by, reason)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        tenantId,
-        userId,
-        resource,
-        action,
-        oldValue,
-        newValue,
-        changedBy,
-        reason,
-      );
+      await this.modulePrisma.mod_ordem_servico_permission_audit.create({
+        data: {
+          userId,
+          resource,
+          action,
+          oldValue,
+          newValue,
+          changedBy,
+          reason,
+        },
+      });
     } catch (error) {
       this.logger.error('Erro ao registrar auditoria de permissao', error as Error);
     }
   }
 
   private async logAccessDenied(
-    tenantId: string,
     userId: string,
     resource: string,
     action: string,
   ): Promise<void> {
     try {
-      await this.prisma.$executeRawUnsafe(
-        `INSERT INTO mod_ordem_servico_permission_audit
-         (tenant_id, user_id, resource, action, old_value, new_value, changed_by, reason)
-         VALUES ($1, $2, $3, $4, null, false, $2, 'ACCESS_DENIED')`,
-        tenantId,
-        userId,
-        resource,
-        action,
-      );
+      await this.modulePrisma.mod_ordem_servico_permission_audit.create({
+        data: {
+          userId,
+          resource,
+          action,
+          oldValue: null,
+          newValue: false,
+          changedBy: userId,
+          reason: 'ACCESS_DENIED',
+        },
+      });
     } catch (error) {
       this.logger.error('Erro ao registrar tentativa de acesso negado', error as Error);
     }
   }
 
-  private async assertTenantContext(tenantId: string): Promise<void> {
+  private getTenantIdOrThrow(): string {
+    const tenantId = this.requestSecurityContext.getTenantId();
     if (!tenantId) {
       throw new BadRequestException('Operacao exige tenant valido');
     }
+    return tenantId;
   }
 
   private buildProfilePermissionKey(resource: string, action: string): string {
@@ -457,9 +432,8 @@ export class PermissionService implements IPermissionService {
     return defaults;
   }
 
-  private async getProfilePermissionsMatrix(
-    tenantId: string,
-  ): Promise<Record<string, Record<ModuleProfile, boolean>>> {
+  private async getProfilePermissionsMatrix(): Promise<Record<string, Record<ModuleProfile, boolean>>> {
+    const tenantId = this.getTenantIdOrThrow();
     const cached = this.profilePermissionCache.get(tenantId);
     if (cached) {
       return cached;
@@ -468,18 +442,14 @@ export class PermissionService implements IPermissionService {
     const defaults = this.getDefaultProfilePermissions();
 
     try {
-      const rows = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT tenant_id, profile, permission_id, allowed
-         FROM mod_ordem_servico_profile_permissions
-         WHERE tenant_id = $1 OR tenant_id = 'default'
-         ORDER BY CASE WHEN tenant_id = 'default' THEN 0 ELSE 1 END, profile ASC, permission_id ASC`,
-        tenantId,
-      );
+      const rows = await this.modulePrisma.mod_ordem_servico_profile_permissions.findMany({
+        orderBy: [{ profile: 'asc' }, { permissionId: 'asc' }],
+      });
 
       const merged: Record<string, Record<ModuleProfile, boolean>> = { ...defaults };
 
       for (const row of rows) {
-        const key = this.normalizeProfilePermissionKey(String(row.permission_id || ''));
+        const key = this.normalizeProfilePermissionKey(String(row.permissionId || ''));
         if (!key) {
           continue;
         }
@@ -490,7 +460,7 @@ export class PermissionService implements IPermissionService {
 
         const profile = String(row.profile || '').toLowerCase();
         if (profile === 'admin' || profile === 'technician' || profile === 'attendant') {
-          merged[key][profile] = Boolean(row.allowed);
+          merged[key][profile] = row.allowed === true;
         }
       }
 
@@ -509,29 +479,29 @@ export class PermissionService implements IPermissionService {
     }
   }
 
-  private async resolveUserProfiles(tenantId: string, userId: string): Promise<ModuleProfile[]> {
+  private async resolveUserProfiles(userId: string): Promise<ModuleProfile[]> {
     try {
-      const roles = await this.prisma.$queryRawUnsafe<any[]>(
-        `SELECT is_admin, is_technician, is_attendant
-         FROM mod_ordem_servico_user_roles
-         WHERE tenant_id = $1 AND user_id = $2
-         LIMIT 1`,
-        tenantId,
-        userId,
-      );
+      const roles = await this.modulePrisma.mod_ordem_servico_user_roles.findFirst({
+        where: { userId },
+        select: {
+          isAdmin: true,
+          isTechnician: true,
+          isAttendant: true,
+        },
+      });
 
-      const role = roles[0];
-      if (!role) {
+      if (!roles) {
         return ['attendant'];
       }
 
       const profiles: ModuleProfile[] = [];
-      if (Boolean(role.is_admin)) profiles.push('admin');
-      if (Boolean(role.is_technician)) profiles.push('technician');
-      if (Boolean(role.is_attendant) || profiles.length === 0) profiles.push('attendant');
+      if (roles.isAdmin) profiles.push('admin');
+      if (roles.isTechnician) profiles.push('technician');
+      if (roles.isAttendant || profiles.length === 0) profiles.push('attendant');
 
       return profiles;
     } catch (error) {
+      const tenantId = this.requestSecurityContext.getTenantId();
       this.logger.error(
         `Erro ao resolver perfis do usuario ${userId} no tenant ${tenantId}. Aplicando fallback.`,
         error as Error,
@@ -540,13 +510,15 @@ export class PermissionService implements IPermissionService {
     }
   }
 
-  private async getTenantUserOrThrow(tenantId: string, userId: string) {
+  private async getTenantUserOrThrow<TSelect extends Record<string, boolean> | undefined = undefined>(
+    userId: string,
+    select?: TSelect,
+  ) {
     const user = await this.prisma.user.findFirst({
       where: {
         id: userId,
-        tenantId,
       },
-      select: {
+      select: select || {
         id: true,
         role: true,
       },

@@ -1,253 +1,188 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
 import { AuditService } from '@core/audit/audit.service';
-import { randomUUID } from 'crypto';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class ClientesService {
     private readonly logger = new Logger(ClientesService.name);
 
     constructor(
-        private prisma: PrismaService,
-        private auditService: AuditService
+        private readonly prisma: ModuleOsPrismaService,
+        private readonly auditService: AuditService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
     ) { }
 
-    async findAll(tenantId: string, search?: string) {
+    async findAll(search?: string) {
         const safeSearch = typeof search === 'string' ? search.trim() : '';
-        
-        // 🔒 Evita busca curta
+
         if (safeSearch.length > 0 && safeSearch.length < 2) {
             return [];
         }
 
         if (safeSearch.length >= 2) {
-            return this.prisma.$queryRawUnsafe<any[]>(
-                `
-                SELECT
-                    id,
-                    name,
-                    document,
-                    phone_primary,
-                    phone_secondary,
-                    image_url,
-                    is_active,
-                    email,
-                    observations,
-                    address_street,
-                    address_number,
-                    address_neighborhood,
-                    address_city,
-                    address_state,
-                    address_zip,
-                    address_complement
-                FROM mod_ordem_servico_clients
-                WHERE tenant_id = $1
-                    AND deleted_at IS NULL
-                    AND (
-                        LOWER(name) LIKE LOWER($2)
-                        OR phone_primary LIKE $2
-                        OR LOWER(email) LIKE LOWER($2)
-                    )
-                ORDER BY name ASC
-                LIMIT 20
-                `,
-                tenantId,
-                `%${safeSearch}%`
-            );
+            return this.prisma.mod_ordem_servico_clients.findMany({
+                where: {
+                    deletedAt: null,
+                    OR: [
+                        { name: { contains: safeSearch, mode: 'insensitive' } },
+                        { phonePrimary: { contains: safeSearch } },
+                        { email: { contains: safeSearch, mode: 'insensitive' } },
+                    ],
+                },
+                orderBy: { name: 'asc' },
+                take: 20,
+            });
         }
 
-        // 📋 Listagem padrão
-        return this.prisma.$queryRawUnsafe<any[]>(
-            `
-            SELECT
+        return this.prisma.mod_ordem_servico_clients.findMany({
+            where: { deletedAt: null },
+            orderBy: { name: 'asc' },
+            take: 50,
+        });
+    }
+
+    async findById(id: string) {
+        return this.prisma.mod_ordem_servico_clients.findFirst({
+            where: {
                 id,
-                name,
-                document,
-                phone_primary,
-                phone_secondary,
-                image_url,
-                is_active,
-                email,
-                observations,
-                address_street,
-                address_number,
-                address_neighborhood,
-                address_city,
-                address_state,
-                address_zip,
-                address_complement
-            FROM mod_ordem_servico_clients
-            WHERE tenant_id = $1
-                AND deleted_at IS NULL
-            ORDER BY name ASC
-            LIMIT 50
-            `,
-            tenantId
-        );
-    }
-    async findById(tenantId: string, id: string) {
-        const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT * FROM mod_ordem_servico_clients WHERE tenant_id = $1 AND id = $2::uuid AND deleted_at IS NULL LIMIT 1`,
-            tenantId, id
-        );
-        return result[0];
+                deletedAt: null,
+            },
+        });
     }
 
-    async create(tenantId: string, data: any, userId: string) {
+    async create(data: any) {
         if (!data.name || !data.phone_primary) {
-            throw new Error('Nome e Telefone principal são obrigatórios');
+            throw new Error('Nome e Telefone principal sao obrigatorios');
         }
-        if (!tenantId) {
-            this.logger.error('Tentativa de criação sem Tenant ID');
-            throw new Error('Erro interno: Tenant ID não identificado. Faça login novamente.');
-        }
-
-        const id = randomUUID();
 
         try {
-            const result = await this.prisma.$queryRawUnsafe<any[]>(
-                `INSERT INTO mod_ordem_servico_clients 
-                (id, tenant_id, name, document, phone_primary, phone_secondary, address, is_active,
-                 address_zip, address_street, address_number, address_complement, address_neighborhood, address_city, address_state,
-                 observations, image_url, email)
-                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-                RETURNING id`,
-                id,
-                tenantId,
-                data.name,
-                data.document || null,
-                data.phone_primary,
-                data.phone_secondary || null,
-                data.address || null,
-                data.is_active ?? true,
-                data.address_zip || null,
-                data.address_street || null,
-                data.address_number || null,
-                data.address_complement || null,
-                data.address_neighborhood || null,
-                data.address_city || null,
-                data.address_state || null,
-                data.observations || null,
-                data.image_url || null,
-                data.email || null
-            );
+            const createdClient = await this.prisma.mod_ordem_servico_clients.create({
+                data: {
+                    name: data.name,
+                    document: data.document || null,
+                    phonePrimary: data.phone_primary,
+                    phoneSecondary: data.phone_secondary || null,
+                    address: data.address || null,
+                    isActive: data.is_active ?? true,
+                    addressZip: data.address_zip || null,
+                    addressStreet: data.address_street || null,
+                    addressNumber: data.address_number || null,
+                    addressComplement: data.address_complement || null,
+                    addressNeighborhood: data.address_neighborhood || null,
+                    addressCity: data.address_city || null,
+                    addressState: data.address_state || null,
+                    observations: data.observations || null,
+                    imageUrl: data.image_url || null,
+                    email: data.email || null,
+                },
+            });
 
-            const newId = result[0].id;
+            const actor = this.getActorContext();
 
             await this.auditService.log({
                 action: 'CREATE_CLIENT',
-                userId,
-                tenantId,
-                details: { clientId: newId, name: data.name }
+                userId: actor.userId,
+                tenantId: actor.tenantId,
+                details: { clientId: createdClient.id, name: data.name },
             });
 
-            return { id: newId, ...data };
+            return createdClient;
         } catch (error) {
             this.logger.error('Erro ao criar cliente:', error);
             throw new Error('Erro ao salvar no banco de dados. Verifique os dados e tente novamente.');
         }
     }
 
-    async update(tenantId: string, id: string, data: any, userId: string) {
+    async update(id: string, data: any) {
         if (!data.name || !data.phone_primary) {
-            throw new Error('Nome e Telefone principal são obrigatórios');
+            throw new Error('Nome e Telefone principal sao obrigatorios');
         }
 
         try {
-            await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordem_servico_clients
-                SET 
-                    name = $3,
-                    document = $4,
-                    phone_primary = $5,
-                    phone_secondary = $6,
-                    address = $7,
-                    is_active = $8,
-                    address_zip = $9,
-                    address_street = $10,
-                    address_number = $11,
-                    address_complement = $12,
-                    address_neighborhood = $13,
-                    address_city = $14,
-                    address_state = $15,
-                    observations = $16,
-                    image_url = $17,
-                    email = $18,
-                    updated_at = NOW()
-                WHERE id = $1::uuid AND tenant_id = $2`,
-                id,
-                tenantId,
-                data.name,
-                data.document || null,
-                data.phone_primary,
-                data.phone_secondary || null,
-                data.address || null,
-                data.is_active ?? true,
-                data.address_zip || null,
-                data.address_street || null,
-                data.address_number || null,
-                data.address_complement || null,
-                data.address_neighborhood || null,
-                data.address_city || null,
-                data.address_state || null,
-                data.observations || null,
-                data.image_url || null,
-                data.email || null
-            );
+            const updated = await this.prisma.mod_ordem_servico_clients.updateMany({
+                where: { id, deletedAt: null },
+                data: {
+                    name: data.name,
+                    document: data.document || null,
+                    phonePrimary: data.phone_primary,
+                    phoneSecondary: data.phone_secondary || null,
+                    address: data.address || null,
+                    isActive: data.is_active ?? true,
+                    addressZip: data.address_zip || null,
+                    addressStreet: data.address_street || null,
+                    addressNumber: data.address_number || null,
+                    addressComplement: data.address_complement || null,
+                    addressNeighborhood: data.address_neighborhood || null,
+                    addressCity: data.address_city || null,
+                    addressState: data.address_state || null,
+                    observations: data.observations || null,
+                    imageUrl: data.image_url || null,
+                    email: data.email || null,
+                    updatedAt: new Date(),
+                },
+            });
+
+            if (updated.count === 0) {
+                throw new Error('Cliente nao encontrado');
+            }
+
+            const actor = this.getActorContext();
 
             await this.auditService.log({
                 action: 'UPDATE_CLIENT',
-                userId,
-                tenantId,
-                details: { clientId: id, updates: data }
+                userId: actor.userId,
+                tenantId: actor.tenantId,
+                details: { clientId: id, updates: data },
             });
 
-            return { id, ...data };
+            return this.findById(id);
         } catch (error) {
             this.logger.error('Erro ao atualizar cliente:', error);
             throw error;
         }
     }
 
-    async delete(tenantId: string, id: string, userId: string) {
-        // Verificar se existem OS associadas a este cliente
-        try {
-            const osCountResult = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT COUNT(*) as count FROM mod_ordem_servico_ordens WHERE cliente_id = $1::uuid AND tenant_id = $2 AND deleted_at IS NULL`,
-                id, tenantId
-            );
+    async delete(id: string) {
+        const osCount = await this.prisma.mod_ordem_servico_ordens.count({
+            where: { clienteId: id },
+        });
 
-            const osCount = parseInt(osCountResult[0]?.count || '0');
-
-            if (osCount > 0) {
-                throw new Error('Não é possível excluir o cliente pois existem Ordens de Serviço associadas a ele.');
-            }
-        } catch (error: any) {
-            // Check for Postgres code 42P01 (undefined_table) or Prisma P2010 which wraps it
-            const isTableNotFoundError =
-                error.code === '42P01' ||
-                (error.code === 'P2010' && (error.meta?.code === '42P01' || error.message?.includes('mod_ordem_servico_ordens')));
-
-            if (isTableNotFoundError) {
-                this.logger.warn(`Tabela de OS não encontrada ao excluir cliente ${id}. Ignorando verificação.`);
-            } else {
-                this.logger.error(`Erro ao verificar OS do cliente: ${error.message} (Code: ${error.code})`);
-                throw error;
-            }
+        if (osCount > 0) {
+            throw new Error('Nao e possivel excluir o cliente pois existem Ordens de Servico associadas a ele.');
         }
 
-        await this.prisma.$executeRawUnsafe(
-            `UPDATE mod_ordem_servico_clients SET deleted_at = NOW() WHERE id = $1::uuid AND tenant_id = $2`,
-            id, tenantId
-        );
+        await this.prisma.mod_ordem_servico_clients.updateMany({
+            where: { id, deletedAt: null },
+            data: {
+                deletedAt: new Date(),
+                updatedAt: new Date(),
+            },
+        });
+
+        const actor = this.getActorContext();
 
         await this.auditService.log({
             action: 'DELETE_CLIENT',
-            userId,
-            tenantId,
-            details: { clientId: id }
+            userId: actor.userId,
+            tenantId: actor.tenantId,
+            details: { clientId: id },
         });
 
         return { success: true };
+    }
+
+    private getActorContext() {
+        const actor = this.requestSecurityContext.getActor();
+        const tenantId = actor?.tenantId || this.requestSecurityContext.getTenantId();
+
+        if (!tenantId) {
+            throw new Error('Tenant ID nao identificado no contexto atual.');
+        }
+
+        return {
+            tenantId,
+            userId: actor?.id || undefined,
+        };
     }
 }

@@ -8,9 +8,10 @@ import { TiposEquipamentoService } from './tipos-equipamento.service';
 import { PrismaModule } from '@core/prisma/prisma.module';
 import { CoreModule } from '../core/core.module';
 import { SharedModule } from '../shared/shared.module';
+import { ModuleOsPrismaModule } from '../prisma/module-os-prisma.module';
 
 @Module({
-    imports: [PrismaModule, SharedModule, CoreModule],
+    imports: [PrismaModule, ModuleOsPrismaModule, SharedModule, CoreModule],
     controllers: [
         ConfiguracoesController,
         TiposServicoController,

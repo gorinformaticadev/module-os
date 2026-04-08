@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { TiposEquipamentoService } from './tipos-equipamento.service';
 import { PermissionGuard } from '../shared/guards/permission.guard';
@@ -13,36 +13,31 @@ export class TiposEquipamentoController {
 
   @Get()
   @RequireConfigPermission('view')
-  async findAll(@Request() req: any) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposEquipamentoService.findAll(tenantId);
+  async findAll() {
+    return this.tiposEquipamentoService.findAll();
   }
 
   @Get(':id')
   @RequireConfigPermission('view')
-  async findOne(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposEquipamentoService.findOne(tenantId, id);
+  async findOne(@Param('id') id: string) {
+    return this.tiposEquipamentoService.findOne(id);
   }
 
   @Post()
   @RequireConfigPermission('edit')
-  async create(@Request() req: any, @Body() createDto: { nome: string }) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposEquipamentoService.create(tenantId, createDto);
+  async create(@Body() createDto: { nome: string }) {
+    return this.tiposEquipamentoService.create(createDto);
   }
 
   @Put(':id')
   @RequireConfigPermission('edit')
-  async update(@Request() req: any, @Param('id') id: string, @Body() updateDto: { nome: string }) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposEquipamentoService.update(tenantId, id, updateDto);
+  async update(@Param('id') id: string, @Body() updateDto: { nome: string }) {
+    return this.tiposEquipamentoService.update(id, updateDto);
   }
 
   @Delete(':id')
   @RequireConfigPermission('edit')
-  async remove(@Request() req: any, @Param('id') id: string) {
-    const tenantId = req.user?.tenantId;
-    return this.tiposEquipamentoService.remove(tenantId, id);
+  async remove(@Param('id') id: string) {
+    return this.tiposEquipamentoService.remove(id);
   }
 }

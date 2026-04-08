@@ -1,103 +1,96 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
+import { ModuleOsPrismaService } from '../../prisma/module-os-prisma.service';
 
 @Injectable()
 export class TemplateService {
+    // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
     private readonly logger = new Logger(TemplateService.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: ModuleOsPrismaService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
+    ) {}
 
-    async findAll(tenantId: string) {
+    async findAll() {
         try {
-            this.logger.log(`Buscando templates para tenant ${tenantId}`);
-            
-            const templates = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT * FROM mod_ordem_servico_templates WHERE tenant_id = $1 ORDER BY name ASC`,
-                tenantId
-            );
+            const templates = await this.prisma.mod_ordem_servico_templates.findMany({
+                orderBy: { name: 'asc' },
+            });
 
-            this.logger.log(`✅ ${templates.length} templates encontrados`);
+            this.logger.log(`${templates.length} templates encontrados`);
             return templates;
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar templates:`, error);
-            // Se a tabela não existir, retornar array vazio
+            this.logger.error('Erro ao buscar templates:', error);
             return [];
         }
     }
 
-    async findById(tenantId: string, id: string) {
+    async findById(id: string) {
         try {
-            const result = await this.prisma.$queryRawUnsafe<any[]>(
-                `SELECT * FROM mod_ordem_servico_templates WHERE tenant_id = $1 AND id = $2 LIMIT 1`,
-                tenantId, id
-            );
-            return result[0];
+            return await this.prisma.mod_ordem_servico_templates.findFirst({
+                where: { id },
+            });
         } catch (error) {
-            this.logger.error(`❌ Erro ao buscar template ${id}:`, error);
+            this.logger.error(`Erro ao buscar template ${id}:`, error);
             return null;
         }
     }
 
-    async create(tenantId: string, data: any, userId: string) {
+    async create(data: any) {
         try {
-            this.logger.log(`Criando template para tenant ${tenantId}`);
-            
-            const result = await this.prisma.$executeRawUnsafe(
-                `INSERT INTO mod_ordem_servico_templates 
-                (tenant_id, name, content, type, created_by)
-                VALUES ($1, $2, $3, $4, $5)`,
-                tenantId,
-                data.name,
-                data.content,
-                data.type || 'GENERAL',
-                userId
-            );
+            const actor = this.requestSecurityContext.getActor();
+            const created = await this.prisma.mod_ordem_servico_templates.create({
+                data: {
+                    name: data.name,
+                    content: data.content,
+                    type: data.type || 'GENERAL',
+                    createdBy: actor?.id || null,
+                },
+            });
 
-            this.logger.log(`✅ Template criado com sucesso`);
-            return { success: true, result };
+            this.logger.log('Template criado com sucesso');
+            return created;
         } catch (error) {
-            this.logger.error(`❌ Erro ao criar template:`, error);
+            this.logger.error('Erro ao criar template:', error);
             throw error;
         }
     }
 
-    async update(tenantId: string, id: string, data: any, userId: string) {
+    async update(id: string, data: any) {
         try {
-            this.logger.log(`Atualizando template ${id} para tenant ${tenantId}`);
-            
-            const result = await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordem_servico_templates 
-                SET name = $3, content = $4, type = $5, updated_at = NOW()
-                WHERE tenant_id = $1 AND id = $2`,
-                tenantId,
-                id,
-                data.name,
-                data.content,
-                data.type || 'GENERAL'
-            );
+            const result = await this.prisma.mod_ordem_servico_templates.updateMany({
+                where: { id },
+                data: {
+                    name: data.name,
+                    content: data.content,
+                    type: data.type || 'GENERAL',
+                    updatedAt: new Date(),
+                },
+            });
 
-            this.logger.log(`✅ Template atualizado com sucesso`);
-            return { success: true, result };
+            if (result.count === 0) {
+                return null;
+            }
+
+            this.logger.log('Template atualizado com sucesso');
+            return this.findById(id);
         } catch (error) {
-            this.logger.error(`❌ Erro ao atualizar template:`, error);
+            this.logger.error(`Erro ao atualizar template ${id}:`, error);
             throw error;
         }
     }
 
-    async delete(tenantId: string, id: string, userId: string) {
+    async delete(id: string) {
         try {
-            this.logger.log(`Excluindo template ${id} para tenant ${tenantId}`);
-            
-            const result = await this.prisma.$executeRawUnsafe(
-                `DELETE FROM mod_ordem_servico_templates WHERE tenant_id = $1 AND id = $2`,
-                tenantId,
-                id
-            );
+            await this.prisma.mod_ordem_servico_templates.deleteMany({
+                where: { id },
+            });
 
-            this.logger.log(`✅ Template excluído com sucesso`);
+            this.logger.log('Template excluido com sucesso');
             return { success: true };
         } catch (error) {
-            this.logger.error(`❌ Erro ao excluir template:`, error);
+            this.logger.error(`Erro ao excluir template ${id}:`, error);
             throw error;
         }
     }

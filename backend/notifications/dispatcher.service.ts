@@ -157,7 +157,12 @@ export class NotificationDispatcherService {
             const error = `Canal ${params.channel} nao suportado`;
             this.logger.error(error);
             await this.history.log({
-                ...params,
+                ruleId: params.ruleId,
+                ordemServicoId: params.ordemServicoId,
+                channel: params.channel,
+                recipient: params.recipient,
+                content: params.content,
+                fingerprint: params.fingerprint,
                 status: 'ERROR',
                 errorMessage: error,
             });
@@ -176,7 +181,12 @@ export class NotificationDispatcherService {
             });
 
             await this.history.log({
-                ...params,
+                ruleId: params.ruleId,
+                ordemServicoId: params.ordemServicoId,
+                channel: params.channel,
+                recipient: params.recipient,
+                content: params.content,
+                fingerprint: params.fingerprint,
                 status: result.success ? 'SUCCESS' : 'ERROR',
                 errorMessage: result.error,
             });
@@ -185,7 +195,12 @@ export class NotificationDispatcherService {
         } catch (error: any) {
             this.logger.error(`Falha no dispatch: ${error.message}`);
             await this.history.log({
-                ...params,
+                ruleId: params.ruleId,
+                ordemServicoId: params.ordemServicoId,
+                channel: params.channel,
+                recipient: params.recipient,
+                content: params.content,
+                fingerprint: params.fingerprint,
                 status: 'ERROR',
                 errorMessage: error.message,
             });

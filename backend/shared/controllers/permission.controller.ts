@@ -5,8 +5,8 @@ import {
   Get,
   Logger,
   Param,
-  Query,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -48,7 +48,7 @@ export class PermissionController {
   async getUsersWithPermissions(@Req() req: ExpressRequest & { user: PermissionRequestUser }) {
     try {
       this.logger.log(`Buscando usuarios com permissoes. Tenant: ${req.user?.tenantId}`);
-      return await this.permissionService.getUsersWithPermissions(req.user.tenantId || '');
+      return await this.permissionService.getUsersWithPermissions();
     } catch (error) {
       this.logger.error('Erro ao buscar usuarios com permissoes', error as Error);
       throw error;
@@ -71,7 +71,7 @@ export class PermissionController {
       }
 
       this.logger.log(`Buscando permissoes do usuario ${userId}. Tenant: ${req.user?.tenantId}`);
-      return await this.permissionService.getUserPermissions(req.user.tenantId || '', userId);
+      return await this.permissionService.getUserPermissions(userId);
     } catch (error) {
       this.logger.error(`Erro ao buscar permissoes do usuario ${userId}`, error as Error);
       throw error;
@@ -89,7 +89,6 @@ export class PermissionController {
     try {
       this.logger.log(`Atualizando permissoes do usuario ${userId}. Tenant: ${req.user?.tenantId}`);
       await this.permissionService.updateUserPermissions(
-        req.user.tenantId || '',
         userId,
         body.permissions || [],
         req.user.id,
@@ -109,7 +108,6 @@ export class PermissionController {
     @Param('action') action: string,
   ) {
     const hasPermission = await this.permissionService.hasPermission(
-      req.user.tenantId || '',
       req.user.id,
       resource,
       action,
@@ -129,7 +127,6 @@ export class PermissionController {
     try {
       this.logger.log(`Buscando auditoria de permissoes. Tenant: ${req.user?.tenantId}`);
       return await this.permissionService.getPermissionAudit(
-        req.user.tenantId || '',
         userId,
         startDate ? new Date(startDate) : undefined,
         endDate ? new Date(endDate) : undefined,

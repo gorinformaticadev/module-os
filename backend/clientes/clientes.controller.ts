@@ -42,14 +42,14 @@ export class ClientesController {
 
   @Get()
   @RequireClientsPermission('view')
-  async findAll(@Query('search') search: string, @Req() req: ExpressRequest & { user: any }) {
-    return this.clientesService.findAll(req.user?.tenantId, search);
+  async findAll(@Query('search') search: string) {
+    return this.clientesService.findAll(search);
   }
 
   @Get(':id')
   @RequireClientsPermission('view_details')
-  async findOne(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
-    const client = await this.clientesService.findById(req.user?.tenantId, id);
+  async findOne(@Param('id') id: string) {
+    const client = await this.clientesService.findById(id);
     if (!client) {
       throw new HttpException('Cliente nao encontrado', HttpStatus.NOT_FOUND);
     }
@@ -59,9 +59,9 @@ export class ClientesController {
 
   @Post()
   @RequireClientsPermission('create')
-  async create(@Body() data: any, @Req() req: ExpressRequest & { user: any }) {
+  async create(@Body() data: any) {
     try {
-      return await this.clientesService.create(req.user?.tenantId, data, req.user?.id);
+      return await this.clientesService.create(data);
     } catch (error: any) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
@@ -69,13 +69,9 @@ export class ClientesController {
 
   @Put(':id')
   @RequireClientsPermission('edit')
-  async update(
-    @Param('id') id: string,
-    @Body() data: any,
-    @Req() req: ExpressRequest & { user: any },
-  ) {
+  async update(@Param('id') id: string, @Body() data: any) {
     try {
-      return await this.clientesService.update(req.user?.tenantId, id, data, req.user?.id);
+      return await this.clientesService.update(id, data);
     } catch (error: any) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
@@ -83,8 +79,8 @@ export class ClientesController {
 
   @Delete(':id')
   @RequireClientsPermission('delete')
-  async remove(@Param('id') id: string, @Req() req: ExpressRequest & { user: any }) {
-    return this.clientesService.delete(req.user?.tenantId, id, req.user?.id);
+  async remove(@Param('id') id: string) {
+    return this.clientesService.delete(id);
   }
 
   @Post('upload')

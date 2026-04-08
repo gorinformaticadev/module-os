@@ -1,169 +1,173 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@core/prisma/prisma.service';
 import { AuditService } from '@core/audit/audit.service';
-import { randomUUID } from 'crypto';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
+import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class ProdutosService {
     private readonly logger = new Logger(ProdutosService.name);
 
     constructor(
-        private prisma: PrismaService,
-        private auditService: AuditService
+        private readonly prisma: ModuleOsPrismaService,
+        private readonly auditService: AuditService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
     ) {
-        this.logger.log('✅✅✅ PRODUTOS SERVICE INICIADO!!! ✅✅✅');
+        this.logger.log('PRODUTOS SERVICE INICIADO');
     }
 
-    async findAll(tenantId: string, filters: any = {}) {
+    async findAll(filters: any = {}) {
         const { search, status } = filters;
-        this.logger.log(`findAll chamado. Tenant: ${tenantId}, Filters: ${JSON.stringify(filters)}`);
+        this.logger.log(`findAll chamado. Filters: ${JSON.stringify(filters)}`);
 
-        // Base query
-        let query = `SELECT * FROM mod_ordem_servico_products WHERE tenant_id = $1 AND deleted_at IS NULL`;
-        const params: any[] = [tenantId];
-
-        // Search filter
-        if (search) {
-            query += ` AND (name ILIKE $${params.length + 1} OR code ILIKE $${params.length + 1})`;
-            params.push(`%${search}%`);
-        }
-
-        // Status filter
-        if (status !== undefined && status !== '') {
-            query += ` AND is_active = $${params.length + 1}`;
-            params.push(status === 'true');
-        }
-
-        query += ` ORDER BY name ASC`;
-
-        return this.prisma.$queryRawUnsafe(query, ...params);
+        return this.prisma.mod_ordem_servico_products.findMany({
+            where: {
+                deletedAt: null,
+                ...(search
+                    ? {
+                        OR: [
+                            { name: { contains: search, mode: 'insensitive' } },
+                            { code: { contains: search, mode: 'insensitive' } },
+                        ],
+                    }
+                    : {}),
+                ...(status !== undefined && status !== ''
+                    ? { isActive: status === 'true' || status === true }
+                    : {}),
+            },
+            orderBy: { name: 'asc' },
+        });
     }
 
-    async findById(tenantId: string, id: string) {
-        const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT * FROM mod_ordem_servico_products WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL LIMIT 1`,
-            tenantId, id
-        );
-        return result[0];
+    async findById(id: string) {
+        return this.prisma.mod_ordem_servico_products.findFirst({
+            where: { id, deletedAt: null },
+        });
     }
 
-    async findByCode(tenantId: string, code: string) {
-        const result = await this.prisma.$queryRawUnsafe<any[]>(
-            `SELECT * FROM mod_ordem_servico_products WHERE tenant_id = $1 AND code = $2 AND deleted_at IS NULL LIMIT 1`,
-            tenantId, code
-        );
-        return result[0];
+    async findByCode(code: string) {
+        return this.prisma.mod_ordem_servico_products.findFirst({
+            where: { code, deletedAt: null },
+        });
     }
 
-    async create(tenantId: string, data: any, userId: string) {
-        // Validation
+    async create(data: any) {
         if (!data.name || !data.code || data.price === undefined) {
-            throw new Error('Código, Nome e Preço são obrigatórios');
+            throw new Error('Codigo, Nome e Preco sao obrigatorios');
         }
 
-        // Check uniqueness
-        const existing = await this.findByCode(tenantId, data.code);
+        const existing = await this.findByCode(data.code);
         if (existing) {
-            throw new Error(`O código "${data.code}" já está em uso por outro produto.`);
+            throw new Error(`O codigo "${data.code}" ja esta em uso por outro produto.`);
         }
-
-        const id = randomUUID();
 
         try {
-            await this.prisma.$executeRawUnsafe(
-                `INSERT INTO mod_ordem_servico_products 
-                (id, tenant_id, code, name, price, cost_price, description, type, image_url, is_active)
-                VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-                id,
-                tenantId,
-                data.code,
-                data.name,
-                data.price,
-                data.cost_price || 0,
-                data.description || null,
-                data.type || 'PRODUCT',
-                data.image_url || null,
-                data.is_active ?? true
-            );
+            const createdProduct = await this.prisma.mod_ordem_servico_products.create({
+                data: {
+                    code: data.code,
+                    name: data.name,
+                    price: data.price,
+                    costPrice: data.cost_price || 0,
+                    description: data.description || null,
+                    type: data.type || 'PRODUCT',
+                    imageUrl: data.image_url || null,
+                    isActive: data.is_active ?? true,
+                },
+            });
+
+            const actor = this.getActorContext();
 
             await this.auditService.log({
                 action: 'CREATE_PRODUCT',
-                userId,
-                tenantId,
-                details: { productId: id, code: data.code, name: data.name }
+                userId: actor.userId,
+                tenantId: actor.tenantId,
+                details: { productId: createdProduct.id, code: data.code, name: data.name },
             });
 
-            return { id, ...data };
+            return createdProduct;
         } catch (error) {
             this.logger.error('Erro ao criar produto:', error);
             throw new Error('Erro ao salvar produto. Verifique os dados.');
         }
     }
 
-    async update(tenantId: string, id: string, data: any, userId: string) {
+    async update(id: string, data: any) {
         if (!data.name || !data.code || data.price === undefined) {
-            throw new Error('Código, Nome e Preço são obrigatórios');
+            throw new Error('Codigo, Nome e Preco sao obrigatorios');
         }
 
-        // Check uniqueness if code changed
-        const existingCode = await this.findByCode(tenantId, data.code);
+        const existingCode = await this.findByCode(data.code);
         if (existingCode && existingCode.id !== id) {
-            throw new Error(`O código "${data.code}" já está em uso por outro produto.`);
+            throw new Error(`O codigo "${data.code}" ja esta em uso por outro produto.`);
         }
 
         try {
-            await this.prisma.$executeRawUnsafe(
-                `UPDATE mod_ordem_servico_products
-                SET 
-                    code = $3,
-                    name = $4,
-                    price = $5,
-                    cost_price = $6,
-                    description = $7,
-                    type = $8,
-                    image_url = $9,
-                    is_active = $10,
-                    updated_at = NOW()
-                WHERE id = $1::uuid AND tenant_id = $2`,
-                id,
-                tenantId,
-                data.code,
-                data.name,
-                data.price,
-                data.cost_price || 0,
-                data.description || null,
-                data.type || 'PRODUCT',
-                data.image_url || null,
-                data.is_active ?? true
-            );
+            const updated = await this.prisma.mod_ordem_servico_products.updateMany({
+                where: { id, deletedAt: null },
+                data: {
+                    code: data.code,
+                    name: data.name,
+                    price: data.price,
+                    costPrice: data.cost_price || 0,
+                    description: data.description || null,
+                    type: data.type || 'PRODUCT',
+                    imageUrl: data.image_url || null,
+                    isActive: data.is_active ?? true,
+                    updatedAt: new Date(),
+                },
+            });
+
+            if (updated.count === 0) {
+                throw new Error('Produto nao encontrado');
+            }
+
+            const actor = this.getActorContext();
 
             await this.auditService.log({
                 action: 'UPDATE_PRODUCT',
-                userId,
-                tenantId,
-                details: { productId: id, updates: data }
+                userId: actor.userId,
+                tenantId: actor.tenantId,
+                details: { productId: id, updates: data },
             });
 
-            return { id, ...data };
+            return this.findById(id);
         } catch (error) {
             this.logger.error('Erro ao atualizar produto:', error);
             throw error;
         }
     }
 
-    async delete(tenantId: string, id: string, userId: string) {
-        await this.prisma.$executeRawUnsafe(
-            `UPDATE mod_ordem_servico_products SET deleted_at = NOW() WHERE id = $1::uuid AND tenant_id = $2`,
-            id, tenantId
-        );
+    async delete(id: string) {
+        await this.prisma.mod_ordem_servico_products.updateMany({
+            where: { id, deletedAt: null },
+            data: {
+                deletedAt: new Date(),
+                updatedAt: new Date(),
+            },
+        });
+
+        const actor = this.getActorContext();
 
         await this.auditService.log({
             action: 'DELETE_PRODUCT',
-            userId,
-            tenantId,
-            details: { productId: id }
+            userId: actor.userId,
+            tenantId: actor.tenantId,
+            details: { productId: id },
         });
 
         return { success: true };
+    }
+
+    private getActorContext() {
+        const actor = this.requestSecurityContext.getActor();
+        const tenantId = actor?.tenantId || this.requestSecurityContext.getTenantId();
+
+        if (!tenantId) {
+            throw new Error('Tenant ID nao identificado no contexto atual.');
+        }
+
+        return {
+            tenantId,
+            userId: actor?.id || undefined,
+        };
     }
 }

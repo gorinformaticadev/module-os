@@ -61,7 +61,7 @@ export class OrdensController {
         try {
             this.logger.log(`🎯 [Controller] INÍCIO - Buscando ordens. Tenant: ${req.user?.tenantId}`);
 
-            const result = await this.ordensService.findAll(req.user.tenantId, filters);
+            const result = await this.ordensService.findAll(filters);
 
             this.logger.log(`🎯 [Controller] Service retornou ${result.data.length} ordens`);
             this.logger.log(`🎯 [Controller] ANTES DE RETORNAR - Resultado OK`);
@@ -81,7 +81,7 @@ export class OrdensController {
     async getDashboardData(@Req() req: ExpressRequest & { user: any }): Promise<DashboardDataResponseDTO[]> {
         try {
             this.logger.log(`Buscando dados do dashboard. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getDashboardData(req.user.tenantId);
+            return await this.ordensService.getDashboardData();
         } catch (error) {
             this.logger.error(`Erro ao buscar dados do dashboard:`, error);
             throw error;
@@ -93,7 +93,7 @@ export class OrdensController {
     async getTiposServico(@Req() req: ExpressRequest & { user: any }): Promise<TipoServicoResponseDTO[]> {
         try {
             this.logger.log(`Buscando tipos de serviço. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getTiposServico(req.user.tenantId);
+            return await this.ordensService.getTiposServico();
         } catch (error) {
             this.logger.error(`Erro ao buscar tipos de serviço:`, error);
             throw error;
@@ -105,7 +105,7 @@ export class OrdensController {
     async getTiposEquipamento(@Req() req: ExpressRequest & { user: any }): Promise<TipoEquipamentoResponseDTO[]> {
         try {
             this.logger.log(`Buscando tipos de equipamento. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getTiposEquipamento(req.user.tenantId);
+            return await this.ordensService.getTiposEquipamento();
         } catch (error) {
             this.logger.error(`Erro ao buscar tipos de equipamento:`, error);
             throw error;
@@ -117,7 +117,7 @@ export class OrdensController {
     async getTechnicians(@Req() req: ExpressRequest & { user: any }): Promise<TechnicianResponseDTO[]> {
         try {
             this.logger.log(`Buscando técnicos. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getTechnicians(req.user.tenantId);
+            return await this.ordensService.getTechnicians();
         } catch (error) {
             this.logger.error(`Erro ao buscar técnicos:`, error);
             throw error;
@@ -132,7 +132,7 @@ export class OrdensController {
     ): Promise<AlertaRetiradaResponseDTO> {
         try {
             this.logger.log(`Buscando alertas de retirada. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getAlertasRetirada(req.user.tenantId);
+            return await this.ordensService.getAlertasRetirada();
         } catch (error) {
             this.logger.error(`Erro ao buscar alertas de retirada:`, error);
             throw error;
@@ -147,7 +147,7 @@ export class OrdensController {
     ): Promise<OrdemServicoResponseDTO> {
         try {
             this.logger.log(`Buscando ordem de serviço ${id}. Tenant: ${req.user?.tenantId}`);
-            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            const ordem = await this.ordensService.findOne(id);
 
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada');
@@ -168,7 +168,7 @@ export class OrdensController {
     ): Promise<HistoricoResponseDTO[]> {
         try {
             this.logger.log(`Buscando histórico da ordem ${id}. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getHistorico(req.user.tenantId, id);
+            return await this.ordensService.getHistorico(id);
         } catch (error) {
             this.logger.error(`Erro ao buscar histórico da ordem ${id}:`, error);
             throw error;
@@ -185,7 +185,7 @@ export class OrdensController {
         try {
             this.logger.log(`Solicitação de PDF para ordem ${id}. Tenant: ${req.user?.tenantId}`);
 
-            const pdfBuffer = await this.ordensService.generatePdf(req.user.tenantId, id);
+            const pdfBuffer = await this.ordensService.generatePdf(id);
 
             res.set({
                 'Content-Type': 'application/pdf',
@@ -211,12 +211,12 @@ export class OrdensController {
             this.logger.log(`Criando nova ordem de serviço. Tenant: ${req.user?.tenantId}`);
 
             // Validar se o cliente está ativo
-            const clienteAtivo = await this.ordensService.isClienteAtivo(req.user.tenantId, createDto.cliente_id);
+            const clienteAtivo = await this.ordensService.isClienteAtivo(createDto.cliente_id);
             if (!clienteAtivo) {
                 throw new BadRequestException('Cliente inativo não pode abrir ordem de serviço');
             }
 
-            return await this.ordensService.create(req.user.tenantId, req.user.id, createDto);
+            return await this.ordensService.create(createDto);
         } catch (error) {
             this.logger.error(`Erro ao criar ordem de serviço:`, error);
             throw error;
@@ -235,7 +235,7 @@ export class OrdensController {
             this.logger.log(`Atualizando ordem de serviço ${id}. Tenant: ${req.user?.tenantId}`);
 
             // Verificar se a ordem existe e pertence ao tenant
-            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            const ordem = await this.ordensService.findOne(id);
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada');
             }
@@ -245,7 +245,7 @@ export class OrdensController {
                 throw new ForbiddenException('Ordem de serviço finalizada, cancelada, retirada ou abandonada não pode ser editada');
             }
 
-            return await this.ordensService.update(req.user.tenantId, req.user.id, id, updateDto);
+            return await this.ordensService.update(id, updateDto);
         } catch (error) {
             this.logger.error(`Erro ao atualizar ordem de serviço ${id}:`, error);
             throw error;
@@ -264,7 +264,7 @@ export class OrdensController {
             this.logger.log(`Atualizando status da ordem ${id} para ${body.status}. Tenant: ${req.user?.tenantId}`);
 
             // Verificar se a ordem existe
-            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            const ordem = await this.ordensService.findOne(id);
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada');
             }
@@ -290,14 +290,7 @@ export class OrdensController {
                 }
             }
 
-            return await this.ordensService.updateStatus(
-                req.user.tenantId,
-                req.user.id,
-                id,
-                body.status,
-                body.motivo_cancelamento,
-                body.observacoes
-            );
+            return await this.ordensService.updateStatus(id, body.status, body.motivo_cancelamento, body.observacoes);
         } catch (error) {
             this.logger.error(`Erro ao atualizar status da ordem ${id}:`, error);
             throw error;
@@ -314,7 +307,7 @@ export class OrdensController {
             this.logger.log(`Excluindo ordem de serviço ${id}. Tenant: ${req.user?.tenantId}`);
 
             // Verificar se a ordem existe
-            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            const ordem = await this.ordensService.findOne(id);
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada');
             }
@@ -324,7 +317,7 @@ export class OrdensController {
                 throw new ForbiddenException('Apenas orçamentos podem ser excluídos por usuários não-admin');
             }
 
-            return await this.ordensService.remove(req.user.tenantId, req.user.id, id);
+            return await this.ordensService.remove(id);
         } catch (error) {
             this.logger.error(`Erro ao excluir ordem de serviço ${id}:`, error);
             throw error;
@@ -340,7 +333,7 @@ export class OrdensController {
         try {
             this.logger.log(`Aprovando orçamento ${id}. Tenant: ${req.user?.tenantId}`);
 
-            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            const ordem = await this.ordensService.findOne(id);
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada');
             }
@@ -349,7 +342,7 @@ export class OrdensController {
                 throw new BadRequestException('Apenas orçamentos podem ser aprovados');
             }
 
-            return await this.ordensService.aprovarOrcamento(req.user.tenantId, req.user.id, id);
+            return await this.ordensService.aprovarOrcamento(id);
         } catch (error) {
             this.logger.error(`Erro ao aprovar orçamento ${id}:`, error);
             throw error;
@@ -468,7 +461,7 @@ export class OrdensController {
     ): Promise<string | undefined> {
         const safeOrdemId = String(ordemId || '').trim();
         if (safeOrdemId) {
-            const ordem = await this.ordensService.findOne(tenantId, safeOrdemId);
+            const ordem = await this.ordensService.findOne(safeOrdemId);
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada para upload');
             }
@@ -538,7 +531,7 @@ export class OrdensController {
     ): Promise<StatusHistoricoResponseDTO[]> {
         try {
             this.logger.log(`Buscando histórico de status da ordem ${id}. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getStatusHistorico(req.user.tenantId, id);
+            return await this.ordensService.getStatusHistorico(id);
         } catch (error) {
             this.logger.error(`Erro ao buscar histórico de status da ordem ${id}:`, error);
             throw error;
@@ -557,7 +550,7 @@ export class OrdensController {
     ): Promise<ConservacaoCalculoResponseDTO> {
         try {
             this.logger.log(`Calculando conservação da ordem ${id}. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.calcularConservacao(req.user.tenantId, id);
+            return await this.ordensService.calcularConservacao(id);
         } catch (error) {
             this.logger.error(`Erro ao calcular conservação da ordem ${id}:`, error);
             throw error;
@@ -574,13 +567,7 @@ export class OrdensController {
     ) {
         try {
             this.logger.log(`Atualizando conservação da ordem ${id}. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.atualizarConservacao(
-                req.user.tenantId,
-                req.user.id,
-                id,
-                body.valor_conservacao || 0,
-                body.justificativa_conservacao
-            );
+            return await this.ordensService.atualizarConservacao(id, body.valor_conservacao || 0, body.justificativa_conservacao);
         } catch (error) {
             this.logger.error(`Erro ao atualizar conservação da ordem ${id}:`, error);
             throw error;
@@ -599,7 +586,7 @@ export class OrdensController {
     ): Promise<PagamentoResponseDTO[]> {
         try {
             this.logger.log(`Buscando pagamentos da ordem ${id}. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getPagamentos(req.user.tenantId, id);
+            return await this.ordensService.getPagamentos(id);
         } catch (error) {
             this.logger.error(`Erro ao buscar pagamentos da ordem ${id}:`, error);
             throw error;
@@ -618,7 +605,7 @@ export class OrdensController {
             this.logger.log(`Registrando retirada da ordem ${id}. Tenant: ${req.user?.tenantId}`);
 
             // Verificar se a ordem existe
-            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            const ordem = await this.ordensService.findOne(id);
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada');
             }
@@ -628,7 +615,7 @@ export class OrdensController {
                 throw new BadRequestException('Só é possível registrar retirada de ordens finalizadas');
             }
 
-            return await this.ordensService.registrarRetirada(req.user.tenantId, req.user.id, id, body);
+            return await this.ordensService.registrarRetirada(id, body);
         } catch (error) {
             this.logger.error(`Erro ao registrar retirada da ordem ${id}:`, error);
             throw error;
@@ -647,7 +634,7 @@ export class OrdensController {
     ): Promise<AlertaAbandonoResponseDTO[]> {
         try {
             this.logger.log(`Buscando alertas de abandono da ordem ${id}. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.getAlertasAbandono(req.user.tenantId, id);
+            return await this.ordensService.getAlertasAbandono(id);
         } catch (error) {
             this.logger.error(`Erro ao buscar alertas de abandono da ordem ${id}:`, error);
             throw error;
@@ -666,7 +653,7 @@ export class OrdensController {
             this.logger.log(`Registrando alerta de abandono para ordem ${id}. Tenant: ${req.user?.tenantId}`);
 
             // Verificar se a ordem existe
-            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            const ordem = await this.ordensService.findOne(id);
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada');
             }
@@ -676,7 +663,7 @@ export class OrdensController {
                 throw new BadRequestException('Só é possível registrar alertas para ordens finalizadas');
             }
 
-            return await this.ordensService.registrarAlertaAbandono(req.user.tenantId, req.user.id, id, body);
+            return await this.ordensService.registrarAlertaAbandono(id, body);
         } catch (error) {
             this.logger.error(`Erro ao registrar alerta de abandono da ordem ${id}:`, error);
             throw error;
@@ -694,7 +681,7 @@ export class OrdensController {
     ) {
         try {
             this.logger.log(`Registrando anexo para alerta ${alertaId}. Tenant: ${req.user?.tenantId}`);
-            return await this.ordensService.registrarAnexoAlerta(req.user.tenantId, req.user.id, alertaId, body);
+            return await this.ordensService.registrarAnexoAlerta(alertaId, body);
         } catch (error) {
             this.logger.error(`Erro ao registrar anexo do alerta ${alertaId}:`, error);
             throw error;
@@ -713,7 +700,7 @@ export class OrdensController {
             this.logger.log(`Marcando ordem ${id} como abandonada. Tenant: ${req.user?.tenantId}`);
 
             // Verificar se a ordem existe
-            const ordem = await this.ordensService.findOne(req.user.tenantId, id);
+            const ordem = await this.ordensService.findOne(id);
             if (!ordem) {
                 throw new NotFoundException('Ordem de serviço não encontrada');
             }
@@ -723,7 +710,7 @@ export class OrdensController {
                 throw new BadRequestException('Só é possível marcar como abandonado ordens finalizadas');
             }
 
-            return await this.ordensService.marcarComoAbandonado(req.user.tenantId, req.user.id, id, body.observacoes);
+            return await this.ordensService.marcarComoAbandonado(id, body.observacoes);
         } catch (error) {
             this.logger.error(`Erro ao marcar ordem ${id} como abandonada:`, error);
             throw error;
