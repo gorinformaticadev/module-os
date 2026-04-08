@@ -1,4 +1,17 @@
-# 📋 CHANGELOG - Módulo Ordem de Serviço
+# CHANGELOG - Modulo Ordem de Servico
+
+## [3.2.0] - 2026-04-08
+### Nucleo migrado para Prisma + ALS
+- Criada camada Prisma local do modulo em `backend/prisma/`, com schema proprio, client gerado e service com bloqueio de operacoes RAW.
+- Nucleo backend migrado para consultas Prisma usando models `mod_ordem_servico_*`, sem `tenantId` manual nas operacoes HTTP principais.
+- Refatorados blocos de `configuracoes`, `clientes`, `produtos`, `shared`, `notifications`, `core` e `ordens` para operar com ALS + Prisma Extension.
+- `ordens.service.ts` foi reestruturado para preservar a logica de negocio sem depender de SQL raw.
+- Jobs e listeners de notificacao passaram a usar varredura controlada fora do tenant e execucao segura por tenant com retorno ao contexto via `runWithActor(...)`.
+
+### Validacao desta rodada
+- `corepack pnpm -C apps/backend build` concluido com sucesso.
+- O validator do host ainda retorna 1 erro de prefixo Prisma, apesar de o schema do modulo usar `@@map("mod_ordem_servico_*")`.
+- Uploads continuam como pendencia de compatibilidade com a stack segura do host.
 
 ## [3.1.1] - 2026-04-07
 ### Compatibilidade com a arquitetura Pluggor atual
@@ -10,116 +23,50 @@
 - Controllers principais passaram a expor `@Permissions(...)` de forma explicita.
 - Removido fallback de `x-tenant-id` em controllers de configuracao.
 - Removidos hardcodes de cor que bloqueavam a validacao do modulo.
-- Validacao executada com sucesso via `node Scripts/validate-module.mjs --path module-os`.
 
 ### Riscos restantes
-- O backend ainda possui uso extensivo de RAW queries.
-- O backend ainda propaga `tenantId` manualmente.
+- O backend ainda tinha uso extensivo de RAW queries na base legada.
 - Uploads ainda nao foram migrados para `SecureFilesService`.
-- A migracao completa para runtime safety ainda depende de refactor profundo dos services.
+- A migracao completa para runtime safety dependia de refactor profundo dos services.
 
 ## [3.1.0] - Atual
-### Funcionalidades Implementadas
-- 🤖 **IA Guidelines**: Criação de `DOCS/IA_PROMPT_CRIACAO_MODULO.md` detalhando como IAs devem gerar módulos compatíveis.
-- Centralização de Uploads: Mapeamento de rotas e segurança via utilitários do sistema hospedeiro para anexos do módulo.
-- Revisão detalhada da arquitetura multitenant (`req.user.tenantId`).
+### Funcionalidades implementadas
+- Diretrizes de IA em `DOCS/IA_PROMPT_CRIACAO_MODULO.md`.
+- Centralizacao de uploads e alinhamento inicial com o sistema hospedeiro.
+- Revisao detalhada da arquitetura multitenant.
 
-## [3.0.0] - Atualizações Estruturais (Host Múltiplo)
-### Refatoração Completa e Compatibilidade
-- Remoção do prefixo `/api` dos controllers do módulo.
-- Migração de notificações transacionais e pushs diretos para a fila/stack central.
-- Job Scheduling / Crons desacoplados usando nova API host `CronService`.
-- Lançamento do script Powershell automatizado `gerar-zip-instalador.ps1` bloqueando envios não conformes.
-- Registração dinâmica de módulo (`backend/index.ts`) e injeção do `CompatibilityModuleContribution` (`frontend/index.tsx`).
+## [3.0.0] - Atualizacoes estruturais
+### Refatoracao e compatibilidade
+- Remocao do prefixo `/api` dos controllers do modulo.
+- Migracao de notificacoes transacionais para a stack central.
+- Jobs e crons desacoplados para a API do host.
+- Registro dinamico de modulo no backend e no frontend.
 
 ## [2.2.0] - 2026-01-24
-### ✅ **Correções Críticas Implementadas**
-
-#### **Problema Principal Resolvido**
-- **404 Not Found** no endpoint `/api/ordem_servico/ordens`
-- Módulo não estava sendo carregado pelo `DynamicModulesLoader`
-
-#### **Causa Raiz**
-- Módulo registrado no banco mas não carregado em runtime
-- `DynamicModulesLoader` não conseguia localizar arquivos do módulo
-- Falta de sincronização entre código e banco de dados
-
-#### **Soluções Implementadas**
-
-##### 1. **Correção do Carregamento do Módulo**
-- ✅ Verificado registro no banco: `ordem_servico` ativo e `hasBackend: true`
-- ✅ Reiniciado backend para forçar recarregamento dos módulos
-- ✅ Confirmado carregamento: `✅ Módulo ordem_servico carregado com sucesso!`
-
-##### 2. **Estrutura de Arquivos Corrigida**
-- ✅ Backend: `apps/backend/src/modules/ordem_servico/` - 46 arquivos
-- ✅ Frontend: `apps/frontend/src/app/modules/ordem_servico/` - 43 arquivos
-- ✅ Módulo principal: `ordem_servico.module.ts` com 35 linhas
-- ✅ Controllers, services, DTOs e guards implementados
-
-##### 3. **Banco de Dados Verificado**
-- ✅ 16 tabelas `mod_ordem_servico_*` criadas
-- ✅ Índices otimizados implementados
-- ✅ Constraints de integridade configuradas
-- ✅ Dados padrão inseridos (tipos de serviço, equipamento, permissões)
-
-##### 4. **Sistema de Permissões Funcional**
-- ✅ 3 perfis pré-configurados: Admin, Técnico, Atendente
-- ✅ Permissões granulares por recurso
-- ✅ Auditoria de alterações implementada
-- ✅ User roles automáticos criados
-
-##### 5. **APIs Operacionais**
-- ✅ `GET /api/ordem_servico/ordens` - Lista ordens
-- ✅ `POST /api/ordem_servico/ordens` - Cria ordem
-- ✅ `PUT /api/ordem_servico/ordens/:id` - Atualiza ordem
-- ✅ `DELETE /api/ordem_servico/ordens/:id` - Exclui ordem
-- ✅ Endpoints para clientes, produtos, configurações
-
-##### 6. **Funcionalidades Verificadas**
-- ✅ Autenticação JWT funcionando
-- ✅ Isolamento por tenant ativo
-- ✅ Logs detalhados implementados
-- ✅ Tratamento de erros robusto
-- ✅ Validações de entrada ativas
-
-#### **Arquivos de Instalação Criados**
-- ✅ `migration_complete.sql` - Migração consolidada (622 linhas)
-- ✅ `install.sh` - Script de instalação automatizada
-- ✅ `README.md` - Documentação completa
-- ✅ Estrutura `module-os/` pronta para distribuição
-
-#### **Testes Realizados**
-- ✅ Endpoint responde com dados corretos
-- ✅ Queries executam em ~50-100ms
-- ✅ Autenticação validada
-- ✅ Tenant isolation confirmado
-- ✅ Logs de operação gerados
-
-### **Status Final: ✅ TOTALMENTE FUNCIONAL**
-
-O módulo Ordem de Serviço está **100% operacional** e pronto para uso em produção.
-
----
+### Correcao critica de carregamento
+- Modulo confirmado no loader dinamico.
+- Estrutura backend/frontend consolidada para distribuicao.
+- Tabelas `mod_ordem_servico_*` e dados padrao verificados.
+- Endpoints principais de ordens, clientes, produtos e configuracoes ativados.
 
 ## [2.1.0] - 2026-01-20
-### Funcionalidades Implementadas
-- Sistema completo de ordens de serviço
-- Gestão de clientes e produtos
-- Sistema de permissões avançado
-- Dashboard com métricas
-- Integração WhatsApp
-- Geração de PDFs
+### Funcionalidades implementadas
+- Sistema completo de ordens de servico.
+- Gestao de clientes e produtos.
+- Sistema de permissoes avancado.
+- Dashboard com metricas.
+- Integracao WhatsApp.
+- Geracao de PDFs.
 
 ## [2.0.0] - 2026-01-18
-### Refatoração Completa
-- Migração para arquitetura modular
-- Separação backend/frontend
-- Sistema de permissões reescrito
-- Otimização de performance
+### Refatoracao completa
+- Migracao para arquitetura modular.
+- Separacao backend/frontend.
+- Sistema de permissoes reescrito.
+- Otimizacao de performance.
 
 ## [1.0.0] - 2026-01-10
-### Lançamento Inicial
-- Funcionalidades básicas implementadas
-- Estrutura inicial do banco
-- Interfaces básicas criadas
+### Lancamento inicial
+- Funcionalidades basicas implementadas.
+- Estrutura inicial do banco.
+- Interfaces basicas criadas.

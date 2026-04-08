@@ -1,24 +1,25 @@
 # Refatoracao de Compatibilidade Pluggor
 
-Data: 2026-04-07
+Data base: 2026-04-07
+Ultima atualizacao: 2026-04-08
 Modulo: `ordem_servico`
-Escopo: adequacao do modulo legado ao contrato atual de governanca, navegacao e runtime safety do Pluggor
+Escopo: adequacao progressiva do modulo legado ao contrato atual de governanca, seguranca de runtime e multitenancy do Pluggor
 
 ## Objetivo
 
-Este trabalho nao recriou o modulo do zero. O foco foi ajustar o modulo existente para que ele respeite o contrato atual do sistema, preservando ao maximo a logica original e explicitando os riscos estruturais que ainda dependem de refactor mais profundo no backend.
+Este trabalho nao recriou o modulo do zero. O foco foi refatorar o modulo existente para mantar a logica original, remover os pontos mais incompatveis com o runtime safety atual e alinhar o nucleo do backend ao modelo Prisma + ALS adotado pelo host.
 
-## O que foi corrigido
+## Entregas realizadas
 
-### 1. Manifesto e contrato do modulo
+### 1. Contrato e manifesto do modulo
 
 - Adicionado `moduleApiVersion: 1` em `module.json` e `backend/module.json`.
 - Adicionados `hasBackend: true` e `hasFrontend: true`.
 - Menus normalizados com `id`, `placement` e `isQuickAction` quando aplicavel.
-- `backend/index.ts` alinhado ao contrato novo de menu/dashboard.
+- `backend/index.ts` alinhado ao contrato atual de dashboard e navegacao.
 - `backend/ordem_servico.module.ts` passou a expor `static SLUG = 'ordem_servico'`.
 
-### 2. Navegacao e frontend
+### 2. Frontend e governanca de acesso
 
 - Manifesto frontend atualizado em `frontend/module-manifest.ts`.
 - Menu legado alinhado em `frontend/menu.ts`.
@@ -28,75 +29,140 @@ Este trabalho nao recriou o modulo do zero. O foco foi ajustar o modulo existent
   - `frontend/components/PrintTemplateA4.tsx`
   - `frontend/components/ui/rich-text-editor.tsx`
 
-### 3. Controllers e contrato explicito de permissao
+### 3. Controllers e permissao explicita
 
-- Criado decorator de compatibilidade `backend/shared/decorators/permissions.decorator.ts`.
-- Controllers principais receberam `@Permissions(...)` no nivel de classe para explicitar o dominio protegido e satisfazer o contrato de auditoria/validator, sem remover os decorators finos ja existentes.
-
-### 4. Multitenancy
-
+- Criado `backend/shared/decorators/permissions.decorator.ts`.
+- Controllers principais receberam `@Permissions(...)` no nivel de classe para explicitar o dominio protegido e satisfazer o contrato atual de auditoria e validacao.
 - Removido fallback de `x-tenant-id` nos controllers de tipos de servico e tipos de equipamento.
-- O modulo agora depende explicitamente do tenant vindo do contexto autenticado.
+
+### 4. Prisma local do modulo
+
+Foi criada uma camada Prisma local do `module-os`, isolada do client do host:
+
+- `backend/prisma/schema.prisma`
+- `backend/prisma/module-os-prisma.service.ts`
+- `backend/prisma/module-os-prisma.module.ts`
+
+Essa camada aplica as regras centrais desta refatoracao:
+
+- bloqueio explicito de operacoes RAW
+- uso obrigatorio de models `mod_ordem_servico_*`
+- escopo por tenant aplicado via contexto ALS
+- rejeicao de mismatch quando algum fluxo tenta sobrescrever `tenantId` manualmente
+
+### 5. Migracao do nucleo backend para Prisma + ALS
+
+O nucleo do modulo deixou de depender de RAW queries nos blocos mais sensiveis:
+
+- `backend/configuracoes/*`
+- `backend/clientes/*`
+- `backend/produtos/*`
+- `backend/shared/services/template.service.ts`
+- `backend/shared/services/ai.service.ts`
+- `backend/shared/services/permission.service.ts`
+- `backend/notifications/*`
+- `backend/core/ordem-servico-config.controller.ts`
+- `backend/core/ordem-servico-cron.service.ts`
+- `backend/ordens/ordens.service.ts`
+- `backend/ordens/ordens.controller.ts`
+
+Resultados da migracao:
+
+- remocao de `prisma.$queryRaw`, `prisma.$queryRawUnsafe`, `prisma.$executeRaw` e `prisma.$executeRawUnsafe` do nucleo funcional do modulo
+- remocao da propagacao manual de `tenantId` nas operacoes HTTP principais
+- uso do contexto autenticado e do ALS para escopo de tenant
+- preservacao da logica de negocio original de ordens, dashboard, historico, notificacoes e configuracoes
+
+### 6. Jobs, eventos e notificacoes
+
+Os fluxos assincronos passaram a seguir um modelo compativel com o runtime atual:
+
+- varreduras globais controladas usam `runWithoutTenantEnforcement(...)` apenas para localizar trabalhos pendentes
+- a execucao por tenant volta para escopo seguro com `runWithActor(...)`
+- consultas do modulo passam pelo Prisma local do modulo, e nao por RAW
+
+Isso foi aplicado em especial em:
+
+- `backend/notifications/scheduler.service.ts`
+- `backend/notifications/event-listener.service.ts`
+- `backend/notifications/rules.service.ts`
+- `backend/notifications/history.service.ts`
+- `backend/notifications/state.service.ts`
+- `backend/core/ordem-servico-cron.service.ts`
 
 ## Validacao executada
 
-Comando executado:
+### Build do backend host
+
+Comando:
+
+```bash
+corepack pnpm -C apps/backend build
+```
+
+Resultado:
+
+- build concluido com sucesso
+
+### Validator do modulo
+
+Comando:
 
 ```bash
 node Scripts/validate-module.mjs --path module-os
 ```
 
-Resultado: validacao concluida com sucesso.
+Resultado atual:
 
-## Pendencias e riscos restantes
+- manifesto ok
+- auditoria de frontend ok
+- auditoria de design tokens ok
+- permanece 1 erro no check de prefixo Prisma do host
 
-Os pontos abaixo continuam sendo incompatibilidades estruturais importantes e nao devem ser ignorados:
+Mensagem atual:
 
-### 1. Uso de RAW queries
+```text
+Modelos no banco de dados para este modulo (mod_ordem_servico_configs) DEVEM ser prefixados com 'mod_ordem_servico_' via @@map no PRISMA para evitar colisao com o Tenant Base.
+```
 
-O modulo ainda usa `prisma.$queryRaw`, `prisma.$queryRawUnsafe`, `prisma.$executeRaw` e `prisma.$executeRawUnsafe` em varios arquivos. Isso conflita com o kill-switch atual do runtime para modulos sandbox.
+Observacao importante:
 
-Arquivos de maior risco:
+O schema local do modulo ja usa `@@map("mod_ordem_servico_*")` em todos os models. O erro remanescente aparenta ser falso positivo do validator do host, nao ausencia real de prefixo no schema do modulo.
 
-- `backend/ordens/ordens.service.ts`
-- `backend/clientes/clientes.service.ts`
-- `backend/produtos/produtos.service.ts`
-- `backend/configuracoes/configuracoes.service.ts`
-- `backend/shared/services/permission.service.ts`
-- `backend/shared/services/template.service.ts`
-- `backend/notifications/*.service.ts`
-- `backend/core/ordem-servico-config.controller.ts`
+## Estado atual de compatibilidade
 
-### 2. tenantId manual
+### Compativel
 
-Grande parte do backend ainda passa `tenantId` manualmente entre controller e service. O contrato atual ideal e:
+- contrato de manifesto
+- menus e placements
+- guards de frontend
+- permissao explicita nos controllers
+- Prisma local com bloqueio de RAW
+- consultas principais do nucleo migradas para Prisma + ALS
+- build do backend host
 
-- controller usa o usuario autenticado
-- service le contexto/escopo implicitamente
-- Prisma aplica tenant scope via ALS/extensions
+### Ainda pendente
 
-### 3. Uploads fora da stack de arquivos seguros
+- migracao de uploads para a stack de arquivos seguros do host
+- eventuais pontos residuais de `tenantId` em payloads internos de jobs e eventos, que nao devem ser confundidos com scopo manual de query
+- ajuste ou revisao do validator do host para eliminar o falso positivo do schema Prisma
 
-O modulo ainda usa utilitarios legados de upload e nao foi migrado para `SecureFilesService`.
+## Riscos restantes
 
-Pontos afetados:
+### 1. Uploads
+
+O modulo ainda nao foi completamente migrado para `SecureFilesService`.
+
+Pontos mais sensiveis:
 
 - `backend/clientes/clientes.controller.ts`
 - `backend/produtos/produtos.controller.ts`
 - `backend/ordens/ordens.controller.ts`
 
-### 4. Integracao Prisma real do host
+### 2. Dependencia do validator do host
 
-O contrato de manifesto e validacao foi corrigido, mas o runtime do host ainda nao possui uma integracao pronta para materializar as tabelas `mod_ordem_servico_*` via client Prisma seguro dentro do sandbox do modulo. Isso significa que a migracao completa para ORM seguro ainda exige refactor coordenado com o backend principal.
+Mesmo com o schema Prisma local corretamente prefixado, o validator do host ainda reprova o modulo por um unico erro de deteccao. Como a regra desta rodada foi mexer somente no modulo, o script do host nao foi alterado.
 
-## Proxima etapa recomendada
+## Conclusao
 
-Executar o refactor em blocos:
-
-1. `configuracoes`, `clientes` e `produtos`
-2. `shared/services/permission.service.ts`
-3. `notifications`
-4. `ordens.service.ts`
-5. migracao de uploads para `SecureFilesService`
-
-Essa ordem reduz risco e preserva comportamento.
+O `module-os` avancou da fase de adequacao contratual para uma refatoracao real de runtime safety. O nucleo funcional do backend agora opera sobre Prisma local com apoio de ALS, sem RAW queries e sem scopo manual de tenant nas operacoes principais. O unico bloqueio de validacao restante, no estado atual, esta concentrado no comportamento do validator do host sobre o schema Prisma do modulo.
