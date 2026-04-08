@@ -1,5 +1,23 @@
 # 📋 CHANGELOG - Módulo Ordem de Serviço
 
+## [3.1.1] - 2026-04-07
+### Compatibilidade com a arquitetura Pluggor atual
+- Adicionado `moduleApiVersion: 1` e normalizacao do contrato de manifesto.
+- Menus atualizados com `placement`, `id` e `isQuickAction`.
+- `OrdemServicoModule` passou a expor `static SLUG`.
+- `backend/index.ts` alinhado ao contrato atual de dashboard/menu.
+- Criado `ModuleAccessGuard` no frontend e mantida compatibilidade via `ModulePageGuard`.
+- Controllers principais passaram a expor `@Permissions(...)` de forma explicita.
+- Removido fallback de `x-tenant-id` em controllers de configuracao.
+- Removidos hardcodes de cor que bloqueavam a validacao do modulo.
+- Validacao executada com sucesso via `node Scripts/validate-module.mjs --path module-os`.
+
+### Riscos restantes
+- O backend ainda possui uso extensivo de RAW queries.
+- O backend ainda propaga `tenantId` manualmente.
+- Uploads ainda nao foram migrados para `SecureFilesService`.
+- A migracao completa para runtime safety ainda depende de refactor profundo dos services.
+
 ## [3.1.0] - Atual
 ### Funcionalidades Implementadas
 - 🤖 **IA Guidelines**: Criação de `DOCS/IA_PROMPT_CRIACAO_MODULO.md` detalhando como IAs devem gerar módulos compatíveis.

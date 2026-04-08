@@ -1,49 +1,55 @@
 export const ModuleMenu = [
     {
         id: 'ordem_servico-main',
-        name: 'Ordem de Serviço',
+        name: 'Ordem de Servico',
         icon: 'Wrench',
         href: '/modules/ordem_servico/pages/dashboard',
         order: 10,
         group: 'ordem_servico',
-        roles: ['ADMIN', 'SUPER_ADMIN', 'ATENDENTE', 'TECNICO'],
-
+        placement: 'sidebar',
+        roles: ['ADMIN', 'SUPER_ADMIN', 'ATENDENTE', 'TECHNICIAN'],
         children: [
             {
                 id: 'ordem_servico-dashboard',
                 name: 'Dashboard',
                 href: '/modules/ordem_servico/pages/dashboard',
                 icon: 'BarChart3',
-                order: 1
+                placement: 'sidebar',
+                isQuickAction: true,
+                order: 1,
             },
             {
                 id: 'ordem_servico-ordens',
-                name: 'Ordens de Serviço',
+                name: 'Ordens de Servico',
                 href: '/modules/ordem_servico/pages/ordens',
                 icon: 'ClipboardList',
-                order: 2
+                placement: 'sidebar',
+                order: 2,
             },
             {
                 id: 'ordem_servico-clientes',
                 name: 'Clientes',
                 href: '/modules/ordem_servico/pages/clientes',
                 icon: 'Users',
-                order: 3
+                placement: 'sidebar',
+                order: 3,
             },
             {
                 id: 'ordem_servico-produtos',
-                name: 'Produtos / Serviços',
+                name: 'Produtos / Servicos',
                 href: '/modules/ordem_servico/pages/produtos',
                 icon: 'Package',
-                order: 4
+                placement: 'sidebar',
+                order: 4,
             },
             {
                 id: 'ordem_servico-configuracoes',
-                name: 'Configurações',
+                name: 'Configuracoes',
                 href: '/modules/ordem_servico/pages/configuracoes',
                 icon: 'Settings',
-                order: 5
-            }
-        ]
-    }
+                placement: 'topbar',
+                order: 5,
+            },
+        ],
+    },
 ];

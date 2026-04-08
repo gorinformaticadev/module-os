@@ -4,8 +4,10 @@ import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { TemplateService } from '../services/template.service';
 import { PermissionGuard } from '../guards/permission.guard';
 import { RequireConfigPermission } from '../decorators/require-permission.decorator';
+import { Permissions } from '../decorators/permissions.decorator';
 
 @Controller('ordem_servico/templates')
+@Permissions('ordem_servico.templates')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class TemplateController {
     private readonly logger = new Logger(TemplateController.name);

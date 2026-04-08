@@ -5,8 +5,10 @@ import { AiService } from '../services/ai.service';
 import { AI_PROMPTS } from '../services/prompts';
 import { PermissionGuard } from '../guards/permission.guard';
 import { RequireOrdersPermission } from '../decorators/require-permission.decorator';
+import { Permissions } from '../decorators/permissions.decorator';
 
 @Controller('ordem_servico/ai')
+@Permissions('ordem_servico.ai')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class AiController {
     private readonly logger = new Logger(AiController.name);

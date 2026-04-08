@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { OrdensService } from './ordens.service';
 import { PermissionGuard } from '../shared/guards/permission.guard';
 import { RequireOrdersPermission } from '../shared/decorators/require-permission.decorator';
+import { Permissions } from '../shared/decorators/permissions.decorator';
 import {
     assertTenantUploadAccess,
     buildTenantModuleUploadUrl,
@@ -42,6 +43,7 @@ import {
 } from '../shared/dto/ordem-servico.dto';
 
 @Controller('ordem_servico/ordens')
+@Permissions('ordem_servico.orders')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class OrdensController {
     private readonly logger = new Logger(OrdensController.name);

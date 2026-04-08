@@ -22,6 +22,7 @@ import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../shared/guards/permission.guard';
 import { RequireProductsPermission } from '../shared/decorators/require-permission.decorator';
 import { ProdutosService } from './produtos.service';
+import { Permissions } from '../shared/decorators/permissions.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import {
@@ -33,6 +34,7 @@ import {
 } from '../shared/utils/upload-security.util';
 
 @Controller('ordem_servico/produtos')
+@Permissions('ordem_servico.products')
 export class ProdutosController {
   private readonly logger = new Logger(ProdutosController.name);
 

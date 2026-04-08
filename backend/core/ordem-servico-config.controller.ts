@@ -5,8 +5,10 @@ import { OrdemServicoCronService } from './ordem-servico-cron.service';
 import { Request as ExpressRequest } from 'express';
 import { PermissionGuard } from '../shared/guards/permission.guard';
 import { RequireConfigPermission } from '../shared/decorators/require-permission.decorator';
+import { Permissions } from '../shared/decorators/permissions.decorator';
 
 @Controller('ordem_servico/config')
+@Permissions('ordem_servico.config')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class OrdemServicoConfigController {
     constructor(

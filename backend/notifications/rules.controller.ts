@@ -5,8 +5,10 @@ import { JwtAuthGuard } from '../../../core/guards/jwt-auth.guard';
 import { validateCreatePayload, validateUpdatePayload, handlePrismaError } from './dto/rule.dto';
 import { PermissionGuard } from '../shared/guards/permission.guard';
 import { RequireConfigPermission } from '../shared/decorators/require-permission.decorator';
+import { Permissions } from '../shared/decorators/permissions.decorator';
 
 @Controller('ordem_servico/notificacoes')
+@Permissions('ordem_servico.notifications')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class NotificationRuleController {
     constructor(

@@ -3,10 +3,12 @@ import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { PermissionGuard } from '../shared/guards/permission.guard';
 import { RequireConfigPermission } from '../shared/decorators/require-permission.decorator';
+import { Permissions } from '../shared/decorators/permissions.decorator';
 
 import { ConfiguracoesService } from './configuracoes.service';
 
 @Controller('ordem_servico/config')
+@Permissions('ordem_servico.config')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class ConfiguracoesController {
     private readonly logger = new Logger(ConfiguracoesController.name);

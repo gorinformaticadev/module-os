@@ -1,105 +1,119 @@
 {
-    "name":  "ordem_servico",
-    "displayName":  "Ordem de Serviço",
-    "version":  "3.1.0",
-    "description":  "Módulo de Gerenciamento de Ordens de Serviço",
-    "author":  "GOR Informatica",
-    "category":  "custom",
-    "enabled":  true,
-    "dependencies":  null,
-    "icon":  "Wrench",
-    "menus":  [
-                  {
-                      "label":  "Dashboard",
-                      "route":  "/modules/ordem_servico/pages/dashboard",
-                      "icon":  "BarChart3",
-                      "order":  1
-                  },
-                  {
-                      "label":  "Ordens de Serviço",
-                      "route":  "/modules/ordem_servico/pages/ordens",
-                      "icon":  "ClipboardList",
-                      "order":  2
-                  },
-                  {
-                      "label":  "Clientes",
-                      "route":  "/modules/ordem_servico/pages/clientes",
-                      "icon":  "Users",
-                      "order":  3
-                  },
-                  {
-                      "label":  "Produtos / Serviços",
-                      "route":  "/modules/ordem_servico/pages/produtos",
-                      "icon":  "Package",
-                      "order":  4
-                  },
-                  {
-                      "label":  "Configurações",
-                      "route":  "/modules/ordem_servico/pages/configuracoes",
-                      "icon":  "Settings",
-                      "order":  5
-                  }
-              ],
-    "dashboard":  [
-                      {
-                          "id":  "status",
-                          "name":  "Operacao de OS",
-                          "icon":  "Wrench",
-                          "description":  "Resumo operacional do modulo de ordens de servico.",
-                          "route":  "/modules/ordem_servico/pages/dashboard",
-                          "actionLabel":  "Abrir dashboard",
-                          "kind":  "summary",
-                          "size":  "medium",
-                          "order":  1,
-                          "stats":  [
-                                        {
-                                            "label":  "Modulo",
-                                            "value":  "Ativo"
-                                        },
-                                        {
-                                            "label":  "Menus",
-                                            "value":  "5"
-                                        },
-                                        {
-                                            "label":  "Entrada",
-                                            "value":  "Dashboard"
-                                        }
-                                    ],
-                          "items":  [
-                                        {
-                                            "id":  "ordem_servico-dashboard",
-                                            "label":  "Dashboard",
-                                            "value":  "/modules/ordem_servico/pages/dashboard",
-                                            "column":  "Atalhos",
-                                            "tone":  "neutral"
-                                        },
-                                        {
-                                            "id":  "ordem_servico-ordens",
-                                            "label":  "Ordens de Servico",
-                                            "value":  "/modules/ordem_servico/pages/ordens",
-                                            "column":  "Atalhos",
-                                            "tone":  "neutral"
-                                        },
-                                        {
-                                            "id":  "ordem_servico-clientes",
-                                            "label":  "Clientes",
-                                            "value":  "/modules/ordem_servico/pages/clientes",
-                                            "column":  "Atalhos",
-                                            "tone":  "neutral"
-                                        },
-                                        {
-                                            "id":  "ordem_servico-produtos",
-                                            "label":  "Produtos / Servicos",
-                                            "value":  "/modules/ordem_servico/pages/produtos",
-                                            "column":  "Atalhos",
-                                            "tone":  "neutral"
-                                        }
-                                    ]
-                      }
-                  ],
-    "defaultConfig":  {
-                          "showNotifications":  true,
-                          "enableWidgets":  true,
-                          "maxItems":  50
-                      }
+  "moduleApiVersion": 1,
+  "name": "ordem_servico",
+  "displayName": "Ordem de Servico",
+  "version": "3.1.0",
+  "description": "Modulo de Gerenciamento de Ordens de Servico",
+  "author": "GOR Informatica",
+  "category": "custom",
+  "enabled": true,
+  "hasBackend": true,
+  "hasFrontend": true,
+  "dependencies": null,
+  "icon": "Wrench",
+  "menus": [
+    {
+      "id": "ordem_servico-dashboard",
+      "label": "Dashboard",
+      "route": "/modules/ordem_servico/pages/dashboard",
+      "icon": "BarChart3",
+      "placement": "sidebar",
+      "isQuickAction": true,
+      "order": 1
+    },
+    {
+      "id": "ordem_servico-ordens",
+      "label": "Ordens de Servico",
+      "route": "/modules/ordem_servico/pages/ordens",
+      "icon": "ClipboardList",
+      "placement": "sidebar",
+      "order": 2
+    },
+    {
+      "id": "ordem_servico-clientes",
+      "label": "Clientes",
+      "route": "/modules/ordem_servico/pages/clientes",
+      "icon": "Users",
+      "placement": "sidebar",
+      "order": 3
+    },
+    {
+      "id": "ordem_servico-produtos",
+      "label": "Produtos / Servicos",
+      "route": "/modules/ordem_servico/pages/produtos",
+      "icon": "Package",
+      "placement": "sidebar",
+      "order": 4
+    },
+    {
+      "id": "ordem_servico-configuracoes",
+      "label": "Configuracoes",
+      "route": "/modules/ordem_servico/pages/configuracoes",
+      "icon": "Settings",
+      "placement": "topbar",
+      "order": 5
+    }
+  ],
+  "dashboard": [
+    {
+      "id": "status",
+      "name": "Operacao de OS",
+      "icon": "Wrench",
+      "description": "Resumo operacional do modulo de ordens de servico.",
+      "route": "/modules/ordem_servico/pages/dashboard",
+      "actionLabel": "Abrir dashboard",
+      "kind": "summary",
+      "size": "medium",
+      "order": 1,
+      "stats": [
+        {
+          "label": "Modulo",
+          "value": "Ativo"
+        },
+        {
+          "label": "Menus",
+          "value": "5"
+        },
+        {
+          "label": "Entrada",
+          "value": "Dashboard"
+        }
+      ],
+      "items": [
+        {
+          "id": "ordem_servico-dashboard",
+          "label": "Dashboard",
+          "value": "/modules/ordem_servico/pages/dashboard",
+          "column": "Atalhos",
+          "tone": "neutral"
+        },
+        {
+          "id": "ordem_servico-ordens",
+          "label": "Ordens de Servico",
+          "value": "/modules/ordem_servico/pages/ordens",
+          "column": "Atalhos",
+          "tone": "neutral"
+        },
+        {
+          "id": "ordem_servico-clientes",
+          "label": "Clientes",
+          "value": "/modules/ordem_servico/pages/clientes",
+          "column": "Atalhos",
+          "tone": "neutral"
+        },
+        {
+          "id": "ordem_servico-produtos",
+          "label": "Produtos / Servicos",
+          "value": "/modules/ordem_servico/pages/produtos",
+          "column": "Atalhos",
+          "tone": "neutral"
+        }
+      ]
+    }
+  ],
+  "defaultConfig": {
+    "showNotifications": true,
+    "enableWidgets": true,
+    "maxItems": 50
+  }
 }

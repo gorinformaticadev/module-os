@@ -24,6 +24,15 @@ interface RichTextEditorProps {
     disabled?: boolean
 }
 
+const TEXT_COLOR_PRESETS = [
+    'hsl(var(--foreground))',
+    'hsl(var(--destructive))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--primary))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))',
+]
+
 
 export function RichTextEditor({ value, onChange, disabled }: RichTextEditorProps) {
     const extensions = useMemo(() => [
@@ -142,7 +151,7 @@ export function RichTextEditor({ value, onChange, disabled }: RichTextEditorProp
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-2">
                         <div className="flex gap-2">
-                            {['#000000', '#ef4444', '#22c55e', '#3b82f6', '#eab308', '#a855f7'].map((color) => (
+                            {TEXT_COLOR_PRESETS.map((color) => (
                                 <button
                                     key={color}
                                     className="h-6 w-6 rounded-full border border-gray-300"

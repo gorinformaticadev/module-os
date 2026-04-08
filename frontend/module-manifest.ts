@@ -10,6 +10,9 @@ export type ModuleMenuEntry = {
     label: string;
     icon: string;
     route: string;
+    permission?: string;
+    placement: 'sidebar' | 'topbar' | 'none';
+    isQuickAction?: boolean;
     order: number;
 };
 
@@ -19,6 +22,9 @@ export const MODULE_MENU_ENTRIES: ModuleMenuEntry[] = [
         label: 'Dashboard',
         icon: 'BarChart3',
         route: `${MODULE_ROUTE_ROOT}/dashboard`,
+        permission: `${MODULE_SLUG}.dashboard.view`,
+        placement: 'sidebar',
+        isQuickAction: true,
         order: 1,
     },
     {
@@ -26,6 +32,8 @@ export const MODULE_MENU_ENTRIES: ModuleMenuEntry[] = [
         label: 'Ordens de Servico',
         icon: 'ClipboardList',
         route: `${MODULE_ROUTE_ROOT}/ordens`,
+        permission: `${MODULE_SLUG}.orders.view`,
+        placement: 'sidebar',
         order: 2,
     },
     {
@@ -33,6 +41,8 @@ export const MODULE_MENU_ENTRIES: ModuleMenuEntry[] = [
         label: 'Clientes',
         icon: 'Users',
         route: `${MODULE_ROUTE_ROOT}/clientes`,
+        permission: `${MODULE_SLUG}.clients.view`,
+        placement: 'sidebar',
         order: 3,
     },
     {
@@ -40,6 +50,8 @@ export const MODULE_MENU_ENTRIES: ModuleMenuEntry[] = [
         label: 'Produtos / Servicos',
         icon: 'Package',
         route: `${MODULE_ROUTE_ROOT}/produtos`,
+        permission: `${MODULE_SLUG}.products.view`,
+        placement: 'sidebar',
         order: 4,
     },
     {
@@ -47,6 +59,8 @@ export const MODULE_MENU_ENTRIES: ModuleMenuEntry[] = [
         label: 'Configuracoes',
         icon: 'Settings',
         route: `${MODULE_ROUTE_ROOT}/configuracoes`,
+        permission: `${MODULE_SLUG}.config.admin`,
+        placement: 'topbar',
         order: 5,
     },
 ];
