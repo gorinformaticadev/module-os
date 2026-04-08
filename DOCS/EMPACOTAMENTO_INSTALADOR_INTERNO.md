@@ -1,14 +1,18 @@
 # Empacotamento para o instalador interno
 
-## Objetivo
+## Status atual
 
-Este documento descreve como gerar um ZIP compativel com o instalador interno de modulos do sistema, acessado em `Configuracoes > Sistema > Modulos`.
+Este documento descreve o formato atual do ZIP compativel com o instalador interno de modulos do sistema, acessado em `Configuracoes > Sistema > Modulos`.
+
+Na refatoracao atual do `module-os`, o backend passou a usar Prisma local em `backend/prisma` e `backend/generated/prisma-client`. Como o instalador interno do host ainda possui uma allowlist mais restrita, o script de empacotamento agora adapta os assets obrigatorios do Prisma para o formato aceito pelo instalador.
+
+## Objetivo
 
 O foco aqui nao e a rota externa `/install`.
 
 ## Script oficial deste repositorio
 
-O repositorio agora possui um script dedicado para gerar um pacote limpo:
+O repositorio possui um script dedicado para gerar um pacote limpo e compativel com o instalador interno:
 
 ```powershell
 .\scripts\gerar-zip-instalador.ps1
@@ -37,6 +41,7 @@ O script inclui apenas o que o instalador interno realmente precisa:
 - `backend/migrations/*.sql`
 - `backend/seeds/*.sql`
 - `backend/module.config.json`, quando existir
+- assets obrigatorios do Prisma local adaptados para extensoes aceitas pelo instalador
 
 ## O que fica de fora
 
@@ -106,6 +111,16 @@ ordem_servico-installer-<versao>.zip
 - `migrations` e `seeds` devem ficar dentro de `backend/`.
 - Arquivos com extensoes fora da allowlist do instalador podem invalidar o pacote.
 - Arquivos de shell como `*.sh` nao devem entrar no ZIP.
+
+## Adaptacao do Prisma local
+
+Para manter compatibilidade com a allowlist atual do instalador:
+
+- `backend/generated/prisma-client/schema.prisma` e empacotado como `schema.prisma.txt`
+- `backend/generated/prisma-client/query_compiler_bg.wasm` e empacotado como `query_compiler_bg.wasm.txt`
+- o `index.js` empacotado do client gerado e ajustado para resolver esses arquivos transformados dentro do ZIP final
+
+Com isso, o pacote continua contendo tudo que o runtime atual do modulo precisa sem depender de extensoes bloqueadas pelo instalador interno.
 
 ## Como validar antes de subir
 

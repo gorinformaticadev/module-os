@@ -29,6 +29,45 @@ function Resolve-OutputDirectory {
     return [System.IO.Path]::GetFullPath((Join-Path $ProjectRoot $BasePath))
 }
 
+function Get-PackagingTransform {
+    param([string]$RelativePath)
+
+    $normalized = $RelativePath.Replace("\", "/")
+
+    switch -Regex ($normalized) {
+        "^backend/generated/prisma-client/schema\.prisma$" {
+            return @{
+                DestinationRelativePath = "generated/prisma-client/schema.prisma.txt"
+                ListedPath              = "backend/generated/prisma-client/schema.prisma.txt"
+            }
+        }
+
+        "^backend/generated/prisma-client/query_compiler_bg\.wasm$" {
+            return @{
+                DestinationRelativePath = "generated/prisma-client/query_compiler_bg.wasm.txt"
+                ListedPath              = "backend/generated/prisma-client/query_compiler_bg.wasm.txt"
+            }
+        }
+    }
+
+    return $null
+}
+
+function Update-PackagedPrismaClient {
+    param([string]$BackendPackageRoot)
+
+    $prismaClientIndex = Join-Path $BackendPackageRoot "generated\\prisma-client\\index.js"
+
+    if (-not (Test-Path -LiteralPath $prismaClientIndex)) {
+        return
+    }
+
+    $content = Get-Content -LiteralPath $prismaClientIndex -Raw
+    $content = $content.Replace("schema.prisma", "schema.prisma.txt")
+    $content = $content.Replace("query_compiler_bg.wasm", "query_compiler_bg.wasm.txt")
+    Set-Content -LiteralPath $prismaClientIndex -Value $content -Encoding UTF8
+}
+
 function Get-RelativePathCompat {
     param(
         [string]$BasePath,
@@ -97,12 +136,18 @@ function Copy-IncludedTree {
 
     foreach ($file in Get-ChildItem -Path $SourceRoot -Recurse -File) {
         $relativeFromRepo = (Get-RelativePathCompat -BasePath $ProjectRoot -TargetPath $file.FullName).Replace("\", "/")
+        $transform = Get-PackagingTransform -RelativePath $relativeFromRepo
 
-        if (-not (Test-IncludedRelativePath -RelativePath $relativeFromRepo)) {
+        if (-not $transform -and -not (Test-IncludedRelativePath -RelativePath $relativeFromRepo)) {
             continue
         }
 
-        $relativeInsideSource = Get-RelativePathCompat -BasePath $SourceRoot -TargetPath $file.FullName
+        $relativeInsideSource = if ($transform) {
+            $transform.DestinationRelativePath
+        } else {
+            Get-RelativePathCompat -BasePath $SourceRoot -TargetPath $file.FullName
+        }
+
         $destination = Join-Path $TargetRoot $relativeInsideSource
         $destinationDir = Split-Path -Parent $destination
 
@@ -111,7 +156,12 @@ function Copy-IncludedTree {
         }
 
         Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
-        $copiedFiles.Add($relativeFromRepo) | Out-Null
+
+        if ($transform) {
+            $copiedFiles.Add($transform.ListedPath) | Out-Null
+        } else {
+            $copiedFiles.Add($relativeFromRepo) | Out-Null
+        }
     }
 
     return $copiedFiles
@@ -181,6 +231,7 @@ try {
 
     $backendFiles = Copy-IncludedTree -SourceRoot $backendRoot -TargetRoot (Join-Path $packageRoot "backend") -ProjectRoot $repoRoot
     $frontendFiles = Copy-IncludedTree -SourceRoot $frontendRoot -TargetRoot (Join-Path $packageRoot "frontend") -ProjectRoot $repoRoot
+    Update-PackagedPrismaClient -BackendPackageRoot (Join-Path $packageRoot "backend")
 
     if ($backendFiles.Count -eq 0) {
         throw "Nenhum arquivo de backend foi incluido no pacote."

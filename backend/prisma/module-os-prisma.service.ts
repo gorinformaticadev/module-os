@@ -12,12 +12,31 @@ const READ_OPERATIONS = new Set([
   'groupBy',
 ]);
 
+function createModuleOsPrismaAdapter() {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error('DATABASE_URL ausente para iniciar o Prisma local do module-os.');
+  }
+
+  try {
+    // O adapter e carregado dinamicamente para manter o modulo distribuivel via ZIP.
+    // A dependencia e declarada no module.json e sincronizada pelo instalador do host.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { PrismaPg } = require('@prisma/adapter-pg');
+    return new PrismaPg({ connectionString });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Falha ao carregar @prisma/adapter-pg no module-os: ${reason}`);
+  }
+}
+
 @Injectable()
 export class ModuleOsPrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ModuleOsPrismaService.name);
 
   constructor(private readonly requestSecurityContext: RequestSecurityContextService) {
-    super();
+    super({ adapter: createModuleOsPrismaAdapter() });
   }
 
   async onModuleInit(): Promise<void> {

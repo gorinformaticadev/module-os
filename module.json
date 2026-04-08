@@ -10,6 +10,12 @@
   "hasBackend": true,
   "hasFrontend": true,
   "dependencies": null,
+  "npmDependencies": {
+    "backend": {
+      "@prisma/adapter-pg": "6.19.2",
+      "pg": "^8.19.0"
+    }
+  },
   "icon": "Wrench",
   "menus": [
     {

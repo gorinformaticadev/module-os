@@ -65,6 +65,8 @@ O instalador interno rejeita arquivos proibidos, como `install.sh`, e espera:
 - diretorios `backend/` e `frontend/` em layout compativel
 - somente arquivos permitidos
 
+Para a versao atual do `module-os`, o script ja trata o Prisma local do modulo durante o empacotamento, adaptando os arquivos obrigatorios para extensoes aceitas pelo instalador interno.
+
 ### 1.5 Notificacoes internas agora passam pela stack central
 
 As notificacoes internas do modulo nao devem mais escrever direto na tabela de notificacoes do sistema.

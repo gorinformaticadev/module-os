@@ -10,6 +10,12 @@
   "hasBackend": true,
   "hasFrontend": true,
   "dependencies": null,
+  "npmDependencies": {
+    "backend": {
+      "@prisma/adapter-pg": "6.19.2",
+      "pg": "^8.19.0"
+    }
+  },
   "icon": "Wrench",
   "menus": [
     {
@@ -17,6 +23,7 @@
       "label": "Dashboard",
       "route": "/modules/ordem_servico/pages/dashboard",
       "icon": "BarChart3",
+      "permission": "ordem_servico.dashboard.view",
       "placement": "sidebar",
       "isQuickAction": true,
       "order": 1
@@ -26,6 +33,7 @@
       "label": "Ordens de Servico",
       "route": "/modules/ordem_servico/pages/ordens",
       "icon": "ClipboardList",
+      "permission": "ordem_servico.orders.view",
       "placement": "sidebar",
       "order": 2
     },
@@ -34,6 +42,7 @@
       "label": "Clientes",
       "route": "/modules/ordem_servico/pages/clientes",
       "icon": "Users",
+      "permission": "ordem_servico.clients.view",
       "placement": "sidebar",
       "order": 3
     },
@@ -42,6 +51,7 @@
       "label": "Produtos / Servicos",
       "route": "/modules/ordem_servico/pages/produtos",
       "icon": "Package",
+      "permission": "ordem_servico.products.view",
       "placement": "sidebar",
       "order": 4
     },
@@ -50,6 +60,7 @@
       "label": "Configuracoes",
       "route": "/modules/ordem_servico/pages/configuracoes",
       "icon": "Settings",
+      "permission": "ordem_servico.config.admin",
       "placement": "topbar",
       "order": 5
     }
