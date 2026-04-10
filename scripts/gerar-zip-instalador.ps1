@@ -16,7 +16,8 @@ $frontendRoot = Join-Path $repoRoot "frontend"
 $allowedExtensions = @(
     ".json", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
     ".css", ".scss", ".md", ".txt", ".sql", ".yml", ".yaml",
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico"
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico",
+    ".wasm", ".prisma"
 )
 
 function Resolve-OutputDirectory {
@@ -34,38 +35,13 @@ function Get-PackagingTransform {
 
     $normalized = $RelativePath.Replace("\", "/")
 
-    switch -Regex ($normalized) {
-        "^backend/generated/prisma-client/schema\.prisma$" {
-            return @{
-                DestinationRelativePath = "generated/prisma-client/schema.prisma.txt"
-                ListedPath              = "backend/generated/prisma-client/schema.prisma.txt"
-            }
-        }
-
-        "^backend/generated/prisma-client/query_compiler_bg\.wasm$" {
-            return @{
-                DestinationRelativePath = "generated/prisma-client/query_compiler_bg.wasm.txt"
-                ListedPath              = "backend/generated/prisma-client/query_compiler_bg.wasm.txt"
-            }
-        }
-    }
-
     return $null
 }
 
 function Update-PackagedPrismaClient {
     param([string]$BackendPackageRoot)
 
-    $prismaClientIndex = Join-Path $BackendPackageRoot "generated\\prisma-client\\index.js"
-
-    if (-not (Test-Path -LiteralPath $prismaClientIndex)) {
-        return
-    }
-
-    $content = Get-Content -LiteralPath $prismaClientIndex -Raw
-    $content = $content.Replace("schema.prisma", "schema.prisma.txt")
-    $content = $content.Replace("query_compiler_bg.wasm", "query_compiler_bg.wasm.txt")
-    Set-Content -LiteralPath $prismaClientIndex -Value $content -Encoding UTF8
+    # Não precisamos mais modificar as extensões no index.js
 }
 
 function Get-RelativePathCompat {
@@ -225,6 +201,24 @@ if (Test-Path -LiteralPath $backendManifestPath) {
 }
 
 try {
+    $prismaSchemaPath = Join-Path $backendRoot "prisma\schema.prisma"
+    if (Test-Path -LiteralPath $prismaSchemaPath) {
+        Write-Host "Gerando Prisma Client atualizado..." -ForegroundColor Cyan
+        Push-Location -Path $backendRoot
+        try {
+            if ($env:OS -match "Windows_NT") {
+                cmd.exe /c "npx --yes prisma@6.19.2 generate"
+            } else {
+                npx --yes prisma@6.19.2 generate
+            }
+            if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
+                Write-Warning "Ocorreu um erro no npx prisma generate, mas o empacotamento continuará."
+            }
+        } finally {
+            Pop-Location
+        }
+    }
+
     New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
 
     Copy-Item -LiteralPath $rootManifestPath -Destination (Join-Path $packageRoot "module.json") -Force

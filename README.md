@@ -1,102 +1,102 @@
-# Módulo Ordem de Serviço (module-os)
+# MÃ³dulo Ordem de ServiÃ§o (module-os)
 
-## 📋 Descrição
+## ðŸ“‹ DescriÃ§Ã£o
 
-Módulo completo para gestão de ordens de serviço, desenvolvido para o sistema multitenant. Inclui funcionalidades completas de gestão de clientes, produtos, ordens de serviço, permissões e relatórios.
+MÃ³dulo completo para gestÃ£o de ordens de serviÃ§o, desenvolvido para o sistema multitenant. Inclui funcionalidades completas de gestÃ£o de clientes, produtos, ordens de serviÃ§o, permissÃµes e relatÃ³rios.
 
-## 🚀 Funcionalidades
+## ðŸš€ Funcionalidades
 
-### ✅ **Gestão Completa de Ordens de Serviço**
-- Criação e edição de ordens de serviço
-- Controle de status (Orçamento → Em Execução → Finalizada/Cancelada)
-- Histórico completo de alterações
-- Geração de PDFs para impressão
-- Integração com WhatsApp
+### âœ… **GestÃ£o Completa de Ordens de ServiÃ§o**
+- CriaÃ§Ã£o e ediÃ§Ã£o de ordens de serviÃ§o
+- Controle de status (OrÃ§amento â†’ Em ExecuÃ§Ã£o â†’ Finalizada/Cancelada)
+- HistÃ³rico completo de alteraÃ§Ãµes
+- GeraÃ§Ã£o de PDFs para impressÃ£o
+- IntegraÃ§Ã£o com WhatsApp
 
-### ✅ **Gestão de Clientes**
+### âœ… **GestÃ£o de Clientes**
 - Cadastro completo de clientes
-- Endereços detalhados
+- EndereÃ§os detalhados
 - Controle de status (Ativo/Inativo)
-- Histórico de ordens por cliente
+- HistÃ³rico de ordens por cliente
 
-### ✅ **Gestão de Produtos/Serviços**
-- Cadastro de produtos e serviços
-- Controle de preços e custos
-- Códigos únicos por tenant
-- Soft delete para segurança
+### âœ… **GestÃ£o de Produtos/ServiÃ§os**
+- Cadastro de produtos e serviÃ§os
+- Controle de preÃ§os e custos
+- CÃ³digos Ãºnicos por tenant
+- Soft delete para seguranÃ§a
 
-### ✅ **Sistema de Permissões Avançado**
-- Permissões por usuário individual
-- Perfis pré-definidos (Admin, Técnico, Atendente)
-- Auditoria completa de alterações
+### âœ… **Sistema de PermissÃµes AvanÃ§ado**
+- PermissÃµes por usuÃ¡rio individual
+- Perfis prÃ©-definidos (Admin, TÃ©cnico, Atendente)
+- Auditoria completa de alteraÃ§Ãµes
 - Controle granular de recursos
 
-### ✅ **Dashboard e Relatórios**
-- Dashboard com métricas em tempo real
-- Relatórios de performance
-- Gráficos e estatísticas
-- Exportação de dados
+### âœ… **Dashboard e RelatÃ³rios**
+- Dashboard com mÃ©tricas em tempo real
+- RelatÃ³rios de performance
+- GrÃ¡ficos e estatÃ­sticas
+- ExportaÃ§Ã£o de dados
 
-### ✅ **Integrações**
-- WhatsApp para notificações
+### âœ… **IntegraÃ§Ãµes**
+- WhatsApp para notificaÃ§Ãµes
 - Sistema de templates para documentos
 - Upload de imagens e arquivos
-- Notificações em tempo real
+- NotificaÃ§Ãµes em tempo real
 
-## 🏗️ **Arquitetura**
+## ðŸ�—ï¸� **Arquitetura**
 
 ### **Backend (NestJS)**
 ```
 backend/
-├── migrations/           # Scripts SQL de migração
-├── seeds/               # Dados iniciais
-├── clientes/            # Gestão de clientes
-├── produtos/            # Gestão de produtos
-├── ordens/              # Ordens de serviço
-├── configuracoes/       # Configurações do módulo
-├── shared/              # Utilitários compartilhados
-│   ├── dto/            # Data Transfer Objects
-│   ├── guards/         # Guards de permissão
-│   ├── services/       # Serviços compartilhados
-│   └── interfaces/     # Interfaces TypeScript
-└── core/               # Configurações centrais
+â”œâ”€â”€ migrations/           # Scripts SQL de migraÃ§Ã£o
+â”œâ”€â”€ seeds/               # Dados iniciais
+â”œâ”€â”€ clientes/            # GestÃ£o de clientes
+â”œâ”€â”€ produtos/            # GestÃ£o de produtos
+â”œâ”€â”€ ordens/              # Ordens de serviÃ§o
+â”œâ”€â”€ configuracoes/       # ConfiguraÃ§Ãµes do mÃ³dulo
+â”œâ”€â”€ shared/              # UtilitÃ¡rios compartilhados
+â”‚   â”œâ”€â”€ dto/            # Data Transfer Objects
+â”‚   â”œâ”€â”€ guards/         # Guards de permissÃ£o
+â”‚   â”œâ”€â”€ services/       # ServiÃ§os compartilhados
+â”‚   â””â”€â”€ interfaces/     # Interfaces TypeScript
+â””â”€â”€ core/               # ConfiguraÃ§Ãµes centrais
 ```
 
 ### **Frontend (Next.js + React)**
 ```
 frontend/
-├── pages/              # Páginas do módulo
-│   ├── dashboard/     # Dashboard principal
-│   ├── ordens/        # Gestão de ordens
-│   ├── clientes/      # Gestão de clientes
-│   ├── produtos/      # Gestão de produtos
-│   └── configuracoes/ # Configurações
-├── components/         # Componentes React
-├── hooks/             # Hooks customizados
-├── services/          # Serviços de API
-└── types/             # Tipos TypeScript
+â”œâ”€â”€ pages/              # PÃ¡ginas do mÃ³dulo
+â”‚   â”œâ”€â”€ dashboard/     # Dashboard principal
+â”‚   â”œâ”€â”€ ordens/        # GestÃ£o de ordens
+â”‚   â”œâ”€â”€ clientes/      # GestÃ£o de clientes
+â”‚   â”œâ”€â”€ produtos/      # GestÃ£o de produtos
+â”‚   â””â”€â”€ configuracoes/ # ConfiguraÃ§Ãµes
+â”œâ”€â”€ components/         # Componentes React
+â”œâ”€â”€ hooks/             # Hooks customizados
+â”œâ”€â”€ services/          # ServiÃ§os de API
+â””â”€â”€ types/             # Tipos TypeScript
 ```
 
-## 📦 **Instalação**
+## ðŸ“¦ **InstalaÃ§Ã£o**
 
-### **Pré-requisitos**
+### **PrÃ©-requisitos**
 - PostgreSQL 15+
 - Node.js 18+
 - Sistema multitenant configurado
 
-### **Passos de Instalação**
+### **Passos de InstalaÃ§Ã£o**
 
 Se a instalacao for feita pelo menu `Configuracoes > Sistema > Modulos`, nao compacte o repositorio inteiro manualmente.
 
-Use o pacote oficial:
+Use o script oficial do compilador:
 
 ```powershell
 .\scripts\gerar-zip-instalador.ps1
 ```
 
-Depois envie `dist\ordem_servico-installer-<versao>.zip`.
+**Nota Arquitetural Automática:** O script `gerar-zip-instalador.ps1` invoca o comando `npx prisma generate` automaticamente antes de empacotar. O Prisma cria uma pasta isolada (`backend/generated`) para o módulo funcionar de forma independente. O empacotador preserva arquivos nativos `.wasm` perfeitamente compatíveis com o instalador principal atualizado do Pluggor.
 
-O instalador interno rejeita arquivos shell como `install.sh`, entao o ZIP precisa conter apenas `module.json` na raiz e os diretorios `backend/` e `frontend/` com arquivos permitidos.
+Depois envie o pacote `dist\ordem_servico-installer-<versao>.zip`.
 
 Para modulos baseados neste, leia tambem `DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_NESTE.md`.
 
@@ -109,16 +109,16 @@ Para modulos baseados neste, leia tambem `DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_N
    cp -r module-os/frontend/* apps/frontend/src/app/modules/ordem_servico/
    ```
 
-2. **Executar migração do banco**
+2. **Executar migraÃ§Ã£o do banco**
    ```bash
    # Conectar ao banco PostgreSQL
    psql "postgresql://user:password@localhost:5432/database"
 
-   # Executar o script de migração
+   # Executar o script de migraÃ§Ã£o
    \i module-os/migration_complete.sql
    ```
 
-3. **Registrar módulo no sistema**
+3. **Registrar mÃ³dulo no sistema**
    ```javascript
    // Executar no backend
    const { PrismaClient } = require('@prisma/client');
@@ -127,7 +127,7 @@ Para modulos baseados neste, leia tambem `DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_N
    await prisma.module.create({
      data: {
        slug: 'ordem_servico',
-       name: 'Ordem de Serviços',
+       name: 'Ordem de ServiÃ§os',
        version: '3.1.0',
        status: 'active',
        hasBackend: true,
@@ -141,55 +141,55 @@ Para modulos baseados neste, leia tambem `DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_N
    cd apps/backend
    npm run start:dev
    
-## ?? **Desenvolvimento por Intelig�ncia Artificial (Avan�ado)**
+## ?? **Desenvolvimento por Inteligência Artificial (Avançado)**
 
-O sistema dita regras estruturais inegoci�veis. Para orientar qualquer IA (Cursor, ChatGPT, Claude) na cria��o de **novos m�dulos** a partir desta base ou desenvolver novos fluxos sem quebrar o m�dulo host, **forne�a a ela nosso prompt mestre**:
+O sistema dita regras estruturais inegociáveis. Para orientar qualquer IA (Cursor, ChatGPT, Claude) na criação de **novos módulos** a partir desta base ou desenvolver novos fluxos sem quebrar o módulo host, **forneça a ela nosso prompt mestre**:
 
 ?? [**Prompt Ouro para IA (IA_PROMPT_CRIACAO_MODULO.md)**](./DOCS/IA_PROMPT_CRIACAO_MODULO.md)
 
-Leia tamb�m as documenta��es de arquitetura na pasta DOCS/:
-- [EMPACOTAMENTO_INSTALADOR_INTERNO.md](./DOCS/EMPACOTAMENTO_INSTALADOR_INTERNO.md) - Regras de gera��o de ZIP de deploy.
-- [GUIA_ADAPTACAO_MODULOS_BASEADOS_NESTE.md](./DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_NESTE.md) - Regras vitais sobre Controllers e Notifica��es centrais.
-- [NOTIFICATIONS_GUIDE.md](./DOCS/NOTIFICATIONS_GUIDE.md) - Documenta��o de alertas cronometrados (End Users).
-- [TUTORIAL_EDICAO_MODULO.md](./DOCS/TUTORIAL_EDICAO_MODULO.md) - Tutorial leg�vel cl�ssico de fork manual do M�dulo de Ordem de Servi�o.
+Leia também as documentações de arquitetura na pasta DOCS/:
+- [EMPACOTAMENTO_INSTALADOR_INTERNO.md](./DOCS/EMPACOTAMENTO_INSTALADOR_INTERNO.md) - Regras de geração de ZIP de deploy.
+- [GUIA_ADAPTACAO_MODULOS_BASEADOS_NESTE.md](./DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_NESTE.md) - Regras vitais sobre Controllers e Notificações centrais.
+- [NOTIFICATIONS_GUIDE.md](./DOCS/NOTIFICATIONS_GUIDE.md) - Documentação de alertas cronometrados (End Users).
+- [TUTORIAL_EDICAO_MODULO.md](./DOCS/TUTORIAL_EDICAO_MODULO.md) - Tutorial legível clássico de fork manual do Módulo de Ordem de Serviço.
 
-## 🔧 **Configuração**
+## ðŸ”§ **ConfiguraÃ§Ã£o**
 
-### **Variáveis de Ambiente**
+### **VariÃ¡veis de Ambiente**
 ```env
-# Configurações específicas do módulo
+# ConfiguraÃ§Ãµes especÃ­ficas do mÃ³dulo
 MODULE_OS_ENABLED=true
 MODULE_OS_MAX_FILE_SIZE=10485760
 MODULE_OS_ALLOWED_EXTENSIONS=jpg,jpeg,png,pdf
 ```
 
-### **Permissões Padrão**
+### **PermissÃµes PadrÃ£o**
 
-O módulo cria automaticamente três perfis de permissão:
+O mÃ³dulo cria automaticamente trÃªs perfis de permissÃ£o:
 
 - **Admin**: Acesso completo a todas as funcionalidades
-- **Técnico**: Acesso a ordens, clientes e produtos (somente leitura)
-- **Atendente**: Acesso básico a ordens e clientes
+- **TÃ©cnico**: Acesso a ordens, clientes e produtos (somente leitura)
+- **Atendente**: Acesso bÃ¡sico a ordens e clientes
 
-## 📊 **Estrutura do Banco de Dados**
+## ðŸ“Š **Estrutura do Banco de Dados**
 
 ### **Tabelas Principais**
-- `mod_ordem_servico_ordens` - Ordens de serviço
+- `mod_ordem_servico_ordens` - Ordens de serviÃ§o
 - `mod_ordem_servico_clients` - Clientes
-- `mod_ordem_servico_products` - Produtos/Serviços
-- `mod_ordem_servico_historico` - Histórico de alterações
-- `mod_ordem_servico_user_roles` - Papéis dos usuários
-- `mod_ordem_servico_user_permissions` - Permissões individuais
-- `mod_ordem_servico_profile_permissions` - Permissões por perfil
+- `mod_ordem_servico_products` - Produtos/ServiÃ§os
+- `mod_ordem_servico_historico` - HistÃ³rico de alteraÃ§Ãµes
+- `mod_ordem_servico_user_roles` - PapÃ©is dos usuÃ¡rios
+- `mod_ordem_servico_user_permissions` - PermissÃµes individuais
+- `mod_ordem_servico_profile_permissions` - PermissÃµes por perfil
 
-### **Índices Otimizados**
-- Índices por tenant em todas as tabelas
-- Índices compostos para consultas frequentes
-- Índices únicos para integridade de dados
+### **Ã�ndices Otimizados**
+- Ã�ndices por tenant em todas as tabelas
+- Ã�ndices compostos para consultas frequentes
+- Ã�ndices Ãºnicos para integridade de dados
 
-## 🔐 **Sistema de Permissões**
+## ðŸ”� **Sistema de PermissÃµes**
 
-### **Recursos Disponíveis**
+### **Recursos DisponÃ­veis**
 - `dashboard_view` - Visualizar dashboard
 - `orders_view` - Visualizar ordens
 - `orders_create` - Criar ordens
@@ -203,68 +203,68 @@ O módulo cria automaticamente três perfis de permissão:
 - `products_create` - Criar produtos
 - `products_edit` - Editar produtos
 - `products_delete` - Excluir produtos
-- `config_view` - Visualizar configurações
-- `config_users` - Gerenciar usuários
-- `config_permissions` - Gerenciar permissões
-- `config_system` - Configurações do sistema
+- `config_view` - Visualizar configuraÃ§Ãµes
+- `config_users` - Gerenciar usuÃ¡rios
+- `config_permissions` - Gerenciar permissÃµes
+- `config_system` - ConfiguraÃ§Ãµes do sistema
 
-## 📈 **Monitoramento**
+## ðŸ“ˆ **Monitoramento**
 
-### **Logs Disponíveis**
-- Logs de carregamento do módulo
-- Logs de operações do banco
-- Logs de permissões e auditoria
-- Logs de integrações (WhatsApp)
+### **Logs DisponÃ­veis**
+- Logs de carregamento do mÃ³dulo
+- Logs de operaÃ§Ãµes do banco
+- Logs de permissÃµes e auditoria
+- Logs de integraÃ§Ãµes (WhatsApp)
 
-### **Métricas**
-- Número de ordens ativas
-- Tempo médio de resolução
-- Taxa de satisfação do cliente
+### **MÃ©tricas**
+- NÃºmero de ordens ativas
+- Tempo mÃ©dio de resoluÃ§Ã£o
+- Taxa de satisfaÃ§Ã£o do cliente
 - Performance das consultas
 
-## 🐛 **Troubleshooting**
+## ðŸ�› **Troubleshooting**
 
-### **Módulo não carrega**
-1. Verificar se o módulo está registrado no banco
+### **MÃ³dulo nÃ£o carrega**
+1. Verificar se o mÃ³dulo estÃ¡ registrado no banco
 2. Verificar logs em `module_loading_debug.log`
 3. Reiniciar o backend
 
-### **Permissões não funcionam**
-1. Verificar se as tabelas de permissão foram criadas
+### **PermissÃµes nÃ£o funcionam**
+1. Verificar se as tabelas de permissÃ£o foram criadas
 2. Executar seeds novamente
-3. Verificar configuração do tenant
+3. Verificar configuraÃ§Ã£o do tenant
 
 ### **Erros de banco de dados**
-1. Verificar conexão com PostgreSQL
-2. Executar migração novamente
+1. Verificar conexÃ£o com PostgreSQL
+2. Executar migraÃ§Ã£o novamente
 3. Verificar logs do banco
 
-## 📝 **Logs Importantes**
+## ðŸ“� **Logs Importantes**
 
 ```
-✅ Módulo ordem_servico carregado com sucesso!
-✅ OrdensService executando queries no banco de dados
-🎯 [Controller] INÍCIO - Buscando ordens
-✅ Resultado retornado com sucesso
+âœ… MÃ³dulo ordem_servico carregado com sucesso!
+âœ… OrdensService executando queries no banco de dados
+ðŸŽ¯ [Controller] INÃ�CIO - Buscando ordens
+âœ… Resultado retornado com sucesso
 ```
 
-## 🤝 **Contribuição**
+## ðŸ¤� **ContribuiÃ§Ã£o**
 
-Para contribuir com o desenvolvimento do módulo:
+Para contribuir com o desenvolvimento do mÃ³dulo:
 
-1. Faça fork do repositório
+1. FaÃ§a fork do repositÃ³rio
 2. Crie uma branch para sua feature
-3. Commit suas alterações
+3. Commit suas alteraÃ§Ãµes
 4. Push para a branch
 5. Abra um Pull Request
 
-## 📄 **Licença**
+## ðŸ“„ **LicenÃ§a**
 
-Este módulo é parte do sistema multitenant e segue a mesma licença AGPL-3.0.
+Este mÃ³dulo Ã© parte do sistema multitenant e segue a mesma licenÃ§a AGPL-3.0.
 
-## 📞 **Suporte**
+## ðŸ“ž **Suporte**
 
-Para suporte técnico, entre em contato com a equipe de desenvolvimento ou abra uma issue no repositório.
+Para suporte tÃ©cnico, entre em contato com a equipe de desenvolvimento ou abra uma issue no repositÃ³rio.
 
 
 
