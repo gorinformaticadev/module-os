@@ -27,14 +27,6 @@ export const ModuleMenu = [
                 order: 2,
             },
             {
-                id: 'ordem_servico-clientes',
-                name: 'Clientes',
-                href: '/modules/ordem_servico/pages/clientes',
-                icon: 'Users',
-                placement: 'sidebar',
-                order: 3,
-            },
-            {
                 id: 'ordem_servico-produtos',
                 name: 'Produtos / Servicos',
                 href: '/modules/ordem_servico/pages/produtos',

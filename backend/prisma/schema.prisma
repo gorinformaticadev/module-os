@@ -50,7 +50,7 @@ model mod_ordem_servico_clients {
   @@index([tenantId])
   @@index([isActive])
   @@unique([tenantId, id])
-  @@map("mod_ordem_servico_clients")
+  @@map("mod_clientes")
 }
 
 model mod_ordem_servico_products {

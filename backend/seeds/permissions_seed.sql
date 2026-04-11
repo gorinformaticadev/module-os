@@ -35,9 +35,9 @@ ON CONFLICT (tenant_id, permission_id, profile) DO NOTHING;
 
 INSERT INTO mod_ordem_servico_profile_permissions (tenant_id, permission_id, profile, allowed)
 SELECT t.id, unnest(ARRAY[
-    'dashboard_view', 'dashboard_export', 'orders_view', 'orders_create', 'orders_edit', 
-    'orders_delete', 'orders_assign', 'clients_view', 'clients_create', 'clients_edit', 
-    'clients_delete', 'products_view', 'products_create', 'products_edit', 'products_delete',
+    'dashboard_view', 'dashboard_export', 'orders_view', 'orders_create', 'orders_edit',
+    'orders_delete', 'orders_assign', 
+    'products_view', 'products_create', 'products_edit', 'products_delete',
     'config_view', 'config_users', 'config_permissions', 'config_system'
 ]), 'admin', true
 FROM tenants t ON CONFLICT (tenant_id, permission_id, profile) DO NOTHING;

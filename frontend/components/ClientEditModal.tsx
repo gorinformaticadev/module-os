@@ -168,7 +168,7 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
 
         try {
             console.log('📡 Fazendo requisição para endpoint interno...');
-            const response = await api.get(`/api/ordem_servico/clientes/cep/${cleanCEP}`);
+            const response = await api.get(`/api/clientes/cep/${cleanCEP}`);
             const data = response.data;
             
             console.log('📋 Resposta da API:', data);
@@ -325,7 +325,7 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
             const formDataUpload = new FormData();
             formDataUpload.append('file', blob, 'avatar.jpg');
 
-            const { data } = await api.post('/api/ordem_servico/clientes/upload', formDataUpload, {
+            const { data } = await api.post('/api/clientes/upload', formDataUpload, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -382,7 +382,7 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
 
         try {
             setSaving(true);
-            const response = await api.put(`/api/ordem_servico/clientes/${client.id}`, formData);
+            const response = await api.put(`/api/clientes/${client.id}`, formData);
             toast({ title: 'Cliente atualizado com sucesso!' });
             
             // Chama callback se fornecido

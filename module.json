@@ -9,7 +9,7 @@
   "enabled": true,
   "hasBackend": true,
   "hasFrontend": true,
-  "dependencies": null,
+  "dependencies": ["clientes"],
   "npmDependencies": {
     "backend": {
       "@prisma/adapter-pg": "6.19.2",
@@ -36,15 +36,6 @@
       "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
       "placement": "sidebar",
       "order": 2
-    },
-    {
-      "id": "ordem_servico-clientes",
-      "label": "Clientes",
-      "route": "/modules/ordem_servico/pages/clientes",
-      "icon": "Users",
-      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
-      "placement": "sidebar",
-      "order": 3
     },
     {
       "id": "ordem_servico-produtos",
@@ -83,7 +74,7 @@
         },
         {
           "label": "Menus",
-          "value": "5"
+          "value": "4"
         },
         {
           "label": "Entrada",
@@ -102,13 +93,6 @@
           "id": "ordem_servico-ordens",
           "label": "Ordens de Servico",
           "value": "/modules/ordem_servico/pages/ordens",
-          "column": "Atalhos",
-          "tone": "neutral"
-        },
-        {
-          "id": "ordem_servico-clientes",
-          "label": "Clientes",
-          "value": "/modules/ordem_servico/pages/clientes",
           "column": "Atalhos",
           "tone": "neutral"
         },

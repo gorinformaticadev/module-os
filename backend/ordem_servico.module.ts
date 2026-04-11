@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ClientesModule } from './clientes/clientes.module';
 import { ProdutosModule } from './produtos/produtos.module';
 import { OrdensModule } from './ordens/ordens.module';
 import { ConfiguracoesModule } from './configuracoes/configuracoes.module';
@@ -16,14 +15,12 @@ import { OrdemServicoNotificationsModule } from './notifications/notifications.m
         AuditModule,
         SharedModule,
         CoreModule,
-        ClientesModule,
         ProdutosModule,
         OrdensModule,
         ConfiguracoesModule,
         OrdemServicoNotificationsModule,
     ],
     exports: [
-        ClientesModule,
         ProdutosModule,
         OrdensModule,
         ConfiguracoesModule,
