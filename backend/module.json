@@ -60,7 +60,7 @@
       "label": "Configuracoes",
       "route": "/modules/ordem_servico/pages/configuracoes",
       "icon": "Settings",
-      "permission": "ordem_servico.config.admin",
+      "permission": "ordem_servico.config.view",
       "placement": "topbar",
       "order": 5
     }
@@ -73,6 +73,7 @@
       "description": "Resumo operacional do modulo de ordens de servico.",
       "route": "/modules/ordem_servico/pages/dashboard",
       "actionLabel": "Abrir dashboard",
+      "permission": "ordem_servico.dashboard.view",
       "kind": "summary",
       "size": "medium",
       "order": 1,

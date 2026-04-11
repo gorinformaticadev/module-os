@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class TiposEquipamentoService {
   // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
-  constructor(private readonly prisma: ModuleOsPrismaService) {}
+  constructor(
+    private readonly prisma: ModuleOsPrismaService,
+    private readonly requestSecurityContext: RequestSecurityContextService,
+  ) {}
 
   async findAll() {
     return this.prisma.mod_ordem_servico_tipos_equipamento.findMany({
@@ -40,7 +44,10 @@ export class TiposEquipamentoService {
     }
 
     return this.prisma.mod_ordem_servico_tipos_equipamento.create({
-      data: { nome: normalizedNome },
+      data: {
+        tenantId: this.getTenantIdOrThrow(),
+        nome: normalizedNome,
+      },
     });
   }
 
@@ -96,5 +103,13 @@ export class TiposEquipamentoService {
     });
 
     return { message: 'Tipo de equipamento excluido com sucesso' };
+  }
+
+  private getTenantIdOrThrow(): string {
+    const tenantId = this.requestSecurityContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID nao identificado no contexto atual.');
+    }
+    return tenantId;
   }
 }

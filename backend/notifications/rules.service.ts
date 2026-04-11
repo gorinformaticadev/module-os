@@ -1,13 +1,18 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 import { CreateNotificationRuleDto } from './dto/create-notification-rule.dto';
+import { Prisma } from '../generated/prisma-client';
 
 @Injectable()
 export class NotificationRuleService {
     // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
     private readonly logger = new Logger(NotificationRuleService.name);
 
-    constructor(private readonly modulePrisma: ModuleOsPrismaService) { }
+    constructor(
+        private readonly modulePrisma: ModuleOsPrismaService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
+    ) { }
 
     async findAll() {
         return this.modulePrisma.mod_ordem_servico_notif_rules.findMany({
@@ -32,13 +37,14 @@ export class NotificationRuleService {
 
         return this.modulePrisma.mod_ordem_servico_notif_rules.create({
             data: {
+                tenantId: this.getTenantIdOrThrow(),
                 title: data.title,
                 description: data.description,
                 enabled: data.enabled ?? true,
                 triggerType: data.trigger_type || 'EVENT',
-                triggerConfig: data.trigger_config || {},
+                triggerConfig: (data.trigger_config || {}) as unknown as Prisma.InputJsonValue,
                 channel: data.channel || 'SYSTEM',
-                recipients: data.recipients || [],
+                recipients: (data.recipients || []) as unknown as Prisma.InputJsonValue,
                 messageTemplate: data.message_template,
                 maxExecutions: data.max_executions ?? null,
                 expiresAt: this.normalizeDate(data.expires_at),
@@ -68,10 +74,10 @@ export class NotificationRuleService {
             payload.expiresAt = this.normalizeDate((data as any).expires_at ?? (data as any).expiresAt);
         }
         if ('trigger_config' in data || 'triggerConfig' in (data as any)) {
-            payload.triggerConfig = (data as any).trigger_config ?? (data as any).triggerConfig ?? {};
+            payload.triggerConfig = ((data as any).trigger_config ?? (data as any).triggerConfig ?? {}) as unknown as Prisma.InputJsonValue;
         }
         if ('recipients' in data) {
-            payload.recipients = data.recipients ?? [];
+            payload.recipients = (data.recipients ?? []) as unknown as Prisma.InputJsonValue;
         }
 
         await this.modulePrisma.mod_ordem_servico_notif_rules.updateMany({
@@ -97,5 +103,13 @@ export class NotificationRuleService {
 
         const parsed = value instanceof Date ? value : new Date(String(value));
         return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    private getTenantIdOrThrow(): string {
+        const tenantId = this.requestSecurityContext.getTenantId();
+        if (!tenantId) {
+            throw new NotFoundException('Tenant ID nao identificado no contexto atual.');
+        }
+        return tenantId;
     }
 }

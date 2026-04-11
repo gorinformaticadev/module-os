@@ -292,6 +292,7 @@ export class OrdensService {
 
         const ordem = await this.modulePrisma.mod_ordem_servico_ordens.create({
             data: {
+                tenantId: actor.tenantId as string,
                 numero,
                 clienteId: createDto.cliente_id,
                 tipoServico: createDto.tipo_servico,
@@ -736,6 +737,7 @@ export class OrdensService {
 
         await this.modulePrisma.mod_ordem_servico_pagamentos.createMany({
             data: retiradaDTO.pagamentos.map((pagamento) => ({
+                tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,
                 formaPagamento: pagamento.forma_pagamento,
                 valor: pagamento.valor,
@@ -818,6 +820,7 @@ export class OrdensService {
 
         const alerta = await this.modulePrisma.mod_ordem_servico_alertas_abandono.create({
             data: {
+                tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,
                 numeroAlerta: alertaDTO.numero_alerta,
                 dataEnvio: new Date(alertaDTO.data_envio),
@@ -863,6 +866,7 @@ export class OrdensService {
 
         return this.modulePrisma.mod_ordem_servico_anexos_abandono.create({
             data: {
+                tenantId: actor.tenantId as string,
                 alertaId,
                 nomeArquivo: anexoDTO.nome_arquivo,
                 tipoArquivo: anexoDTO.tipo_arquivo || 'application/octet-stream',
@@ -1041,6 +1045,7 @@ export class OrdensService {
         const actor = this.getActorOrThrow();
         await this.modulePrisma.mod_ordem_servico_historico.create({
             data: {
+                tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,
                 usuarioId: actor.id as string,
                 acao,
@@ -1085,6 +1090,7 @@ export class OrdensService {
         const actor = this.getActorOrThrow();
         await this.modulePrisma.mod_ordem_servico_status_historico.create({
             data: {
+                tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,
                 statusAnterior,
                 statusNovo,

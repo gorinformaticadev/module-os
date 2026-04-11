@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
@@ -6,7 +7,10 @@ export class NotificationHistoryService {
     // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
     private readonly logger = new Logger(NotificationHistoryService.name);
 
-    constructor(private readonly modulePrisma: ModuleOsPrismaService) { }
+    constructor(
+        private readonly modulePrisma: ModuleOsPrismaService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
+    ) { }
 
     async findAll(filters?: any) {
         const { ruleId, ordemServicoId, status } = filters || {};
@@ -35,6 +39,7 @@ export class NotificationHistoryService {
         try {
             await this.modulePrisma.mod_ordem_servico_notif_history.create({
                 data: {
+                    tenantId: this.getTenantIdOrThrow(),
                     ruleId: data.ruleId,
                     ordemServicoId: data.ordemServicoId || null,
                     channel: data.channel,
@@ -48,5 +53,13 @@ export class NotificationHistoryService {
         } catch (error) {
             this.logger.error('Erro ao logar historico de notificacao:', error);
         }
+    }
+
+    private getTenantIdOrThrow(): string {
+        const tenantId = this.requestSecurityContext.getTenantId();
+        if (!tenantId) {
+            throw new Error('Tenant ID nao identificado no contexto atual.');
+        }
+        return tenantId;
     }
 }

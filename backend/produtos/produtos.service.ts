@@ -61,8 +61,10 @@ export class ProdutosService {
         }
 
         try {
+            const actor = this.getActorContext();
             const createdProduct = await this.prisma.mod_ordem_servico_products.create({
                 data: {
+                    tenantId: actor.tenantId,
                     code: data.code,
                     name: data.name,
                     price: data.price,
@@ -73,8 +75,6 @@ export class ProdutosService {
                     isActive: data.is_active ?? true,
                 },
             });
-
-            const actor = this.getActorContext();
 
             await this.auditService.log({
                 action: 'CREATE_PRODUCT',

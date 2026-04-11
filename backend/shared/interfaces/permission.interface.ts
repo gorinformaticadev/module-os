@@ -56,7 +56,7 @@ export interface PermissionAudit {
 export interface IPermissionService {
   getUserPermissions(userId: string): Promise<UserPermission[]>;
   updateUserPermissions(userId: string, permissions: PermissionUpdate[], changedBy: string): Promise<void>;
-  hasPermission(userId: string, resource: string, action: string): Promise<boolean>;
+  hasPermission(userId: string, resource: string, action: string, requesterRole?: string | null): Promise<boolean>;
   getAvailablePermissions(): AvailablePermission[];
   getUsersWithPermissions(): Promise<UserWithPermissions[]>;
   getPermissionAudit(userId?: string, startDate?: Date, endDate?: Date): Promise<PermissionAudit[]>;

@@ -7,6 +7,7 @@ import { PermissionGuard } from '../shared/guards/permission.guard';
 import { RequireConfigPermission } from '../shared/decorators/require-permission.decorator';
 import { Permissions } from '../shared/decorators/permissions.decorator';
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
 
 @Controller('ordem_servico/config')
 @Permissions('ordem_servico.config')
@@ -17,7 +18,16 @@ export class OrdemServicoConfigController {
         private readonly prisma: PrismaService,
         private readonly modulePrisma: ModuleOsPrismaService,
         private readonly cronService: OrdemServicoCronService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
     ) { }
+
+    private getTenantIdOrThrow(): string {
+        const tenantId = this.requestSecurityContext.getTenantId();
+        if (!tenantId) {
+            throw new Error('TenantId nao encontrado no contexto da requisicao.');
+        }
+        return tenantId;
+    }
 
     @Get('notifications')
     @RequireConfigPermission('manage_notifications')
@@ -30,8 +40,10 @@ export class OrdemServicoConfigController {
     @Post('notifications')
     @RequireConfigPermission('manage_notifications')
     async createNotificationConfig(@Body() body: any) {
+        const tenantId = this.getTenantIdOrThrow();
         const result = await this.modulePrisma.mod_ordem_servico_notification_schedules.create({
             data: {
+                tenantId,
                 title: body.title,
                 content: body.content,
                 audience: body.audience,
@@ -55,8 +67,10 @@ export class OrdemServicoConfigController {
     @Post('tipos-servico')
     @RequireConfigPermission('edit')
     async createTipoServico(@Body() body: { nome: string }) {
+        const tenantId = this.getTenantIdOrThrow();
         return this.modulePrisma.mod_ordem_servico_tipos_servico.create({
             data: {
+                tenantId,
                 nome: body.nome,
                 isDefault: false,
             },
@@ -102,8 +116,9 @@ export class OrdemServicoConfigController {
     @Post('tipos-equipamento')
     @RequireConfigPermission('edit')
     async createTipoEquipamento(@Body() body: { nome: string }) {
+        const tenantId = this.getTenantIdOrThrow();
         return this.modulePrisma.mod_ordem_servico_tipos_equipamento.create({
-            data: { nome: body.nome },
+            data: { tenantId, nome: body.nome },
         });
     }
 
@@ -196,6 +211,7 @@ export class OrdemServicoConfigController {
         @Param('id') userId: string,
         @Body() body: { is_technician: boolean },
     ) {
+        const tenantId = this.getTenantIdOrThrow();
         const existing = await this.modulePrisma.mod_ordem_servico_user_roles.findFirst({
             where: { userId },
         });
@@ -211,6 +227,7 @@ export class OrdemServicoConfigController {
         } else {
             await this.modulePrisma.mod_ordem_servico_user_roles.create({
                 data: {
+                    tenantId,
                     userId,
                     isTechnician: body.is_technician,
                     isAttendant: true,

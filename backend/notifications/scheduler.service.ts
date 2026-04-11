@@ -19,6 +19,32 @@ type RuntimeRule = {
     maxExecutions?: number | null;
 };
 
+type RuleTriggerConfig = {
+    reference?: string;
+    condition?: string;
+    frequency?: {
+        days?: number;
+        hours?: number;
+        minutes?: number;
+        seconds?: number;
+    };
+    silence_window?: {
+        start?: string;
+        end?: string;
+    };
+    offset_duration?: {
+        value?: number;
+        unit?: string;
+        days?: number;
+        hours?: number;
+        minutes?: number;
+        seconds?: number;
+    };
+    value?: number;
+    unit?: string;
+    [key: string]: unknown;
+};
+
 @Injectable()
 export class NotificationSchedulerService implements OnModuleInit {
     private readonly logger = new Logger(NotificationSchedulerService.name);
@@ -106,7 +132,7 @@ export class NotificationSchedulerService implements OnModuleInit {
     }
 
     private async processOffsetRule(rule: RuntimeRule) {
-        const config = this.normalizeJson(rule.triggerConfig, {});
+        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {});
 
         if (config.reference === 'BEFORE_DEADLINE' || config.reference === 'AFTER_DEADLINE') {
             await this.processRelativeDeadline(rule, config);
@@ -151,7 +177,7 @@ export class NotificationSchedulerService implements OnModuleInit {
     }
 
     private async processConditionRule(rule: RuntimeRule) {
-        const config = this.normalizeJson(rule.triggerConfig, {});
+        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {});
 
         if (config.condition === 'OVERDUE') {
             await this.processOverdueOS(rule, config);
@@ -204,7 +230,7 @@ export class NotificationSchedulerService implements OnModuleInit {
     }
 
     private async dispatchNotification(rule: RuntimeRule, ordem: any, fingerprint: string): Promise<boolean> {
-        const config = this.normalizeJson(rule.triggerConfig, {});
+        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {});
 
         if (this.isInSilenceWindow(config.silence_window)) {
             this.logger.log(`Regra [${rule.title}] silenciada pela Janela de Silencio`);

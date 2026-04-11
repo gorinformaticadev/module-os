@@ -128,6 +128,7 @@ export class PermissionService implements IPermissionService {
         } else {
           await this.modulePrisma.mod_ordem_servico_user_permissions.create({
             data: {
+              tenantId,
               userId,
               resource: permission.resource,
               action: permission.action,
@@ -155,8 +156,25 @@ export class PermissionService implements IPermissionService {
     }
   }
 
-  async hasPermission(userId: string, resource: string, action: string): Promise<boolean> {
+  async hasPermission(
+    userId: string,
+    resource: string,
+    action: string,
+    requesterRole?: string | null,
+  ): Promise<boolean> {
     try {
+      // Verificar role ANTES de qualquer consulta ao banco
+      // ADMIN e SUPER_ADMIN têm acesso total, independente do estado do módulo
+      const normalizedRequesterRole = this.normalizeRole(requesterRole);
+      if (normalizedRequesterRole === 'ADMIN' || normalizedRequesterRole === 'SUPER_ADMIN') {
+        return true;
+      }
+
+      const moduleEnabled = await this.isModuleEnabled();
+      if (!moduleEnabled) {
+        return false;
+      }
+
       const user = await this.getTenantUserOrThrow(userId, {
         id: true,
         role: true,
@@ -164,7 +182,8 @@ export class PermissionService implements IPermissionService {
         email: true,
       });
 
-      if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+      const normalizedUserRole = this.normalizeRole(user.role);
+      if (normalizedUserRole === 'ADMIN' || normalizedUserRole === 'SUPER_ADMIN') {
         return true;
       }
 
@@ -325,6 +344,7 @@ export class PermissionService implements IPermissionService {
     try {
       await this.modulePrisma.mod_ordem_servico_permission_audit.create({
         data: {
+          tenantId: this.getTenantIdOrThrow(),
           userId,
           resource,
           action,
@@ -347,6 +367,7 @@ export class PermissionService implements IPermissionService {
     try {
       await this.modulePrisma.mod_ordem_servico_permission_audit.create({
         data: {
+          tenantId: this.getTenantIdOrThrow(),
           userId,
           resource,
           action,
@@ -367,6 +388,36 @@ export class PermissionService implements IPermissionService {
       throw new BadRequestException('Operacao exige tenant valido');
     }
     return tenantId;
+  }
+
+  private async isModuleEnabled(): Promise<boolean> {
+    this.getTenantIdOrThrow();
+
+    try {
+      const config = await this.modulePrisma.mod_ordem_servico_configs.findFirst({
+        where: { key: 'module_enabled' },
+        select: { value: true },
+      });
+
+      if (!config?.value) {
+        return false;
+      }
+
+      const normalizedValue = String(config.value).trim().toLowerCase();
+      return ['1', 'true', 'yes', 'on', 'enabled'].includes(normalizedValue);
+    } catch (error) {
+      this.logger.error('Erro ao verificar se o modulo ordem_servico esta habilitado para o tenant', error as Error);
+      return false;
+    }
+  }
+
+  private normalizeRole(role: unknown): string | null {
+    if (typeof role !== 'string') {
+      return null;
+    }
+
+    const normalizedRole = role.trim().toUpperCase();
+    return normalizedRole.length > 0 ? normalizedRole : null;
   }
 
   private buildProfilePermissionKey(resource: string, action: string): string {

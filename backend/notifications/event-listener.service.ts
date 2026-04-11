@@ -5,6 +5,11 @@ import { RequestSecurityContextService, type SecurityActor } from '@common/servi
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 import { NotificationDispatcherService } from './dispatcher.service';
 
+type EventTriggerConfig = {
+    events?: string[];
+    [key: string]: unknown;
+};
+
 @Injectable()
 export class NotificationEventListenerService {
     private readonly logger = new Logger(NotificationEventListenerService.name);
@@ -38,7 +43,7 @@ export class NotificationEventListenerService {
             });
 
             for (const rule of rules) {
-                const config = this.normalizeJson(rule.triggerConfig, {});
+                const config = this.normalizeJson<EventTriggerConfig>(rule.triggerConfig, {});
                 if (!Array.isArray(config.events) || !config.events.includes(eventType)) {
                     continue;
                 }

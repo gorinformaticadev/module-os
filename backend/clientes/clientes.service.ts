@@ -57,8 +57,10 @@ export class ClientesService {
         }
 
         try {
+            const actor = this.getActorContext();
             const createdClient = await this.prisma.mod_ordem_servico_clients.create({
                 data: {
+                    tenantId: actor.tenantId,
                     name: data.name,
                     document: data.document || null,
                     phonePrimary: data.phone_primary,
@@ -77,8 +79,6 @@ export class ClientesService {
                     email: data.email || null,
                 },
             });
-
-            const actor = this.getActorContext();
 
             await this.auditService.log({
                 action: 'CREATE_CLIENT',

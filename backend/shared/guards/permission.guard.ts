@@ -31,6 +31,7 @@ export class PermissionGuard implements CanActivate {
         user.id,
         requiredPermission.resource,
         requiredPermission.action,
+        user.role,
       );
 
       if (!hasPermission) {

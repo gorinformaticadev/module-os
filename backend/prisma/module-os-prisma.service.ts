@@ -72,7 +72,7 @@ export class ModuleOsPrismaService extends PrismaClient implements OnModuleInit,
               throw new Error(`Contexto de tenant ausente para ${model}.${operation}`);
             }
 
-            const nextArgs = args ?? {};
+            const nextArgs = { ...(args ?? {}) } as any;
 
             if (READ_OPERATIONS.has(operation) || operation === 'updateMany' || operation === 'deleteMany') {
               nextArgs.where = ModuleOsPrismaService.mergeTenantScope(nextArgs.where, tenantId);

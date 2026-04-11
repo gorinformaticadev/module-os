@@ -40,8 +40,13 @@ export class TemplateService {
     async create(data: any) {
         try {
             const actor = this.requestSecurityContext.getActor();
+            const tenantId = actor?.tenantId || this.requestSecurityContext.getTenantId();
+            if (!tenantId) {
+                throw new Error('Tenant ID nao identificado no contexto atual.');
+            }
             const created = await this.prisma.mod_ordem_servico_templates.create({
                 data: {
+                    tenantId,
                     name: data.name,
                     content: data.content,
                     type: data.type || 'GENERAL',

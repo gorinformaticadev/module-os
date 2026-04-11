@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 
 @Injectable()
 export class TiposServicoService {
   // tenantId e aplicado pelo ALS + ModuleOsPrismaService.
-  constructor(private readonly prisma: ModuleOsPrismaService) {}
+  constructor(
+    private readonly prisma: ModuleOsPrismaService,
+    private readonly requestSecurityContext: RequestSecurityContextService,
+  ) {}
 
   async findAll() {
     return this.prisma.mod_ordem_servico_tipos_servico.findMany({
@@ -41,6 +45,7 @@ export class TiposServicoService {
 
     return this.prisma.mod_ordem_servico_tipos_servico.create({
       data: {
+        tenantId: this.getTenantIdOrThrow(),
         nome: normalizedNome,
         isDefault: false,
       },
@@ -103,5 +108,13 @@ export class TiposServicoService {
     });
 
     return { message: 'Tipo de servico excluido com sucesso' };
+  }
+
+  private getTenantIdOrThrow(): string {
+    const tenantId = this.requestSecurityContext.getTenantId();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID nao identificado no contexto atual.');
+    }
+    return tenantId;
   }
 }

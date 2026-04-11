@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@core/prisma/prisma.service';
+import { RequestSecurityContextService } from '@common/services/request-security-context.service';
 import { OrdemServicoCronService } from '../core/ordem-servico-cron.service';
 import { AiService } from '../shared/services/ai.service';
 import { AVAILABLE_PERMISSIONS } from '../shared/constants/available-permissions';
@@ -20,6 +21,7 @@ export class ConfiguracoesService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly modulePrisma: ModuleOsPrismaService,
+        private readonly requestSecurityContext: RequestSecurityContextService,
         private readonly aiService: AiService,
         private readonly cronService: OrdemServicoCronService,
     ) { }
@@ -155,6 +157,7 @@ export class ConfiguracoesService {
 
     async updateProfilePermissions(permissions: any) {
         try {
+            const tenantId = this.getTenantIdOrThrow();
             await this.modulePrisma.mod_ordem_servico_profile_permissions.deleteMany();
             const rows = [];
 
@@ -162,6 +165,7 @@ export class ConfiguracoesService {
                 const normalizedPermissionId = this.normalizePermissionId(permissionId);
                 for (const [profileName, allowed] of Object.entries(profiles as Record<string, boolean>)) {
                     rows.push({
+                        tenantId,
                         profile: profileName,
                         permissionId: normalizedPermissionId,
                         allowed,
@@ -195,8 +199,10 @@ export class ConfiguracoesService {
 
     async createNotification(data: any) {
         try {
+            const tenantId = this.getTenantIdOrThrow();
             const result = await this.modulePrisma.mod_ordem_servico_notification_schedules.create({
                 data: {
+                    tenantId,
                     title: data.title,
                     content: data.content,
                     audience: data.audience || 'all',
@@ -330,6 +336,7 @@ export class ConfiguracoesService {
     }
 
     private async upsertConfigValue(key: string, value: any) {
+        const tenantId = this.getTenantIdOrThrow();
         const configValue = typeof value === 'string' ? value : JSON.stringify(value);
 
         const updateResult = await this.modulePrisma.mod_ordem_servico_configs.updateMany({
@@ -343,10 +350,19 @@ export class ConfiguracoesService {
         if (updateResult.count === 0) {
             await this.modulePrisma.mod_ordem_servico_configs.create({
                 data: {
+                    tenantId,
                     key,
                     value: configValue,
                 },
             });
         }
+    }
+
+    private getTenantIdOrThrow(): string {
+        const tenantId = this.requestSecurityContext.getTenantId();
+        if (!tenantId) {
+            throw new Error('Tenant ID nao identificado no contexto atual.');
+        }
+        return tenantId;
     }
 }

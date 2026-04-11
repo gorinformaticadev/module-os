@@ -111,6 +111,7 @@ export class PermissionController {
       req.user.id,
       resource,
       action,
+      req.user.role,
     );
 
     return { hasPermission };
