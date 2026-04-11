@@ -2,7 +2,7 @@ export const ModuleMenu = [
     {
         id: 'ordem_servico-main',
         name: 'Ordem de Servico',
-        icon: 'Wrench',
+        icon: 'FileCog',
         href: '/modules/ordem_servico/pages/dashboard',
         order: 10,
         group: 'ordem_servico',

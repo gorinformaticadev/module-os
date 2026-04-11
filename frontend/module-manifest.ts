@@ -2,7 +2,7 @@ export const MODULE_SLUG = 'ordem_servico';
 export const MODULE_NAME = 'Ordem de Servicos';
 export const MODULE_DISPLAY_NAME = 'Ordem de Servicos';
 export const MODULE_VERSION = '3.1.0';
-export const MODULE_ICON = 'Wrench';
+export const MODULE_ICON = 'FileCog';
 export const MODULE_ROUTE_ROOT = `/modules/${MODULE_SLUG}/pages`;
 
 export type ModuleMenuEntry = {

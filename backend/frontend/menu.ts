@@ -22,7 +22,7 @@ export const ModuleMenu = [
                 id: 'ordem_servico-ordens',
                 name: 'Ordens de Servico',
                 href: '/modules/ordem_servico/pages/ordens',
-                icon: 'ClipboardList',
+                icon: 'FileCog',
                 placement: 'sidebar',
                 order: 2,
             },

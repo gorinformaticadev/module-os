@@ -16,7 +16,7 @@
       "pg": "^8.19.0"
     }
   },
-  "icon": "Wrench",
+  "icon": "FileCog",
   "menus": [
     {
       "id": "ordem_servico-dashboard",
@@ -69,7 +69,7 @@
     {
       "id": "status",
       "name": "Operacao de OS",
-      "icon": "Wrench",
+      "icon": "FileCog",
       "description": "Resumo operacional do modulo de ordens de servico.",
       "route": "/modules/ordem_servico/pages/dashboard",
       "actionLabel": "Abrir dashboard",
