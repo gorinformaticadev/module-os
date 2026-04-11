@@ -17,7 +17,7 @@ $allowedExtensions = @(
     ".json", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
     ".css", ".scss", ".md", ".txt", ".sql", ".yml", ".yaml",
     ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico",
-    ".wasm", ".prisma"
+    ".wasm", ".prisma", ".node", ".d.ts"
 )
 
 function Resolve-OutputDirectory {
