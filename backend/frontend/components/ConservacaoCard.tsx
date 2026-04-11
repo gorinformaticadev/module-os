@@ -10,7 +10,31 @@ interface ConservacaoCardProps {
     onConservacaoCalculada?: (conservacao: ConservacaoCalculo) => void;
 }
 
-import api from '@/lib/api';
+// Cliente API
+const api = {
+    get: async (url: string) => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+        const getToken = () => {
+            if (typeof window === 'undefined') return '';
+            const cookies = document.cookie.split(';');
+            const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+            if (tokenCookie) return tokenCookie.split('=')[1];
+            const encrypted = sessionStorage.getItem("@App:token");
+            if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+            return '';
+        };
+        const token = getToken();
+        const response = await fetch(`${baseUrl}${url}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return { data: await response.json() };
+    }
+};
 
 function formatCurrency(value: number): string {
     return new Intl.NumberFormat('pt-BR', {

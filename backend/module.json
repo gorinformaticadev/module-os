@@ -16,14 +16,14 @@
       "pg": "^8.19.0"
     }
   },
-  "icon": "Wrench",
+  "icon": "FileCog",
   "menus": [
     {
       "id": "ordem_servico-dashboard",
       "label": "Dashboard",
       "route": "/modules/ordem_servico/pages/dashboard",
       "icon": "BarChart3",
-      "permission": "ordem_servico.dashboard.view",
+      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
       "placement": "sidebar",
       "isQuickAction": true,
       "order": 1
@@ -33,7 +33,7 @@
       "label": "Ordens de Servico",
       "route": "/modules/ordem_servico/pages/ordens",
       "icon": "ClipboardList",
-      "permission": "ordem_servico.orders.view",
+      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
       "placement": "sidebar",
       "order": 2
     },
@@ -42,7 +42,7 @@
       "label": "Clientes",
       "route": "/modules/ordem_servico/pages/clientes",
       "icon": "Users",
-      "permission": "ordem_servico.clients.view",
+      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
       "placement": "sidebar",
       "order": 3
     },
@@ -51,7 +51,7 @@
       "label": "Produtos / Servicos",
       "route": "/modules/ordem_servico/pages/produtos",
       "icon": "Package",
-      "permission": "ordem_servico.products.view",
+      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
       "placement": "sidebar",
       "order": 4
     },
@@ -60,7 +60,7 @@
       "label": "Configuracoes",
       "route": "/modules/ordem_servico/pages/configuracoes",
       "icon": "Settings",
-      "permission": "ordem_servico.config.view",
+      "roles": ["SUPER_ADMIN", "ADMIN"],
       "placement": "topbar",
       "order": 5
     }
@@ -69,11 +69,10 @@
     {
       "id": "status",
       "name": "Operacao de OS",
-      "icon": "Wrench",
+      "icon": "FileCog",
       "description": "Resumo operacional do modulo de ordens de servico.",
       "route": "/modules/ordem_servico/pages/dashboard",
       "actionLabel": "Abrir dashboard",
-      "permission": "ordem_servico.dashboard.view",
       "kind": "summary",
       "size": "medium",
       "order": 1,

@@ -7,7 +7,6 @@ import { PermissionManagement } from '../../components/PermissionManagement';
 import { ProfilePermissionMatrix } from '../../components/ProfilePermissionMatrix';
 import { TiposServicoManager } from '../../components/TiposServicoManager';
 import { TiposEquipamentoManager } from '../../components/TiposEquipamentoManager';
-import api from '@/lib/api';
 import { RichTextEditor } from '../../components/ui/rich-text-editor';
 import { WhatsAppEditor } from '../../components/WhatsAppEditor';
 import { NotificationsManager } from '../../components/NotificationsManager';
@@ -23,7 +22,99 @@ const CONFIG_ACTION_PERMISSIONS = [
   { resource: 'config', action: 'manage_notifications' },
 ];
 
-// Cliente API agora usa o padrão do sistema importado acima
+// Cliente API customizado para o módulo raiz (sem autenticação automática)
+const api = {
+  get: async (url: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
+
+    // Função auxiliar para obter o token de forma segura (Cookie ou SessionStorage)
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+
+      // 1. Tentar ler do cookie
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+
+      // 2. Fallback para sessionStorage (criptografado em base64)
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) {
+        try { return atob(encrypted); } catch { return ''; }
+      }
+
+      return '';
+    };
+
+    const token = getToken();
+
+    // Log para depuração
+    if (!token) console.warn('⚠️ [ModulePage] Token não encontrado (Cookies/SessionSt)!');
+    // else console.log('🔑 [ModulePage] Token encontrado.');
+
+    const response = await fetch(`${baseUrl}${url}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  },
+  post: async (url: string, data: any) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
+    // Duplicando lógica de token para manter consistência sem refatorar tudo para fora agora
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+      return '';
+    };
+    const token = getToken();
+
+    const response = await fetch(`${baseUrl}${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  },
+  put: async (url: string, data: any) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+
+    // Duplicando lógica de token
+    const getToken = () => {
+      if (typeof window === 'undefined') return '';
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+      if (tokenCookie) return tokenCookie.split('=')[1];
+      const encrypted = sessionStorage.getItem("@App:token");
+      if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+      return '';
+    };
+    const token = getToken();
+
+    const response = await fetch(`${baseUrl}${url}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return { data: await response.json() };
+  }
+};
 
 // Importar componentes UI reais do sistema
 const Card = React.forwardRef<

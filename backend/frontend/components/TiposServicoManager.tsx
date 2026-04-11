@@ -84,21 +84,42 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
 );
 Input.displayName = "Input";
 
+const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & {
+  variant?: "default" | "secondary" | "destructive" | "outline";
+}>(({ className, variant = "default", ...props }, ref) => {
+  const variantClasses = {
+    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+    outline: "text-foreground",
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantClasses[variant]} ${className || ''}`}
+      {...props}
+    />
+  );
+});
+Badge.displayName = "Badge";
+
 const useToast = () => ({
   toast: ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
     console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
   }
 });
 
-interface TipoEquipamento {
+interface TipoServico {
   id: string;
   nome: string;
+  is_default: boolean;
   created_at: string;
 }
 
-export function TiposEquipamentoManager() {
+export function TiposServicoManager() {
   const { toast } = useToast();
-  const [tipos, setTipos] = useState<TipoEquipamento[]>([]);
+  const [tipos, setTipos] = useState<TipoServico[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -113,13 +134,13 @@ export function TiposEquipamentoManager() {
   const fetchTipos = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/ordem_servico/tipos-equipamento');
+      const response = await api.get('/api/ordem_servico/tipos-servico');
       setTipos(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error('Erro ao carregar tipos de equipamento:', error);
+      console.error('Erro ao carregar tipos de serviço:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar os tipos de equipamento.',
+        description: 'Não foi possível carregar os tipos de serviço.',
         variant: 'destructive'
       });
     } finally {
@@ -141,11 +162,11 @@ export function TiposEquipamentoManager() {
 
     try {
       if (editingId) {
-        await api.put(`/api/ordem_servico/tipos-equipamento/${editingId}`, formData);
-        toast({ title: 'Tipo de equipamento atualizado com sucesso!' });
+        await api.put(`/api/ordem_servico/tipos-servico/${editingId}`, formData);
+        toast({ title: 'Tipo de serviço atualizado com sucesso!' });
       } else {
-        await api.post('/api/ordem_servico/tipos-equipamento', formData);
-        toast({ title: 'Tipo de equipamento criado com sucesso!' });
+        await api.post('/api/ordem_servico/tipos-servico', formData);
+        toast({ title: 'Tipo de serviço criado com sucesso!' });
       }
 
       setFormData({ nome: '' });
@@ -155,13 +176,13 @@ export function TiposEquipamentoManager() {
     } catch (error) {
       toast({
         title: 'Erro',
-        description: 'Ocorreu um erro ao salvar o tipo de equipamento.',
+        description: 'Ocorreu um erro ao salvar o tipo de serviço.',
         variant: 'destructive'
       });
     }
   };
 
-  const handleEdit = (tipo: TipoEquipamento) => {
+  const handleEdit = (tipo: TipoServico) => {
     setFormData({
       nome: tipo.nome
     });
@@ -169,19 +190,28 @@ export function TiposEquipamentoManager() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string, nome: string) => {
+  const handleDelete = async (id: string, nome: string, isDefault: boolean) => {
+    if (isDefault) {
+      toast({
+        title: 'Não é possível excluir',
+        description: 'Tipos de serviço padrão não podem ser excluídos.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     if (!confirm(`Tem certeza que deseja excluir o tipo "${nome}"?`)) {
       return;
     }
 
     try {
-      await api.delete(`/api/ordem_servico/tipos-equipamento/${id}`);
-      toast({ title: 'Tipo de equipamento excluído com sucesso!' });
+      await api.delete(`/api/ordem_servico/tipos-servico/${id}`);
+      toast({ title: 'Tipo de serviço excluído com sucesso!' });
       fetchTipos();
     } catch (error) {
       toast({
         title: 'Erro',
-        description: 'Não foi possível excluir o tipo de equipamento.',
+        description: 'Não foi possível excluir o tipo de serviço.',
         variant: 'destructive'
       });
     }
@@ -197,7 +227,7 @@ export function TiposEquipamentoManager() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Tipos de Equipamento
+          Tipos de Serviço
           <Button
             size="sm"
             onClick={() => setShowForm(true)}
@@ -208,7 +238,7 @@ export function TiposEquipamentoManager() {
           </Button>
         </CardTitle>
         <CardDescription>
-          Gerencie os tipos de equipamento disponíveis. Apenas o nome é necessário.
+          Gerencie os tipos de serviço disponíveis. Apenas o nome é necessário.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -219,7 +249,7 @@ export function TiposEquipamentoManager() {
               <Input
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Ex: Servidor"
+                placeholder="Ex: Instalação de Software"
                 className="h-7 text-xs"
                 required
               />
@@ -252,6 +282,11 @@ export function TiposEquipamentoManager() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium">{tipo.nome}</span>
+                    {tipo.is_default && (
+                      <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                        Padrão
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 ml-2">
@@ -259,10 +294,12 @@ export function TiposEquipamentoManager() {
                     className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors"
                     onClick={() => handleEdit(tipo)}
                   />
-                  <Trash2
-                    className="h-4 w-4 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
-                    onClick={() => handleDelete(tipo.id, tipo.nome)}
-                  />
+                  {!tipo.is_default && (
+                    <Trash2
+                      className="h-4 w-4 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
+                      onClick={() => handleDelete(tipo.id, tipo.nome, tipo.is_default)}
+                    />
+                  )}
                 </div>
               </div>
             ))}

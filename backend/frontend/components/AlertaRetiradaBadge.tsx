@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Package, AlertTriangle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { AlertaRetirada } from '../types/ordem-servico.types';
-import api from '@/lib/api';
 
 interface AlertaRetiradaBadgeProps {
     className?: string;
@@ -13,6 +12,31 @@ interface AlertaRetiradaBadgeProps {
     variant?: 'badge' | 'card';
 }
 
+// Cliente API
+const api = {
+    get: async (url: string) => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+        const getToken = () => {
+            if (typeof window === 'undefined') return '';
+            const cookies = document.cookie.split(';');
+            const tokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+            if (tokenCookie) return tokenCookie.split('=')[1];
+            const encrypted = sessionStorage.getItem("@App:token");
+            if (encrypted) { try { return atob(encrypted); } catch { return ''; } }
+            return '';
+        };
+        const token = getToken();
+        const response = await fetch(`${baseUrl}${url}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return { data: await response.json() };
+    }
+};
 
 export function AlertaRetiradaBadge({ 
     className = '', 

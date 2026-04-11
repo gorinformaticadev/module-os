@@ -132,7 +132,7 @@ export class NotificationSchedulerService implements OnModuleInit {
     }
 
     private async processOffsetRule(rule: RuntimeRule) {
-        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {});
+        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {} as any);
 
         if (config.reference === 'BEFORE_DEADLINE' || config.reference === 'AFTER_DEADLINE') {
             await this.processRelativeDeadline(rule, config);
@@ -177,7 +177,7 @@ export class NotificationSchedulerService implements OnModuleInit {
     }
 
     private async processConditionRule(rule: RuntimeRule) {
-        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {});
+        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {} as any);
 
         if (config.condition === 'OVERDUE') {
             await this.processOverdueOS(rule, config);
@@ -230,7 +230,7 @@ export class NotificationSchedulerService implements OnModuleInit {
     }
 
     private async dispatchNotification(rule: RuntimeRule, ordem: any, fingerprint: string): Promise<boolean> {
-        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {});
+        const config = this.normalizeJson<RuleTriggerConfig>(rule.triggerConfig, {} as any);
 
         if (this.isInSilenceWindow(config.silence_window)) {
             this.logger.log(`Regra [${rule.title}] silenciada pela Janela de Silencio`);

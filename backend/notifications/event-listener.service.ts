@@ -43,7 +43,7 @@ export class NotificationEventListenerService {
             });
 
             for (const rule of rules) {
-                const config = this.normalizeJson<EventTriggerConfig>(rule.triggerConfig, {});
+                const config = this.normalizeJson<EventTriggerConfig>(rule.triggerConfig, {} as any);
                 if (!Array.isArray(config.events) || !config.events.includes(eventType)) {
                     continue;
                 }

@@ -16,15 +16,25 @@ import {
     MessageSquare,
     RefreshCw,
     Search,
-    HelpCircle
+    HelpCircle,
+    Info
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+// Reuse existing UI components if possible, or define local mini-components
+// (Assuming these are available via global styles or local definitions in page.tsx)
+const Button = ({ children, variant = 'default', className = '', ...props }: any) => {
+    const base = "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:ring-2 disabled:opacity-50";
+    const variants = {
+        default: "bg-primary text-white hover:bg-primary/90",
+        outline: "border border-input bg-background hover:bg-accent text-foreground",
+        ghost: "hover:bg-accent text-foreground",
+        destructive: "bg-destructive text-white hover:bg-destructive/90",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    };
+    return <button className={`${base} ${(variants as any)[variant]} ${className}`} {...props}>{children}</button>;
+};
 
+// Simple Tooltip helper
 const InfoTooltip = ({ text }: { text: string }) => (
     <div className="group relative inline-block ml-1.5 align-middle cursor-help">
         <HelpCircle className="h-4 w-4 text-muted-foreground/70 hover:text-primary transition-colors" />
@@ -34,6 +44,23 @@ const InfoTooltip = ({ text }: { text: string }) => (
         </div>
     </div>
 );
+
+const Card = ({ children, className = '' }: any) => (
+    <div className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm shadow-sm ${className}`}>
+        {children}
+    </div>
+);
+
+const Badge = ({ children, variant = 'default', className = '' }: any) => {
+    const variants = {
+        default: "bg-primary/10 text-primary border-primary/20",
+        secondary: "bg-secondary/10 text-secondary border-secondary/20",
+        destructive: "bg-destructive/10 text-destructive border-destructive/20",
+        outline: "border-border text-foreground",
+        success: "bg-green-500/10 text-green-600 border-green-200 dark:border-green-500/20"
+    };
+    return <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${(variants as any)[variant]} ${className}`}>{children}</span>;
+};
 
 export function NotificationsManager({ api, toast, user }: any) {
     const [activeSubTab, setActiveSubTab] = useState<'rules' | 'history'>('rules');
@@ -101,6 +128,7 @@ export function NotificationsManager({ api, toast, user }: any) {
         return <MessageSquare className={className} />;
     };
 
+    // Pagination for history
     const [historyFilters, setHistoryFilters] = useState({
         status: '',
         ruleId: ''
@@ -164,7 +192,7 @@ export function NotificationsManager({ api, toast, user }: any) {
     };
 
     return (
-        <div className="space-y-6 text-foreground">
+        <div className="space-y-6">
             <div className="flex items-center justify-between border-b pb-4">
                 <div className="flex gap-4">
                     <Button
@@ -189,7 +217,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                     <Button onClick={() => {
                         setCurrentRule(buildEmptyRule());
                         setIsEditing(true);
-                    }} className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 font-bold">
+                    }} className="gap-2">
                         <Plus className="h-4 w-4" />
                         Nova Regra
                     </Button>
@@ -201,10 +229,10 @@ export function NotificationsManager({ api, toast, user }: any) {
                     {loading && rules.length === 0 ? (
                         <div className="text-center py-20 flex flex-col items-center gap-4">
                             <RefreshCw className="h-8 w-8 animate-spin text-primary opacity-50" />
-                            <p className="text-muted-foreground font-medium text-lg">Carregando agendamentos...</p>
+                            <p className="text-muted-foreground">Carregando instâncias...</p>
                         </div>
                     ) : rules.length === 0 ? (
-                        <div className="text-center py-20 border-2 border-dashed rounded-xl bg-muted/10">
+                        <div className="text-center py-20 border-2 border-dashed rounded-xl">
                             <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
                             <h3 className="text-lg font-medium">Nenhuma regra configurada</h3>
                             <p className="text-muted-foreground mb-6">Comece criando uma regra de gatilho para suas Ordens de Serviço.</p>
@@ -215,64 +243,60 @@ export function NotificationsManager({ api, toast, user }: any) {
                         </div>
                     ) : (
                         rules.map((rule) => (
-                            <Card key={rule.id} className="hover:border-primary/30 transition-all group overflow-hidden border-border shadow-sm">
-                                <CardContent className="p-5">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex gap-4">
-                                            <div className={`p-3 rounded-lg ${rule.enabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                                                {getChannelIcon(rule.channel)}
-                                            </div>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2">
-                                                    <h4 className="font-bold text-lg">{rule.title}</h4>
-                                                    <Badge variant={rule.enabled ? 'outline' : 'secondary'} className={rule.enabled ? 'border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400' : ''}>
-                                                        {rule.enabled ? 'Ativa' : 'Inativa'}
-                                                    </Badge>
-                                                    <Badge variant="outline" className="opacity-70 font-normal">{rule.trigger_type}</Badge>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground line-clamp-1 italic">{rule.description || 'Sem descrição'}</p>
-                                                <div className="flex items-center gap-4 mt-2">
-                                                    <span className="text-xs text-muted-foreground flex items-center gap-1 font-medium">
-                                                        <Clock className="h-3 w-3" />
-                                                        Execuções: {rule.current_executions} {rule.max_executions ? `/ ${rule.max_executions}` : ''}
-                                                    </span>
-                                                    {rule.last_execution_at && (
-                                                        <span className="text-xs text-muted-foreground flex items-center gap-1 font-medium">
-                                                            <Calendar className="h-3 w-3" />
-                                                            Última: {new Date(rule.last_execution_at).toLocaleString()}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
+                            <Card key={rule.id} className="p-5 hover:border-primary/30 transition-all group">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex gap-4">
+                                        <div className={`p-3 rounded-lg ${rule.enabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                                            {getChannelIcon(rule.channel)}
                                         </div>
-
-                                        <div className="flex gap-2">
-                                            <Button variant="ghost" size="sm" onClick={() => handleToggle(rule)} className="font-medium">
-                                                {rule.enabled ? 'Pausar' : 'Ativar'}
-                                            </Button>
-                                            <Button variant="ghost" size="sm" onClick={() => { setCurrentRule(rule); setIsEditing(true); }} className="hover:bg-primary/10 hover:text-primary">
-                                                <Edit2 className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 h-9 w-9 p-0" onClick={() => handleDelete(rule.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-bold text-lg">{rule.title}</h4>
+                                                <Badge variant={rule.enabled ? 'success' : 'secondary'}>{rule.enabled ? 'Ativa' : 'Inativa'}</Badge>
+                                                <Badge variant="outline" className="opacity-70">{rule.trigger_type}</Badge>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground line-clamp-1">{rule.description || 'Sem descrição'}</p>
+                                            <div className="flex items-center gap-4 mt-2">
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    Execuções: {rule.current_executions} {rule.max_executions ? `/ ${rule.max_executions}` : ''}
+                                                </span>
+                                                {rule.last_execution_at && (
+                                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                        <Calendar className="h-3 w-3" />
+                                                        Ultima: {new Date(rule.last_execution_at).toLocaleString()}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </CardContent>
+
+                                    <div className="flex gap-2">
+                                        <Button variant="ghost" size="sm" onClick={() => handleToggle(rule)}>
+                                            {rule.enabled ? 'Pausar' : 'Ativar'}
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => { setCurrentRule(rule); setIsEditing(true); }}>
+                                            <Edit2 className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(rule.id)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
                             </Card>
                         ))
                     )}
                 </div>
             ) : (
-                <Card className="overflow-hidden border-border/50 shadow-md">
-                    <CardHeader className="p-4 bg-muted/30 border-b flex flex-row justify-between items-center gap-4 space-y-0">
-                        <div className="flex items-center bg-background rounded-lg border px-3 py-1 flex-1 max-w-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <Card className="overflow-hidden">
+                    <div className="p-4 bg-muted/30 border-b flex justify-between items-center gap-4">
+                        <div className="flex items-center bg-background rounded-lg border px-3 py-1 flex-1 max-w-sm">
                             <Search className="h-4 w-4 text-muted-foreground mr-2" />
                             <input className="bg-transparent border-none outline-none text-sm w-full py-1" placeholder="Buscar no histórico..." />
                         </div>
                         <div className="flex gap-2">
                             <select
-                                className="bg-background border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                                className="bg-background border rounded-lg px-3 py-1.5 text-sm"
                                 value={historyFilters.status}
                                 onChange={(e) => setHistoryFilters({ ...historyFilters, status: e.target.value })}
                             >
@@ -281,88 +305,84 @@ export function NotificationsManager({ api, toast, user }: any) {
                                 <option value="ERROR">Erro</option>
                                 <option value="PAUSED">Pausado</option>
                             </select>
-                            <Button variant="outline" size="sm" onClick={fetchHistory} className="h-9 w-9 p-0">
+                            <Button variant="outline" size="sm" onClick={fetchHistory}>
                                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                             </Button>
                         </div>
-                    </CardHeader>
+                    </div>
 
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="bg-muted/50 text-muted-foreground font-semibold border-b">
-                                    <tr>
-                                        <th className="px-5 py-3 text-left">Data</th>
-                                        <th className="px-5 py-3 text-left">Regra</th>
-                                        <th className="px-5 py-3 text-left">Canal</th>
-                                        <th className="px-5 py-3 text-left">Destinatário</th>
-                                        <th className="px-5 py-3 text-left">Status</th>
-                                        <th className="px-5 py-3 text-right">Ação</th>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
+                                <tr>
+                                    <th className="px-5 py-3 text-left">Data</th>
+                                    <th className="px-5 py-3 text-left">Regra</th>
+                                    <th className="px-5 py-3 text-left">Canal</th>
+                                    <th className="px-5 py-3 text-left">Destinatário</th>
+                                    <th className="px-5 py-3 text-left">Status</th>
+                                    <th className="px-5 py-3 text-right">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y border-b">
+                                {history.map(item => (
+                                    <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                                        <td className="px-5 py-4 whitespace-nowrap">
+                                            <div className="flex flex-col">
+                                                <span>{new Date(item.sent_at).toLocaleDateString()}</span>
+                                                <span className="text-[10px] text-muted-foreground">{new Date(item.sent_at).toLocaleTimeString()}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 font-medium">Rule #{item.rule_id.substring(0, 8)}</td>
+                                        <td className="px-5 py-4">
+                                            <Badge variant="outline" className="gap-1">
+                                                {getChannelIcon(item.channel, 'h-3 w-3')}
+                                                {item.channel}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-5 py-4 truncate max-w-[150px]">{item.recipient}</td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-1.5 font-medium">
+                                                {item.status === 'SUCCESS' ? (
+                                                    <><CheckCircle2 className="h-4 w-4 text-green-500" /> <span className="text-green-600">Sucesso</span></>
+                                                ) : item.status === 'ERROR' ? (
+                                                    <><XCircle className="h-4 w-4 text-destructive" /> <span className="text-destructive">Erro</span></>
+                                                ) : (
+                                                    <><AlertCircle className="h-4 w-4 text-yellow-500" /> <span className="text-yellow-600">{item.status}</span></>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><ChevronRight className="h-4 w-4" /></Button>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y border-b">
-                                    {history.map(item => (
-                                        <tr key={item.id} className="hover:bg-muted/20 transition-colors">
-                                            <td className="px-5 py-4 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-foreground/80">{new Date(item.sent_at).toLocaleDateString()}</span>
-                                                    <span className="text-[10px] text-muted-foreground">{new Date(item.sent_at).toLocaleTimeString()}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 font-bold text-primary/80">Regra #{item.rule_id.substring(0, 8)}</td>
-                                            <td className="px-5 py-4">
-                                                <Badge variant="outline" className="gap-1.5 font-medium">
-                                                    {getChannelIcon(item.channel, 'h-3.5 w-3.5')}
-                                                    {item.channel}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-5 py-4 truncate max-w-[150px] font-medium text-foreground/70">{item.recipient}</td>
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-tighter">
-                                                    {item.status === 'SUCCESS' ? (
-                                                        <><CheckCircle2 className="h-4 w-4 text-green-500" /> <span className="text-green-600 dark:text-green-400">Sucesso</span></>
-                                                    ) : item.status === 'ERROR' ? (
-                                                        <><XCircle className="h-4 w-4 text-destructive" /> <span className="text-destructive">Erro</span></>
-                                                    ) : (
-                                                        <><AlertCircle className="h-4 w-4 text-yellow-500" /> <span className="text-yellow-600 dark:text-yellow-400">{item.status}</span></>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 text-right">
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-primary/10 transition-colors"><ChevronRight className="h-4 w-4" /></Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {history.length === 0 && !loading && (
-                                <div className="py-24 text-center text-muted-foreground font-medium flex flex-col items-center gap-2 italic">
-                                    <Bell className="h-10 w-10 opacity-10 mb-2" />
-                                    Nenhum registro encontrado no período.
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
+                                ))}
+                            </tbody>
+                        </table>
+                        {history.length === 0 && !loading && (
+                            <div className="py-20 text-center text-muted-foreground">Nenhum registro encontrado no período.</div>
+                        )}
+                    </div>
                 </Card>
             )}
 
+            {/* Extreme simplification of Rule Form Modal - Concept Only */}
             {isEditing && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-                    <Card className="w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] border-primary/10">
-                        <CardHeader className="p-6 border-b flex flex-row justify-between items-center bg-card">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+                    <Card className="w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        <div className="flex-none p-6 border-b flex justify-between items-center bg-background">
                             <div>
-                                <CardTitle className="text-xl font-bold">{currentRule?.id ? 'Editar Regra' : 'Nova Regra de Notificação'}</CardTitle>
+                                <h3 className="text-xl font-bold">{currentRule?.id ? 'Editar Regra' : 'Nova Regra de Notificação'}</h3>
                                 <p className="text-sm text-muted-foreground">Configure quando e como as notificações serão enviadas.</p>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => setIsEditing(false)} className="rounded-full hover:bg-destructive/10 hover:text-destructive">
+                            <button onClick={() => setIsEditing(false)} className="text-muted-foreground hover:text-foreground">
                                 <XCircle className="h-6 w-6" />
-                            </Button>
-                        </CardHeader>
+                            </button>
+                        </div>
 
-                        <CardContent className="flex-1 overflow-y-auto p-6 space-y-6">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {!currentRule.id && (
-                                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 mb-4">
-                                    <h4 className="text-sm font-bold mb-3 flex items-center gap-2 text-primary">
+                                <div className="bg-primary/5 p-4 rounded-lg border border-primary/10 mb-4">
+                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                                         <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                         Comece com um Modelo
                                     </h4>
@@ -373,7 +393,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                                             { label: '⚠️ OS Atrasada', config: { title: 'OS Fora do Prazo', trigger_type: 'CONDITION', trigger_config: { condition: 'OVERDUE' }, channel: 'SYSTEM', message_template: 'Atenção: OS #{{numero}} está atrasada!' } },
                                             { label: '✅ Finalizada (Zap)', config: { title: 'OS Concluída', trigger_type: 'EVENT', trigger_config: { events: ['STATUS_CHANGED'], status_to: 'CONCLUIDO' }, channel: 'WHATSAPP', message_template: 'Olá {{cliente}}, sua OS #{{numero}} foi finalizada!' } },
                                         ].map((t, i) => (
-                                            <Button key={i} variant="outline" size="sm" onClick={() => applyTemplate(t.config)} className="bg-background hover:bg-primary/10 hover:border-primary/30 transition-all font-medium">{t.label}</Button>
+                                            <Button key={i} variant="outline" size="sm" onClick={() => applyTemplate(t.config)}>{t.label}</Button>
                                         ))}
                                     </div>
                                 </div>
@@ -381,25 +401,25 @@ export function NotificationsManager({ api, toast, user }: any) {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="col-span-2 space-y-2">
-                                    <label className="text-sm font-semibold flex items-center">
+                                    <label className="text-sm font-medium flex items-center">
                                         Título da Regra
                                         <InfoTooltip text="Um nome interno para você identificar esta regra facilmente." />
                                     </label>
-                                    <Input
+                                    <input
+                                        className="w-full bg-background border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                         value={currentRule?.title || ''}
                                         onChange={(e) => setCurrentRule({ ...currentRule, title: e.target.value })}
                                         placeholder="Ex: Alerta de OS Atrasada"
-                                        className="font-medium"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold flex items-center">
+                                    <label className="text-sm font-medium flex items-center">
                                         Tipo de Gatilho
                                         <InfoTooltip text="O evento ou condição que dispara esta notificação." />
                                     </label>
                                     <select
-                                        className="w-full bg-background border rounded-lg px-4 py-2 h-10 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                                        className="w-full bg-background border rounded-lg px-4 py-2"
                                         value={currentRule?.trigger_type || 'EVENT'}
                                         onChange={(e) => setCurrentRule({ ...currentRule, trigger_type: e.target.value, trigger_config: {} })}
                                     >
@@ -410,12 +430,12 @@ export function NotificationsManager({ api, toast, user }: any) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold flex items-center">
+                                    <label className="text-sm font-medium flex items-center">
                                         Canal de Envio
                                         <InfoTooltip text="Por onde o destinatário receberá a mensagem." />
                                     </label>
                                     <select
-                                        className="w-full bg-background border rounded-lg px-4 py-2 h-10 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                                        className="w-full bg-background border rounded-lg px-4 py-2"
                                         value={currentChannel}
                                         onChange={(e) => {
                                             const nextChannel = e.target.value;
@@ -430,23 +450,23 @@ export function NotificationsManager({ api, toast, user }: any) {
                                         <option value="EMAIL">📧 E-mail</option>
                                         <option value="WHATSAPP">📱 WhatsApp</option>
                                     </select>
-                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                    <p className="text-xs text-muted-foreground">
                                         {internalChannelSelected
-                                            ? 'Sistema usa o hub central de notificações e entrega somente para usuários internos do tenant.'
-                                            : 'Canais externos podem atender cliente e, quando fizer sentido, usuários internos.'}
+                                            ? 'Sistema usa o hub central de notificacoes e entrega somente para usuarios internos do tenant.'
+                                            : 'Canais externos podem atender cliente e, quando fizer sentido, usuarios internos.'}
                                     </p>
                                 </div>
 
                                 <div className="col-span-2 space-y-2">
-                                    <label className="text-sm font-semibold flex items-center">
+                                    <label className="text-sm font-medium flex items-center">
                                         Destinatários
                                         <InfoTooltip text="Quem deve receber esta mensagem?" />
                                     </label>
-                                    <div className="flex flex-wrap gap-4 p-4 bg-muted/20 rounded-xl border items-center">
-                                        <label className={`flex items-center gap-2 select-none font-medium text-sm ${internalChannelSelected ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                                    <div className="flex gap-6 p-4 bg-muted/20 rounded-lg border items-center">
+                                        <label className={`flex items-center gap-2 select-none ${internalChannelSelected ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
                                             <input
                                                 type="checkbox"
-                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary transition-all"
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                                 disabled={internalChannelSelected}
                                                 checked={currentRule?.recipients?.some((r: any) => r.type === 'CLIENT')}
                                                 onChange={(e) => updateRecipients('CLIENT', e.target.checked)}
@@ -454,20 +474,20 @@ export function NotificationsManager({ api, toast, user }: any) {
                                             <span>Cliente</span>
                                         </label>
 
-                                        <label className="flex items-center gap-2 cursor-pointer select-none font-medium text-sm">
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
-                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary transition-all"
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                                 checked={currentRule?.recipients?.some((r: any) => r.type === 'TECHNICIAN')}
                                                 onChange={(e) => updateRecipients('TECHNICIAN', e.target.checked)}
                                             />
                                             <span>Técnico Responsável</span>
                                         </label>
 
-                                        <label className="flex items-center gap-2 cursor-pointer select-none font-medium text-sm">
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
-                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary transition-all"
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                                 checked={currentRule?.recipients?.some((r: any) => r.type === 'ADMIN')}
                                                 onChange={(e) => updateRecipients('ADMIN', e.target.checked)}
                                             />
@@ -475,10 +495,10 @@ export function NotificationsManager({ api, toast, user }: any) {
                                         </label>
 
                                         {user?.role === 'SUPER_ADMIN' && (
-                                            <label className="flex items-center gap-2 cursor-pointer select-none text-red-600 font-bold text-sm">
+                                            <label className="flex items-center gap-2 cursor-pointer select-none text-red-600 font-medium">
                                                 <input
                                                     type="checkbox"
-                                                    className="h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500 transition-all"
+                                                    className="h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
                                                     checked={currentRule?.recipients?.some((r: any) => r.type === 'SUPER_ADMIN')}
                                                     onChange={(e) => updateRecipients('SUPER_ADMIN', e.target.checked)}
                                                 />
@@ -486,33 +506,33 @@ export function NotificationsManager({ api, toast, user }: any) {
                                             </label>
                                         )}
                                     </div>
-                                    <p className="text-[11px] text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground">
                                         {internalChannelSelected
-                                            ? 'Para notificações internas, use Técnico Responsável, Administradores ou Super Admin. Cliente fica bloqueado neste canal.'
+                                            ? 'Para notificacoes internas, use Tecnico Responsavel, Administradores ou Super Admin. Cliente fica bloqueado neste canal.'
                                             : 'Para e-mail e WhatsApp, Cliente pode ser usado normalmente.'}
                                     </p>
                                 </div>
 
-                                <div className="col-span-2 border rounded-xl p-5 bg-muted/20 space-y-4">
-                                    <h5 className="text-[10px] font-bold uppercase text-primary tracking-widest flex items-center mb-2">
+                                {/* Dynamic Config Section */}
+                                <div className="col-span-2 border rounded-lg p-4 bg-muted/20 space-y-4">
+                                    <h5 className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center">
                                         Configuração do Gatilho
                                         <InfoTooltip text="Defina os detalhes específicos de quando a regra deve disparar." />
                                     </h5>
 
                                     {currentRule?.trigger_type === 'EVENT' && (
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-semibold">Eventos Observados</label>
-                                            <div className="flex flex-wrap gap-3">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Eventos Observados</label>
+                                            <div className="flex flex-wrap gap-4">
                                                 {Object.entries({
                                                     'CREATED': '✨ Nova OS Criada',
                                                     'STATUS_CHANGED': '🔄 Mudança de Status',
                                                     'ASSIGNED': '👤 Técnico Atribuído',
                                                     'FINISHED': '✅ OS Finalizada'
                                                 }).map(([evt, label]) => (
-                                                    <label key={evt} className="flex items-center gap-2 bg-background px-4 py-2 rounded-lg border cursor-pointer hover:border-primary/50 transition-all shadow-sm">
+                                                    <label key={evt} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border cursor-pointer hover:border-primary">
                                                         <input
                                                             type="checkbox"
-                                                            className="h-4 w-4 text-primary focus:ring-primary rounded"
                                                             checked={currentRule?.trigger_config?.events?.includes(evt) ?? false}
                                                             onChange={(e) => {
                                                                 const events = currentRule?.trigger_config?.events || [];
@@ -522,7 +542,7 @@ export function NotificationsManager({ api, toast, user }: any) {
                                                                 setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, events: newEvents } });
                                                             }}
                                                         />
-                                                        <span className="text-sm font-medium">{label}</span>
+                                                        <span className="text-sm">{label}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -531,7 +551,7 @@ export function NotificationsManager({ api, toast, user }: any) {
 
                                     {currentRule?.trigger_type === 'OFFSET' && (
                                         <div className="space-y-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <DurationPicker
                                                     label="Tempo de Deslocamento"
                                                     value={currentRule?.trigger_config?.offset_duration || { days: 0, hours: 0, minutes: 0, seconds: 0 }}
@@ -542,12 +562,12 @@ export function NotificationsManager({ api, toast, user }: any) {
                                                 />
 
                                                 <div className="space-y-2">
-                                                    <label className="text-sm font-semibold flex items-center">
+                                                    <label className="text-sm font-medium flex items-center">
                                                         Referência
                                                         <InfoTooltip text="Quando este tempo deve ser contado?" />
                                                     </label>
                                                     <select
-                                                        className="w-full bg-background border rounded-lg px-4 py-2 h-[58px] outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                                                        className="w-full bg-background border rounded-lg px-4 py-2 h-[58px]"
                                                         value={currentRule?.trigger_config?.reference || 'BEFORE_DEADLINE'}
                                                         onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, reference: e.target.value } })}
                                                     >
@@ -563,9 +583,9 @@ export function NotificationsManager({ api, toast, user }: any) {
 
                                     {currentRule?.trigger_type === 'CONDITION' && (
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold">Condição</label>
+                                            <label className="text-sm font-medium">Condição</label>
                                             <select
-                                                className="w-full bg-background border rounded-lg px-4 py-2 h-10 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                                                className="w-full bg-background border rounded-lg px-4 py-2"
                                                 value={currentRule?.trigger_config?.condition || 'OVERDUE'}
                                                 onChange={(e) => setCurrentRule({ ...currentRule, trigger_config: { ...currentRule.trigger_config, condition: e.target.value } })}
                                             >
@@ -577,29 +597,31 @@ export function NotificationsManager({ api, toast, user }: any) {
                                     )}
                                 </div>
 
-                                <div className="col-span-2 space-y-5 border-t pt-5">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {/* Limits & Window */}
+                                <div className="col-span-2 space-y-4 border-t pt-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center tracking-widest">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center">
                                                 Limite de Execuções
                                                 <InfoTooltip text="Número máximo de vezes que esta regra pode ser acionada. Deixe vazio para infinito." />
                                             </label>
-                                            <Input
+                                            <input
                                                 type="number"
+                                                className="w-full bg-background border rounded-lg px-4 py-2"
                                                 placeholder="Infinito"
                                                 value={currentRule?.max_executions || ''}
                                                 onChange={(e) => setCurrentRule({ ...currentRule, max_executions: e.target.value ? parseInt(e.target.value) : null })}
-                                                className="font-medium"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase text-muted-foreground flex items-center tracking-widest">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground flex items-center">
                                                 Janela de Silêncio
                                                 <InfoTooltip text="Horário em que as notificações serão pausadas (ex: não enviar de madrugada)." />
                                             </label>
                                             <div className="flex gap-2">
-                                                <Input
+                                                <input
                                                     type="time"
+                                                    className="w-full bg-background border rounded-lg px-2 py-2"
                                                     value={currentRule?.trigger_config?.silence_window?.start || ''}
                                                     onChange={(e) => setCurrentRule({
                                                         ...currentRule,
@@ -608,10 +630,10 @@ export function NotificationsManager({ api, toast, user }: any) {
                                                             silence_window: { ...currentRule.trigger_config?.silence_window, start: e.target.value }
                                                         }
                                                     })}
-                                                    className="font-medium"
                                                 />
-                                                <Input
+                                                <input
                                                     type="time"
+                                                    className="w-full bg-background border rounded-lg px-2 py-2"
                                                     value={currentRule?.trigger_config?.silence_window?.end || ''}
                                                     onChange={(e) => setCurrentRule({
                                                         ...currentRule,
@@ -620,7 +642,6 @@ export function NotificationsManager({ api, toast, user }: any) {
                                                             silence_window: { ...currentRule.trigger_config?.silence_window, end: e.target.value }
                                                         }
                                                     })}
-                                                    className="font-medium"
                                                 />
                                             </div>
                                         </div>
@@ -635,34 +656,34 @@ export function NotificationsManager({ api, toast, user }: any) {
                                                 trigger_config: { ...currentRule.trigger_config, frequency: val }
                                             })}
                                         />
-                                        <p className="text-[10px] text-muted-foreground mt-2 ml-1 italic font-medium">* Deixe tudo zerado para executar apenas uma vez.</p>
+                                        <p className="text-[10px] text-muted-foreground mt-1 ml-1">* Deixe tudo zerado para executar apenas uma vez.</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-3 pt-2">
-                                <label className="text-sm font-bold flex items-center">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium flex items-center">
                                     Template da Mensagem
                                     <InfoTooltip text="Use as variáveis abaixo para personalizar a mensagem. Elas serão substituídas pelos dados reais da OS." />
                                 </label>
-                                <Textarea
-                                    className="min-h-[120px] font-mono text-sm leading-relaxed p-4 bg-muted/30 border-primary/10 focus:border-primary/30"
+                                <textarea
+                                    className="w-full bg-background border rounded-lg px-4 py-2 min-h-[100px] font-mono text-sm"
                                     value={currentRule?.message_template || ''}
                                     onChange={(e) => setCurrentRule({ ...currentRule, message_template: e.target.value })}
                                     placeholder="Ex: Olá {{cliente}}, sua OS #{{numero}} mudou para {{status}}."
                                 />
-                                <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground font-bold">
-                                    <span className="bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-primary/20 transition-all border border-primary/5" onClick={() => addToken('{{cliente}}')}>{'{{cliente}}'}</span>
-                                    <span className="bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-primary/20 transition-all border border-primary/5" onClick={() => addToken('{{numero}}')}>{'{{numero}}'}</span>
-                                    <span className="bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-primary/20 transition-all border border-primary/5" onClick={() => addToken('{{status}}')}>{'{{status}}'}</span>
-                                    <span className="bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-primary/20 transition-all border border-primary/5" onClick={() => addToken('{{data_previsao}}')}>{'{{data_previsao}}'}</span>
+                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => addToken('{{cliente}}')}>{'{{cliente}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => addToken('{{numero}}')}>{'{{numero}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => addToken('{{status}}')}>{'{{status}}'}</span>
+                                    <span className="bg-muted px-2 py-1 rounded cursor-pointer hover:bg-muted/80" onClick={() => addToken('{{data_previsao}}')}>{'{{data_previsao}}'}</span>
                                 </div>
                             </div>
-                        </CardContent>
+                        </div>
 
                         <div className="flex-none p-6 border-t bg-muted/5 flex justify-end gap-3 rounded-b-xl">
-                            <Button variant="outline" onClick={() => setIsEditing(false)} className="px-8 transition-colors">Cancelar</Button>
-                            <Button className="px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/10" onClick={async () => {
+                            <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                            <Button onClick={async () => {
                                 try {
                                     const method = currentRule.id ? 'put' : 'post';
                                     const url = currentRule.id ? `/api/ordem_servico/notificacoes/regras/${currentRule.id}` : '/api/ordem_servico/notificacoes/regras';
