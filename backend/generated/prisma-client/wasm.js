@@ -453,7 +453,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\Compartilhado\\Servidor\\GORInformatica\\Documents\\GitHub\\module-os\\backend\\generated\\prisma-client",
+      "value": "D:\\Usuarios\\Servidor\\GORInformatica\\Documents\\GitHub\\Pluggor\\module-os\\backend\\generated\\prisma-client",
       "fromEnvVar": null
     },
     "config": {
@@ -467,7 +467,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\Compartilhado\\Servidor\\GORInformatica\\Documents\\GitHub\\module-os\\backend\\prisma\\schema.prisma",
+    "sourceFilePath": "D:\\Usuarios\\Servidor\\GORInformatica\\Documents\\GitHub\\Pluggor\\module-os\\backend\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
