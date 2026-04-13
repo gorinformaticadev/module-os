@@ -90,7 +90,7 @@ function Test-IncludedRelativePath {
         return $false
     }
 
-    if ($normalized -match "(^|/)(node_modules|\.git|\.qoder|dist|DOCS|docs|scripts)/") {
+    if ($normalized -match "(^|/)(node_modules|generated|\.git|\.qoder|dist|DOCS|docs|scripts)/") {
         return $false
     }
 
@@ -201,24 +201,6 @@ if (Test-Path -LiteralPath $backendManifestPath) {
 }
 
 try {
-    $prismaSchemaPath = Join-Path $backendRoot "prisma\schema.prisma"
-    if (Test-Path -LiteralPath $prismaSchemaPath) {
-        Write-Host "Gerando Prisma Client atualizado..." -ForegroundColor Cyan
-        Push-Location -Path $backendRoot
-        try {
-            if ($env:OS -match "Windows_NT") {
-                cmd.exe /c "npx --yes prisma@6.19.2 generate"
-            } else {
-                npx --yes prisma@6.19.2 generate
-            }
-            if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
-                Write-Warning "Ocorreu um erro no npx prisma generate, mas o empacotamento continuará."
-            }
-        } finally {
-            Pop-Location
-        }
-    }
-
     New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
 
     Copy-Item -LiteralPath $rootManifestPath -Destination (Join-Path $packageRoot "module.json") -Force
