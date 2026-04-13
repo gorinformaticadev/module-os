@@ -75,11 +75,11 @@ export class ModuleOsPrismaService extends PrismaClient implements OnModuleInit,
             const nextArgs = { ...(args ?? {}) } as any;
 
             if (READ_OPERATIONS.has(operation) || operation === 'updateMany' || operation === 'deleteMany') {
-              nextArgs.where = ModuleOsPrismaService.mergeTenantScope(nextArgs.where, tenantId);
+              nextArgs.where = ModuleOsPrismaService.mergeTenantScope(nextArgs.where, tenantId) as any;
             }
 
             if (WRITE_OPERATIONS.has(operation)) {
-              nextArgs.data = ModuleOsPrismaService.applyTenantData(nextArgs.data, tenantId);
+              nextArgs.data = ModuleOsPrismaService.applyTenantData(nextArgs.data, tenantId) as any;
             }
 
             return query(nextArgs);

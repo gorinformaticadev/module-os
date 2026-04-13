@@ -1,6 +1,10 @@
+'use client';
+
 import React from 'react';
 import { FrontendModuleDefinition } from '@/lib/module-types';
 import { MeuModuloWidget } from './components/MeuModuloWidget';
+import { AlertaRetiradaBadge } from './components/AlertaRetiradaBadge';
+import ClientOrdersList from './components/ClientOrdersList';
 import {
     MODULE_DISPLAY_NAME,
     MODULE_ICON,
@@ -11,6 +15,10 @@ import {
     MODULE_VERSION,
 } from './module-manifest';
 
+// Exportacoes de componentes para a plataforma
+export { MeuModuloWidget } from './components/MeuModuloWidget';
+export { AlertaRetiradaBadge } from './components/AlertaRetiradaBadge';
+export { ClientOrdersList };
 export { default as moduloOsConfiguracoesPage } from './pages/configuracoes';
 
 type CompatibilityModuleContribution = {
@@ -48,12 +56,23 @@ type CompatibilityModuleContribution = {
             tone: 'neutral' | 'good' | 'warn' | 'danger';
         }>;
     }>;
+    clientMenu?: Array<{
+        id: string;
+        name: string;
+        component: string;
+        icon?: string;
+    }>;
+    taskbar?: Array<{
+        id: string;
+        component: string;
+        position?: 'left' | 'right';
+    }>;
 };
 
 const legacyWidget = {
     id: `${MODULE_SLUG}-status`,
     type: 'summary_card' as const,
-    title: 'Status Ordem de Servicos',
+    title: 'Status O.S.',
     component: MeuModuloWidget,
     gridSize: { w: 1, h: 1 },
     order: 1,
@@ -81,7 +100,7 @@ export const moduloOsContribution: CompatibilityModuleContribution = {
     dashboard: [
         {
             id: 'status',
-            name: 'Operacao de OS',
+            name: 'Operacao de O.S.',
             component: 'MeuModuloWidget',
             order: 1,
             icon: MODULE_ICON,
@@ -104,6 +123,23 @@ export const moduloOsContribution: CompatibilityModuleContribution = {
             })),
         },
     ],
+    // Injetando no Menu do Cliente
+    clientMenu: [
+        {
+            id: 'os-aba',
+            name: 'Ordens de Servico',
+            component: 'ClientOrdersList',
+            icon: 'ClipboardList'
+        }
+    ],
+    // Injetando na Taskbar
+    taskbar: [
+        {
+            id: 'alertas-retirada-os',
+            component: 'AlertaRetiradaBadge',
+            position: 'right'
+        }
+    ]
 };
 
 export default moduloOsContribution;

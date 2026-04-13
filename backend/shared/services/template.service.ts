@@ -14,7 +14,7 @@ export class TemplateService {
 
     async findAll() {
         try {
-            const templates = await this.prisma.mod_ordem_servico_templates.findMany({
+            const templates = await (this.prisma as any).mod_ordem_servico_templates.findMany({
                 orderBy: { name: 'asc' },
             });
 
@@ -28,7 +28,7 @@ export class TemplateService {
 
     async findById(id: string) {
         try {
-            return await this.prisma.mod_ordem_servico_templates.findFirst({
+            return await (this.prisma as any).mod_ordem_servico_templates.findFirst({
                 where: { id },
             });
         } catch (error) {
@@ -44,7 +44,7 @@ export class TemplateService {
             if (!tenantId) {
                 throw new Error('Tenant ID nao identificado no contexto atual.');
             }
-            const created = await this.prisma.mod_ordem_servico_templates.create({
+            const created = await (this.prisma as any).mod_ordem_servico_templates.create({
                 data: {
                     tenantId,
                     name: data.name,
@@ -64,7 +64,7 @@ export class TemplateService {
 
     async update(id: string, data: any) {
         try {
-            const result = await this.prisma.mod_ordem_servico_templates.updateMany({
+            const result = await (this.prisma as any).mod_ordem_servico_templates.updateMany({
                 where: { id },
                 data: {
                     name: data.name,
@@ -88,7 +88,7 @@ export class TemplateService {
 
     async delete(id: string) {
         try {
-            await this.prisma.mod_ordem_servico_templates.deleteMany({
+            await (this.prisma as any).mod_ordem_servico_templates.deleteMany({
                 where: { id },
             });
 

@@ -52,7 +52,7 @@ export class PermissionService implements IPermissionService {
     }
 
     try {
-      const permissions = await this.modulePrisma.mod_ordem_servico_user_permissions.findMany({
+      const permissions = await (this.modulePrisma as any).mod_ordem_servico_user_permissions.findMany({
         where: { userId },
         orderBy: [{ resource: 'asc' }, { action: 'asc' }],
       });
@@ -104,7 +104,7 @@ export class PermissionService implements IPermissionService {
 
         if (current) {
           if (current.allowed !== permission.allowed) {
-            await this.modulePrisma.mod_ordem_servico_user_permissions.updateMany({
+            await (this.modulePrisma as any).mod_ordem_servico_user_permissions.updateMany({
               where: {
                 userId,
                 resource: permission.resource,
@@ -126,7 +126,7 @@ export class PermissionService implements IPermissionService {
             );
           }
         } else {
-          await this.modulePrisma.mod_ordem_servico_user_permissions.create({
+          await (this.modulePrisma as any).mod_ordem_servico_user_permissions.create({
             data: {
               tenantId,
               userId,
@@ -308,7 +308,7 @@ export class PermissionService implements IPermissionService {
         };
       }
 
-      const audits = await this.modulePrisma.mod_ordem_servico_permission_audit.findMany({
+      const audits = await (this.modulePrisma as any).mod_ordem_servico_permission_audit.findMany({
         where,
         orderBy: { changedAt: 'desc' },
         take: 1000,
@@ -342,7 +342,7 @@ export class PermissionService implements IPermissionService {
     reason?: string,
   ): Promise<void> {
     try {
-      await this.modulePrisma.mod_ordem_servico_permission_audit.create({
+      await (this.modulePrisma as any).mod_ordem_servico_permission_audit.create({
         data: {
           tenantId: this.getTenantIdOrThrow(),
           userId,
@@ -365,7 +365,7 @@ export class PermissionService implements IPermissionService {
     action: string,
   ): Promise<void> {
     try {
-      await this.modulePrisma.mod_ordem_servico_permission_audit.create({
+      await (this.modulePrisma as any).mod_ordem_servico_permission_audit.create({
         data: {
           tenantId: this.getTenantIdOrThrow(),
           userId,
@@ -394,7 +394,7 @@ export class PermissionService implements IPermissionService {
     this.getTenantIdOrThrow();
 
     try {
-      const config = await this.modulePrisma.mod_ordem_servico_configs.findFirst({
+      const config = await (this.modulePrisma as any).mod_ordem_servico_configs.findFirst({
         where: { key: 'module_enabled' },
         select: { value: true },
       });
@@ -493,7 +493,7 @@ export class PermissionService implements IPermissionService {
     const defaults = this.getDefaultProfilePermissions();
 
     try {
-      const rows = await this.modulePrisma.mod_ordem_servico_profile_permissions.findMany({
+      const rows = await (this.modulePrisma as any).mod_ordem_servico_profile_permissions.findMany({
         orderBy: [{ profile: 'asc' }, { permissionId: 'asc' }],
       });
 
@@ -532,7 +532,7 @@ export class PermissionService implements IPermissionService {
 
   private async resolveUserProfiles(userId: string): Promise<ModuleProfile[]> {
     try {
-      const roles = await this.modulePrisma.mod_ordem_servico_user_roles.findFirst({
+      const roles = await (this.modulePrisma as any).mod_ordem_servico_user_roles.findFirst({
         where: { userId },
         select: {
           isAdmin: true,

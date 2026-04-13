@@ -47,7 +47,7 @@ export class OrdensService {
     ) { }
 
     async findOne(id: string) {
-        const ordem = await this.modulePrisma.mod_ordem_servico_ordens.findFirst({
+        const ordem = await (this.modulePrisma as any).mod_ordem_servico_ordens.findFirst({
             where: { id },
             include: { cliente: true },
         });
@@ -67,7 +67,7 @@ export class OrdensService {
     }
 
     async isClienteAtivo(clienteId: string): Promise<boolean> {
-        const cliente = await this.modulePrisma.mod_ordem_servico_clients.findFirst({
+        const cliente = await (this.modulePrisma as any).mod_ordem_servico_clients.findFirst({
             where: {
                 id: clienteId,
                 isActive: true,
@@ -83,7 +83,7 @@ export class OrdensService {
     }
 
     async getConfig(key: string): Promise<string | null> {
-        const result = await this.modulePrisma.mod_ordem_servico_configs.findFirst({
+        const result = await (this.modulePrisma as any).mod_ordem_servico_configs.findFirst({
             where: { key },
             select: { value: true },
         });
@@ -91,7 +91,7 @@ export class OrdensService {
     }
 
     private async gerarNumeroOS(): Promise<string> {
-        const ultima = await this.modulePrisma.mod_ordem_servico_ordens.findFirst({
+        const ultima = await (this.modulePrisma as any).mod_ordem_servico_ordens.findFirst({
             orderBy: { createdAt: 'desc' },
             select: { numero: true },
         });
@@ -264,8 +264,8 @@ export class OrdensService {
         };
 
         const [total, ordens] = await Promise.all([
-            this.modulePrisma.mod_ordem_servico_ordens.count({ where }),
-            this.modulePrisma.mod_ordem_servico_ordens.findMany({
+            (this.modulePrisma as any).mod_ordem_servico_ordens.count({ where }),
+            (this.modulePrisma as any).mod_ordem_servico_ordens.findMany({
                 where,
                 include: { cliente: true },
                 orderBy: { createdAt: 'desc' },
@@ -290,7 +290,7 @@ export class OrdensService {
         const numero = await this.gerarNumeroOS();
         const status = createDto.status ?? StatusOS.ORCAMENTO;
 
-        const ordem = await this.modulePrisma.mod_ordem_servico_ordens.create({
+        const ordem = await (this.modulePrisma as any).mod_ordem_servico_ordens.create({
             data: {
                 tenantId: actor.tenantId as string,
                 numero,
@@ -403,7 +403,7 @@ export class OrdensService {
             updatedAt: new Date(),
         };
 
-        await this.modulePrisma.mod_ordem_servico_ordens.updateMany({
+        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
             where: { id },
             data,
         });
@@ -442,7 +442,7 @@ export class OrdensService {
             ...(novoStatus === StatusOS.FINALIZADA ? { dataConclusao: new Date() } : {}),
         };
 
-        await this.modulePrisma.mod_ordem_servico_ordens.updateMany({
+        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
             where: { id },
             data,
         });
@@ -469,19 +469,19 @@ export class OrdensService {
     }
 
     async remove(id: string) {
-        await this.modulePrisma.mod_ordem_servico_anexos_abandono.deleteMany({
+        await (this.modulePrisma as any).mod_ordem_servico_anexos_abandono.deleteMany({
             where: {
                 alerta: {
                     ordemServicoId: id,
                 },
             },
         });
-        await this.modulePrisma.mod_ordem_servico_alertas_abandono.deleteMany({ where: { ordemServicoId: id } });
-        await this.modulePrisma.mod_ordem_servico_pagamentos.deleteMany({ where: { ordemServicoId: id } });
-        await this.modulePrisma.mod_ordem_servico_status_historico.deleteMany({ where: { ordemServicoId: id } });
-        await this.modulePrisma.mod_ordem_servico_historico.deleteMany({ where: { ordemServicoId: id } });
-        await this.modulePrisma.mod_ordem_servico_order_notifications.deleteMany({ where: { ordemId: id } });
-        await this.modulePrisma.mod_ordem_servico_ordens.deleteMany({ where: { id } });
+        await (this.modulePrisma as any).mod_ordem_servico_alertas_abandono.deleteMany({ where: { ordemServicoId: id } });
+        await (this.modulePrisma as any).mod_ordem_servico_pagamentos.deleteMany({ where: { ordemServicoId: id } });
+        await (this.modulePrisma as any).mod_ordem_servico_status_historico.deleteMany({ where: { ordemServicoId: id } });
+        await (this.modulePrisma as any).mod_ordem_servico_historico.deleteMany({ where: { ordemServicoId: id } });
+        await (this.modulePrisma as any).mod_ordem_servico_order_notifications.deleteMany({ where: { ordemId: id } });
+        await (this.modulePrisma as any).mod_ordem_servico_ordens.deleteMany({ where: { id } });
         return { success: true };
     }
 
@@ -491,7 +491,7 @@ export class OrdensService {
             throw new BadRequestException('Orcamento nao encontrado ou ja aprovado');
         }
 
-        await this.modulePrisma.mod_ordem_servico_ordens.updateMany({
+        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
             where: { id },
             data: {
                 status: StatusOS.ABERTA,
@@ -507,7 +507,7 @@ export class OrdensService {
     }
 
     async getHistorico(ordemId: string) {
-        const historico = await this.modulePrisma.mod_ordem_servico_historico.findMany({
+        const historico = await (this.modulePrisma as any).mod_ordem_servico_historico.findMany({
             where: { ordemServicoId: ordemId },
             orderBy: { createdAt: 'desc' },
         });
@@ -531,7 +531,7 @@ export class OrdensService {
     }
 
     async getDashboardData() {
-        const dados = await this.modulePrisma.mod_ordem_servico_ordens.groupBy({
+        const dados = await (this.modulePrisma as any).mod_ordem_servico_ordens.groupBy({
             by: ['status'],
             _count: { status: true },
             _sum: { valorServico: true },
@@ -545,7 +545,7 @@ export class OrdensService {
     }
 
     async getTiposServico() {
-        const result = await this.modulePrisma.mod_ordem_servico_tipos_servico.findMany({
+        const result = await (this.modulePrisma as any).mod_ordem_servico_tipos_servico.findMany({
             orderBy: { nome: 'asc' },
         });
 
@@ -557,7 +557,7 @@ export class OrdensService {
     }
 
     async getTiposEquipamento() {
-        const result = await this.modulePrisma.mod_ordem_servico_tipos_equipamento.findMany({
+        const result = await (this.modulePrisma as any).mod_ordem_servico_tipos_equipamento.findMany({
             orderBy: { nome: 'asc' },
         });
 
@@ -568,7 +568,7 @@ export class OrdensService {
     }
 
     async getTechnicians() {
-        const userRoles = await this.modulePrisma.mod_ordem_servico_user_roles.findMany({
+        const userRoles = await (this.modulePrisma as any).mod_ordem_servico_user_roles.findMany({
             where: { isTechnician: true },
             select: { userId: true },
         });
@@ -594,7 +594,7 @@ export class OrdensService {
     }
 
     async getStatusHistorico(ordemId: string) {
-        const historico = await this.modulePrisma.mod_ordem_servico_status_historico.findMany({
+        const historico = await (this.modulePrisma as any).mod_ordem_servico_status_historico.findMany({
             where: { ordemServicoId: ordemId },
             orderBy: { dataAlteracao: 'desc' },
         });
@@ -669,7 +669,7 @@ export class OrdensService {
     }
 
     async atualizarConservacao(ordemId: string, valorConservacao: number, justificativa?: string) {
-        await this.modulePrisma.mod_ordem_servico_ordens.updateMany({
+        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
             where: { id: ordemId },
             data: {
                 valorConservacao,
@@ -709,7 +709,7 @@ export class OrdensService {
     }
 
     async getPagamentos(ordemId: string) {
-        const pagamentos = await this.modulePrisma.mod_ordem_servico_pagamentos.findMany({
+        const pagamentos = await (this.modulePrisma as any).mod_ordem_servico_pagamentos.findMany({
             where: { ordemServicoId: ordemId },
             orderBy: { createdAt: 'asc' },
         });
@@ -735,7 +735,7 @@ export class OrdensService {
             ? retiradaDTO.valor_conservacao
             : conservacao.emAtraso ? conservacao.valorConservacao : 0;
 
-        await this.modulePrisma.mod_ordem_servico_pagamentos.createMany({
+        await (this.modulePrisma as any).mod_ordem_servico_pagamentos.createMany({
             data: retiradaDTO.pagamentos.map((pagamento) => ({
                 tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,
@@ -747,7 +747,7 @@ export class OrdensService {
             })),
         });
 
-        await this.modulePrisma.mod_ordem_servico_ordens.updateMany({
+        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
             where: { id: ordemId },
             data: {
                 status: StatusOS.RETIRADO,
@@ -772,7 +772,7 @@ export class OrdensService {
     }
 
     async getAlertasAbandono(ordemId: string) {
-        const alertas = await this.modulePrisma.mod_ordem_servico_alertas_abandono.findMany({
+        const alertas = await (this.modulePrisma as any).mod_ordem_servico_alertas_abandono.findMany({
             where: { ordemServicoId: ordemId },
             include: { anexos: true },
             orderBy: { numeroAlerta: 'asc' },
@@ -818,7 +818,7 @@ export class OrdensService {
             throw new BadRequestException(`Alerta ${alertaDTO.numero_alerta} nao pode ser registrado. O proximo alerta esperado e o ${numeroEsperado}`);
         }
 
-        const alerta = await this.modulePrisma.mod_ordem_servico_alertas_abandono.create({
+        const alerta = await (this.modulePrisma as any).mod_ordem_servico_alertas_abandono.create({
             data: {
                 tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,
@@ -855,7 +855,7 @@ export class OrdensService {
 
     async registrarAnexoAlerta(alertaId: string, anexoDTO: any) {
         const actor = this.getActorOrThrow();
-        const alerta = await this.modulePrisma.mod_ordem_servico_alertas_abandono.findFirst({
+        const alerta = await (this.modulePrisma as any).mod_ordem_servico_alertas_abandono.findFirst({
             where: { id: alertaId },
             select: { id: true },
         });
@@ -864,7 +864,7 @@ export class OrdensService {
             throw new NotFoundException('Alerta nao encontrado');
         }
 
-        return this.modulePrisma.mod_ordem_servico_anexos_abandono.create({
+        return (this.modulePrisma as any).mod_ordem_servico_anexos_abandono.create({
             data: {
                 tenantId: actor.tenantId as string,
                 alertaId,
@@ -899,7 +899,7 @@ export class OrdensService {
     async marcarComoAbandonado(ordemId: string, observacoes?: string) {
         const { ordem } = await this.validarAbandono(ordemId);
 
-        await this.modulePrisma.mod_ordem_servico_ordens.updateMany({
+        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
             where: { id: ordemId },
             data: {
                 status: StatusOS.ABANDONADO,
@@ -925,7 +925,7 @@ export class OrdensService {
     }
 
     async getAlertasRetirada() {
-        const ordens = await this.modulePrisma.mod_ordem_servico_ordens.findMany({
+        const ordens = await (this.modulePrisma as any).mod_ordem_servico_ordens.findMany({
             where: {
                 status: StatusOS.FINALIZADA,
                 dataConclusao: { not: null },
@@ -1043,7 +1043,7 @@ export class OrdensService {
         observacoes?: string | null,
     ) {
         const actor = this.getActorOrThrow();
-        await this.modulePrisma.mod_ordem_servico_historico.create({
+        await (this.modulePrisma as any).mod_ordem_servico_historico.create({
             data: {
                 tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,
@@ -1088,7 +1088,7 @@ export class OrdensService {
         observacoes?: string | null,
     ) {
         const actor = this.getActorOrThrow();
-        await this.modulePrisma.mod_ordem_servico_status_historico.create({
+        await (this.modulePrisma as any).mod_ordem_servico_status_historico.create({
             data: {
                 tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,

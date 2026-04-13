@@ -38,7 +38,7 @@ const moduleContract = {
     moduleApiVersion: 1,
     name: 'ordem_servico',
     slug: 'ordem_servico',
-    version: '3.1.0',
+    version: '1.0.0',
     displayName: 'Ordem de Servicos',
     description: 'Modulo de gerenciamento de ordens de servico.',
     author: 'GOR Informatica',
@@ -51,13 +51,15 @@ const moduleContract = {
     },
     register(context: any) {
         const routeRoot = '/modules/ordem_servico/pages';
+        const ALL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'USER', 'TECH'];
+
         const menuItems = [
             {
                 id: 'ordem_servico-dashboard',
                 label: 'Dashboard',
                 href: `${routeRoot}/dashboard`,
                 icon: 'BarChart3',
-                permission: 'ordem_servico.dashboard.view',
+                roles: ALL_ROLES,
                 placement: 'sidebar',
                 isQuickAction: true,
                 order: 1,
@@ -68,7 +70,7 @@ const moduleContract = {
                 label: 'Ordens de Servico',
                 href: `${routeRoot}/ordens`,
                 icon: 'ClipboardList',
-                permission: 'ordem_servico.orders.view',
+                roles: ALL_ROLES,
                 placement: 'sidebar',
                 order: 2,
                 module: 'ordem_servico',
@@ -78,7 +80,7 @@ const moduleContract = {
                 label: 'Clientes',
                 href: `${routeRoot}/clientes`,
                 icon: 'Users',
-                permission: 'ordem_servico.clients.view',
+                roles: ALL_ROLES,
                 placement: 'sidebar',
                 order: 3,
                 module: 'ordem_servico',
@@ -88,7 +90,7 @@ const moduleContract = {
                 label: 'Produtos / Servicos',
                 href: `${routeRoot}/produtos`,
                 icon: 'Package',
-                permission: 'ordem_servico.products.view',
+                roles: ALL_ROLES,
                 placement: 'sidebar',
                 order: 4,
                 module: 'ordem_servico',
@@ -98,7 +100,7 @@ const moduleContract = {
                 label: 'Configuracoes',
                 href: `${routeRoot}/configuracoes`,
                 icon: 'Settings',
-                permission: 'ordem_servico.config.view',
+                roles: ['SUPER_ADMIN', 'ADMIN'],
                 placement: 'topbar',
                 order: 5,
                 module: 'ordem_servico',
@@ -109,6 +111,25 @@ const moduleContract = {
             menuItems.forEach((item) => context.menu.add(item));
         }
 
+        if (context?.clientMenu?.add) {
+            context.clientMenu.add({
+                id: 'os-aba',
+                label: 'Ordens de Servico',
+                component: 'ClientOrdersList',
+                module: 'ordem_servico',
+                roles: ALL_ROLES
+            });
+        }
+
+        if (context?.taskbar?.add) {
+            context.taskbar.add({
+                id: 'alertas-retirada-os',
+                component: 'AlertaRetiradaBadge',
+                module: 'ordem_servico',
+                roles: ALL_ROLES
+            });
+        }
+
         if (context?.dashboard?.addWidget) {
             context.dashboard.addWidget({
                 id: 'ordem_servico-status',
@@ -117,13 +138,13 @@ const moduleContract = {
                 gridSize: { w: 1, h: 1 },
                 order: 1,
                 module: 'ordem_servico',
-                permission: 'ordem_servico.dashboard.view',
+                roles: ALL_ROLES,
                 refresh: 60000,
             });
         }
 
         if (context?.logger?.info) {
-            context.logger.info('Modulo ordem_servico registrado em modo compatibilidade.');
+            context.logger.info('Modulo ordem_servico registrado com permissoes baseadas em roles.');
         }
     },
 };

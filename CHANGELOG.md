@@ -1,6 +1,6 @@
 # CHANGELOG - Modulo Ordem de Servico
 
-## [3.2.0] - 2026-04-08
+## [1.0.0] - 2026-04-08
 ### Nucleo migrado para Prisma + ALS
 - Criada camada Prisma local do modulo em `backend/prisma/`, com schema proprio, client gerado e service com bloqueio de operacoes RAW.
 - Nucleo backend migrado para consultas Prisma usando models `mod_ordem_servico_*`, sem `tenantId` manual nas operacoes HTTP principais.
