@@ -38,7 +38,7 @@ const moduleContract = {
     moduleApiVersion: 1,
     name: 'ordem_servico',
     slug: 'ordem_servico',
-    version: '3.2.0',
+    version: '1.0.0',
     displayName: 'Ordem de Servicos',
     description: 'Modulo de gerenciamento de ordens de servico.',
     author: 'GOR Informatica',

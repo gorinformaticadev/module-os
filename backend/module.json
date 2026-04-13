@@ -2,7 +2,7 @@
   "moduleApiVersion": 1,
   "name": "ordem_servico",
   "displayName": "Ordem de Servico",
-  "version": "3.2.0",
+  "version": "1.0.0",
   "description": "Modulo de Gerenciamento de Ordens de Servico",
   "author": "GOR Informatica",
   "category": "custom",
@@ -23,7 +23,12 @@
       "label": "Dashboard",
       "route": "/modules/ordem_servico/pages/dashboard",
       "icon": "BarChart3",
-      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
+      "roles": [
+        "SUPER_ADMIN",
+        "ADMIN",
+        "USER",
+        "TECH"
+      ],
       "placement": "sidebar",
       "isQuickAction": true,
       "order": 1
@@ -33,7 +38,12 @@
       "label": "Ordens de Servico",
       "route": "/modules/ordem_servico/pages/ordens",
       "icon": "ClipboardList",
-      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
+      "roles": [
+        "SUPER_ADMIN",
+        "ADMIN",
+        "USER",
+        "TECH"
+      ],
       "placement": "sidebar",
       "order": 2
     },
@@ -42,7 +52,12 @@
       "label": "Clientes",
       "route": "/modules/ordem_servico/pages/clientes",
       "icon": "Users",
-      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
+      "roles": [
+        "SUPER_ADMIN",
+        "ADMIN",
+        "USER",
+        "TECH"
+      ],
       "placement": "sidebar",
       "order": 3
     },
@@ -51,7 +66,12 @@
       "label": "Produtos / Servicos",
       "route": "/modules/ordem_servico/pages/produtos",
       "icon": "Package",
-      "roles": ["SUPER_ADMIN", "ADMIN", "USER", "TECH"],
+      "roles": [
+        "SUPER_ADMIN",
+        "ADMIN",
+        "USER",
+        "TECH"
+      ],
       "placement": "sidebar",
       "order": 4
     },
@@ -60,7 +80,10 @@
       "label": "Configuracoes",
       "route": "/modules/ordem_servico/pages/configuracoes",
       "icon": "Settings",
-      "roles": ["SUPER_ADMIN", "ADMIN"],
+      "roles": [
+        "SUPER_ADMIN",
+        "ADMIN"
+      ],
       "placement": "topbar",
       "order": 5
     }
