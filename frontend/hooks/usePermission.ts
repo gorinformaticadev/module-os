@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { PermissionService } from '../services/permissionService';
 
 interface UsePermissionResult {
@@ -10,6 +11,7 @@ interface UsePermissionResult {
 }
 
 export const usePermission = (resource?: string, action?: string): UsePermissionResult => {
+  const { user } = useAuth();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,31 +20,39 @@ export const usePermission = (resource?: string, action?: string): UsePermission
     try {
       setLoading(true);
       setError(null);
-      
+
+      if (!user) {
+        setHasPermission(false);
+        return false;
+      }
+
+      if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {
+        setHasPermission(true);
+        return true;
+      }
+
       const allowed = await PermissionService.checkPermission(res, act);
       setHasPermission(allowed);
-      
       return allowed;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao verificar permissão';
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao verificar permissao';
       setError(errorMessage);
       setHasPermission(false);
-      console.error('Erro ao verificar permissão:', err);
       return false;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const refetch = useCallback(() => {
     if (resource && action) {
-      checkPermission(resource, action);
+      void checkPermission(resource, action);
     }
   }, [resource, action, checkPermission]);
 
   useEffect(() => {
     if (resource && action) {
-      checkPermission(resource, action);
+      void checkPermission(resource, action);
     }
   }, [resource, action, checkPermission]);
 
@@ -51,12 +61,12 @@ export const usePermission = (resource?: string, action?: string): UsePermission
     loading,
     error,
     checkPermission,
-    refetch
+    refetch,
   };
 };
 
-// Hook para verificar múltiplas permissões
 export const useMultiplePermissions = (permissions: Array<{ resource: string; action: string }>) => {
+  const { user } = useAuth();
   const [results, setResults] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,13 +77,21 @@ export const useMultiplePermissions = (permissions: Array<{ resource: string; ac
     try {
       setLoading(true);
       setError(null);
-      
+
+      if (user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN') {
+        const allowedResults = permissions.reduce<Record<string, boolean>>((acc, permission) => {
+          acc[`${permission.resource}:${permission.action}`] = true;
+          return acc;
+        }, {});
+        setResults(allowedResults);
+        return;
+      }
+
       const checks = await Promise.all(
-        permissions.map(async ({ resource, action }) => {
-          const key = `${resource}:${action}`;
-          const allowed = await PermissionService.checkPermission(resource, action);
-          return { key, allowed };
-        })
+        permissions.map(async ({ resource, action }) => ({
+          key: `${resource}:${action}`,
+          allowed: await PermissionService.checkPermission(resource, action),
+        })),
       );
 
       const newResults: Record<string, boolean> = {};
@@ -83,21 +101,19 @@ export const useMultiplePermissions = (permissions: Array<{ resource: string; ac
 
       setResults(newResults);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao verificar permissões';
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao verificar permissoes';
       setError(errorMessage);
-      console.error('Erro ao verificar permissões:', err);
     } finally {
       setLoading(false);
     }
-  }, [permissions]);
+  }, [permissions, user]);
 
   useEffect(() => {
-    checkAllPermissions();
+    void checkAllPermissions();
   }, [checkAllPermissions]);
 
   const hasPermission = useCallback((resource: string, action: string): boolean => {
-    const key = `${resource}:${action}`;
-    return results[key] || false;
+    return results[`${resource}:${action}`] || false;
   }, [results]);
 
   const hasAnyPermission = useCallback((perms: Array<{ resource: string; action: string }>): boolean => {
@@ -115,28 +131,26 @@ export const useMultiplePermissions = (permissions: Array<{ resource: string; ac
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    refetch: checkAllPermissions
+    refetch: checkAllPermissions,
   };
 };
 
-// Hook para verificar se o usuário tem pelo menos uma permissão de uma lista
 export const useHasAnyPermission = (permissions: Array<{ resource: string; action: string }>) => {
   const { hasAnyPermission, loading, error } = useMultiplePermissions(permissions);
-  
+
   return {
     hasAnyPermission: hasAnyPermission(permissions),
     loading,
-    error
+    error,
   };
 };
 
-// Hook para verificar se o usuário tem todas as permissões de uma lista
 export const useHasAllPermissions = (permissions: Array<{ resource: string; action: string }>) => {
   const { hasAllPermissions, loading, error } = useMultiplePermissions(permissions);
-  
+
   return {
     hasAllPermissions: hasAllPermissions(permissions),
     loading,
-    error
+    error,
   };
 };

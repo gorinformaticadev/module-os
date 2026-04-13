@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { PermissionService } from '../services/permissionService';
 import { PermissionDenied } from './PermissionDenied';
 
@@ -13,26 +14,36 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
   resource,
   action,
   children,
-  fallback
+  fallback,
 }) => {
+  const { user } = useAuth();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkPermission = async () => {
       try {
+        if (!user) {
+          setHasPermission(false);
+          return;
+        }
+
+        if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {
+          setHasPermission(true);
+          return;
+        }
+
         const allowed = await PermissionService.checkPermission(resource, action);
         setHasPermission(allowed);
-      } catch (error) {
-        console.error('Erro ao verificar permissão:', error);
+      } catch {
         setHasPermission(false);
       } finally {
         setLoading(false);
       }
     };
 
-    checkPermission();
-  }, [resource, action]);
+    void checkPermission();
+  }, [action, resource, user]);
 
   if (loading) {
     return (

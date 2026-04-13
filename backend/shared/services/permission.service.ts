@@ -224,7 +224,9 @@ export class PermissionService implements IPermissionService {
 
   async getUsersWithPermissions(): Promise<UserWithPermissions[]> {
     try {
+      const tenantId = this.getTenantIdOrThrow();
       const users = await this.prisma.user.findMany({
+        where: { tenantId },
         orderBy: { name: 'asc' },
         select: {
           id: true,
@@ -565,9 +567,11 @@ export class PermissionService implements IPermissionService {
     userId: string,
     select?: TSelect,
   ) {
+    const tenantId = this.getTenantIdOrThrow();
     const user = await this.prisma.user.findFirst({
       where: {
         id: userId,
+        tenantId,
       },
       select: select || {
         id: true,
