@@ -21,7 +21,7 @@ export class ClientesService {
         }
 
         if (safeSearch.length >= 2) {
-            return this.prisma.mod_ordem_servico_clients.findMany({
+            return (this.prisma as any).mod_ordem_servico_clients.findMany({
                 where: {
                     deletedAt: null,
                     OR: [
@@ -35,7 +35,7 @@ export class ClientesService {
             });
         }
 
-        return this.prisma.mod_ordem_servico_clients.findMany({
+        return (this.prisma as any).mod_ordem_servico_clients.findMany({
             where: { deletedAt: null },
             orderBy: { name: 'asc' },
             take: 50,
@@ -43,7 +43,7 @@ export class ClientesService {
     }
 
     async findById(id: string) {
-        return this.prisma.mod_ordem_servico_clients.findFirst({
+        return (this.prisma as any).mod_ordem_servico_clients.findFirst({
             where: {
                 id,
                 deletedAt: null,
@@ -58,7 +58,7 @@ export class ClientesService {
 
         try {
             const actor = this.getActorContext();
-            const createdClient = await this.prisma.mod_ordem_servico_clients.create({
+            const createdClient = await (this.prisma as any).mod_ordem_servico_clients.create({
                 data: {
                     tenantId: actor.tenantId,
                     name: data.name,
@@ -100,7 +100,7 @@ export class ClientesService {
         }
 
         try {
-            const updated = await this.prisma.mod_ordem_servico_clients.updateMany({
+            const updated = await (this.prisma as any).mod_ordem_servico_clients.updateMany({
                 where: { id, deletedAt: null },
                 data: {
                     name: data.name,
@@ -144,7 +144,7 @@ export class ClientesService {
     }
 
     async delete(id: string) {
-        const osCount = await this.prisma.mod_ordem_servico_ordens.count({
+        const osCount = await (this.prisma as any).mod_ordem_servico_ordens.count({
             where: { clienteId: id },
         });
 
@@ -152,7 +152,7 @@ export class ClientesService {
             throw new Error('Nao e possivel excluir o cliente pois existem Ordens de Servico associadas a ele.');
         }
 
-        await this.prisma.mod_ordem_servico_clients.updateMany({
+        await (this.prisma as any).mod_ordem_servico_clients.updateMany({
             where: { id, deletedAt: null },
             data: {
                 deletedAt: new Date(),

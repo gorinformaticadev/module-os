@@ -11,13 +11,13 @@ export class TiposServicoService {
   ) {}
 
   async findAll() {
-    return this.prisma.mod_ordem_servico_tipos_servico.findMany({
+    return (this.prisma as any).mod_ordem_servico_tipos_servico.findMany({
       orderBy: [{ isDefault: 'desc' }, { nome: 'asc' }],
     });
   }
 
   async findOne(id: string) {
-    const tipo = await this.prisma.mod_ordem_servico_tipos_servico.findFirst({
+    const tipo = await (this.prisma as any).mod_ordem_servico_tipos_servico.findFirst({
       where: { id },
     });
 
@@ -34,7 +34,7 @@ export class TiposServicoService {
       throw new BadRequestException('Nome e obrigatorio');
     }
 
-    const existing = await this.prisma.mod_ordem_servico_tipos_servico.findFirst({
+    const existing = await (this.prisma as any).mod_ordem_servico_tipos_servico.findFirst({
       where: { nome: { equals: normalizedNome, mode: 'insensitive' } },
       select: { id: true },
     });
@@ -43,7 +43,7 @@ export class TiposServicoService {
       throw new BadRequestException('Ja existe um tipo de servico com este nome');
     }
 
-    return this.prisma.mod_ordem_servico_tipos_servico.create({
+    return (this.prisma as any).mod_ordem_servico_tipos_servico.create({
       data: {
         tenantId: this.getTenantIdOrThrow(),
         nome: normalizedNome,
@@ -61,7 +61,7 @@ export class TiposServicoService {
     }
 
     if (normalizedNome !== existing.nome) {
-      const duplicate = await this.prisma.mod_ordem_servico_tipos_servico.findFirst({
+      const duplicate = await (this.prisma as any).mod_ordem_servico_tipos_servico.findFirst({
         where: {
           id: { not: id },
           nome: { equals: normalizedNome, mode: 'insensitive' },
@@ -74,7 +74,7 @@ export class TiposServicoService {
       }
     }
 
-    const updateResult = await this.prisma.mod_ordem_servico_tipos_servico.updateMany({
+    const updateResult = await (this.prisma as any).mod_ordem_servico_tipos_servico.updateMany({
       where: { id },
       data: { nome: normalizedNome },
     });
@@ -93,7 +93,7 @@ export class TiposServicoService {
       throw new BadRequestException('Tipos de servico padrao nao podem ser excluidos');
     }
 
-    const inUseCount = await this.prisma.mod_ordem_servico_ordens.count({
+    const inUseCount = await (this.prisma as any).mod_ordem_servico_ordens.count({
       where: { tipoServico: existing.nome },
     });
 
@@ -103,7 +103,7 @@ export class TiposServicoService {
       );
     }
 
-    await this.prisma.mod_ordem_servico_tipos_servico.deleteMany({
+    await (this.prisma as any).mod_ordem_servico_tipos_servico.deleteMany({
       where: { id },
     });
 

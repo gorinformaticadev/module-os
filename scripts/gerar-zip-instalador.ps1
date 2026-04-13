@@ -94,6 +94,11 @@ function Test-IncludedRelativePath {
         return $false
     }
 
+    # Bloqueio específico para evitar frontend dentro de backend e vice-versa
+    if ($normalized -match "^backend/frontend/" -or $normalized -match "^frontend/backend/") {
+        return $false
+    }
+
     if ($fileName -eq "package-lock.json") {
         return $false
     }

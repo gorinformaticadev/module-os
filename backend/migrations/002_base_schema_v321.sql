@@ -1,4 +1,4 @@
--- 002: Base Schema OS
+-- 002: Base Schema OS (Sincronizado com Schema Prisma V3.2.1+)
 CREATE TABLE mod_ordem_servico_configs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
@@ -26,9 +26,11 @@ CREATE TABLE mod_ordem_servico_clients (
     address_city VARCHAR(100),
     address_state VARCHAR(2),
     observations TEXT,
+    image_url TEXT,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
     CONSTRAINT fk_mod_ordem_servico_clients_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
@@ -39,8 +41,13 @@ CREATE TABLE mod_ordem_servico_products (
     name VARCHAR(255) NOT NULL,
     type VARCHAR(20) DEFAULT 'PRODUCT' NOT NULL,
     price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    cost_price DECIMAL(10, 2) DEFAULT 0.00,
+    description TEXT,
+    image_url TEXT,
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
     CONSTRAINT fk_mod_ordem_servico_products_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
@@ -52,13 +59,35 @@ CREATE TABLE mod_ordem_servico_ordens (
     usuario_responsavel_id TEXT NOT NULL,
     tipo_servico TEXT NOT NULL,
     descricao TEXT NOT NULL,
+    observacoes_internas TEXT,
+    observacoes_cliente TEXT,
     valor_servico DECIMAL(10,2) DEFAULT 0.00,
+    forma_pagamento TEXT,
     status INTEGER NOT NULL DEFAULT 0 CHECK (status >= 0 AND status <= 9),
     prioridade TEXT DEFAULT 'MEDIA',
     data_abertura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    data_previsao TIMESTAMP,
     data_conclusao TIMESTAMP,
+    origem_solicitacao TEXT NOT NULL,
+    orcamento_aprovado BOOLEAN DEFAULT false,
+    motivo_cancelamento TEXT,
+    equipamento_tipo TEXT,
+    equipamento_marca TEXT,
+    equipamento_modelo TEXT,
+    equipamento_serie TEXT,
+    equipamento_acessorios TEXT,
+    equipamento_estado TEXT,
+    equipamento_fotos TEXT,
+    laudo_tecnico TEXT,
+    itens TEXT,
+    formatacao_so TEXT,
+    formatacao_backup BOOLEAN DEFAULT false,
+    formatacao_backup_descricao TEXT,
+    formatacao_senha TEXT,
+    garantia_dias INTEGER DEFAULT 0,
     valor_conservacao DECIMAL(10,2) DEFAULT 0,
     dias_atraso INTEGER DEFAULT 0,
+    justificativa_conservacao TEXT,
     data_limite_retirada TIMESTAMP,
     data_retirada TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

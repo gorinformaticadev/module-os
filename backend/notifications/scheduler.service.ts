@@ -85,7 +85,7 @@ export class NotificationSchedulerService implements OnModuleInit {
             const now = new Date();
             const activeRules = await this.requestSecurityContext.runWithoutTenantEnforcement(
                 'module-os notification scheduler sweep',
-                () => this.modulePrisma.mod_ordem_servico_notif_rules.findMany({
+                () => (this.modulePrisma as any).mod_ordem_servico_notif_rules.findMany({
                     where: {
                         enabled: true,
                         triggerType: { in: ['CRON', 'CONDITION', 'OFFSET'] },
@@ -140,7 +140,7 @@ export class NotificationSchedulerService implements OnModuleInit {
     }
 
     private async processRelativeDeadline(rule: RuntimeRule, config: any) {
-        const orders = await this.modulePrisma.mod_ordem_servico_ordens.findMany({
+        const orders = await (this.modulePrisma as any).mod_ordem_servico_ordens.findMany({
             where: {
                 status: { notIn: [3, 4, 6] },
                 dataPrevisao: { not: null },
@@ -185,7 +185,7 @@ export class NotificationSchedulerService implements OnModuleInit {
     }
 
     private async processOverdueOS(rule: RuntimeRule, config: any) {
-        const overdueOrders = await this.modulePrisma.mod_ordem_servico_ordens.findMany({
+        const overdueOrders = await (this.modulePrisma as any).mod_ordem_servico_ordens.findMany({
             where: {
                 status: { notIn: [3, 4, 6] },
                 dataPrevisao: { lt: new Date() },
@@ -256,7 +256,7 @@ export class NotificationSchedulerService implements OnModuleInit {
         }
 
         if (atLeastOneSuccess) {
-            await this.modulePrisma.mod_ordem_servico_notif_rules.updateMany({
+            await (this.modulePrisma as any).mod_ordem_servico_notif_rules.updateMany({
                 where: { id: rule.id },
                 data: {
                     currentExecutions: { increment: 1 },
