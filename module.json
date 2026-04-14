@@ -9,7 +9,7 @@
   "enabled": true,
   "hasBackend": true,
   "hasFrontend": true,
-  "dependencies": ["clientes"],
+  "dependencies": [],
   "npmDependencies": {
     "backend": {
       "@prisma/adapter-pg": "6.19.2",
