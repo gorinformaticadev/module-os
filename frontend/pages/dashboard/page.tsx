@@ -379,7 +379,7 @@ export default function OrdemServicoDashboardPage() {
   const handleShortcut = (action: string) => {
     switch (action) {
       case 'clientes':
-        window.location.href = `/modules/clientes/pages/clientes`;
+        window.location.href = `${MODULE_ROUTE_ROOT}/clientes`;
         break;
       case 'produtos':
         window.location.href = `${MODULE_ROUTE_ROOT}/produtos`;

@@ -50,7 +50,7 @@ model mod_ordem_servico_clients {
   @@index([tenantId])
   @@index([isActive])
   @@unique([tenantId, id])
-  @@map("mod_clientes")
+  @@map("mod_ordem_servico_clients")
 }
 
 model mod_ordem_servico_products {
@@ -103,10 +103,10 @@ model mod_ordem_servico_ordens {
   equipamentoFotos         String?                               @map("equipamento_fotos")
   laudoTecnico             String?                               @map("laudo_tecnico")
   itens                    String?
-  formatacaoSo             String?                               @map("formatacao_so")
-  formatacaoBackup         Boolean?                              @default(false) @map("formatacao_backup")
-  formatacaoBackupDescricao String?                              @map("formatacao_backup_descricao")
-  formatacaoSenha          String?                               @map("formatacao_senha")
+  formatacaoSo             String?                               @map("formatting_so")
+  formatacaoBackup         Boolean?                              @default(false) @map("formatting_backup")
+  formatacaoBackupDescricao String?                              @map("formatting_backup_descricao")
+  formatacaoSenha          String?                               @map("formatting_senha")
   garantiaDias             Int?                                  @default(0) @map("garantia_dias")
   valorConservacao         Decimal?                              @default(0) @map("valor_conservacao") @db.Decimal(10, 2)
   diasAtraso               Int?                                  @default(0) @map("dias_atraso")

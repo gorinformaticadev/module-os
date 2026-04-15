@@ -13,17 +13,23 @@ export class ClientesService {
         private readonly requestSecurityContext: RequestSecurityContextService,
     ) { }
 
-    async findAll(search?: string) {
+    async findAll(filters: { search?: string; status?: string | boolean } = {}) {
+        const { search, status } = filters;
         const safeSearch = typeof search === 'string' ? search.trim() : '';
+        const statusFilter =
+            status === '' || status === undefined || status === null
+                ? undefined
+                : status === true || status === 'true';
 
         if (safeSearch.length > 0 && safeSearch.length < 2) {
             return [];
         }
 
         if (safeSearch.length >= 2) {
-            return (this.prisma as any).mod_ordem_servico_clients.findMany({
+            const clients = await (this.prisma as any).mod_ordem_servico_clients.findMany({
                 where: {
                     deletedAt: null,
+                    ...(statusFilter !== undefined ? { isActive: statusFilter } : {}),
                     OR: [
                         { name: { contains: safeSearch, mode: 'insensitive' } },
                         { phonePrimary: { contains: safeSearch } },
@@ -33,22 +39,31 @@ export class ClientesService {
                 orderBy: { name: 'asc' },
                 take: 20,
             });
+
+            return clients.map((client: any) => this.serializeClient(client));
         }
 
-        return (this.prisma as any).mod_ordem_servico_clients.findMany({
-            where: { deletedAt: null },
+        const clients = await (this.prisma as any).mod_ordem_servico_clients.findMany({
+            where: {
+                deletedAt: null,
+                ...(statusFilter !== undefined ? { isActive: statusFilter } : {}),
+            },
             orderBy: { name: 'asc' },
             take: 50,
         });
+
+        return clients.map((client: any) => this.serializeClient(client));
     }
 
     async findById(id: string) {
-        return (this.prisma as any).mod_ordem_servico_clients.findFirst({
+        const client = await (this.prisma as any).mod_ordem_servico_clients.findFirst({
             where: {
                 id,
                 deletedAt: null,
             },
         });
+
+        return client ? this.serializeClient(client) : null;
     }
 
     async create(data: any) {
@@ -87,7 +102,7 @@ export class ClientesService {
                 details: { clientId: createdClient.id, name: data.name },
             });
 
-            return createdClient;
+            return this.serializeClient(createdClient);
         } catch (error) {
             this.logger.error('Erro ao criar cliente:', error);
             throw new Error('Erro ao salvar no banco de dados. Verifique os dados e tente novamente.');
@@ -183,6 +198,31 @@ export class ClientesService {
         return {
             tenantId,
             userId: actor?.id || undefined,
+        };
+    }
+
+    private serializeClient(client: any) {
+        return {
+            id: client.id,
+            name: client.name,
+            document: client.document,
+            phone_primary: client.phonePrimary,
+            phone_secondary: client.phoneSecondary,
+            email: client.email,
+            address: client.address,
+            address_zip: client.addressZip,
+            address_street: client.addressStreet,
+            address_number: client.addressNumber,
+            address_complement: client.addressComplement,
+            address_neighborhood: client.addressNeighborhood,
+            address_city: client.addressCity,
+            address_state: client.addressState,
+            observations: client.observations,
+            image_url: client.imageUrl,
+            is_active: client.isActive ?? true,
+            created_at: client.createdAt?.toISOString?.() ?? client.createdAt ?? null,
+            updated_at: client.updatedAt?.toISOString?.() ?? client.updatedAt ?? null,
+            deleted_at: client.deletedAt?.toISOString?.() ?? client.deletedAt ?? null,
         };
     }
 }

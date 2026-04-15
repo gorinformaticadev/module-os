@@ -325,7 +325,7 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
             const formDataUpload = new FormData();
             formDataUpload.append('file', blob, 'avatar.jpg');
 
-            const { data } = await api.post('/api/clientes/upload', formDataUpload, {
+            const { data } = await api.post('/api/ordem_servico/clientes/upload', formDataUpload, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
