@@ -134,7 +134,7 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
 
         try {
             console.log('📡 Fazendo requisição para endpoint interno...');
-            const response = await api.get(`/api/clientes/cep/${cleanCEP}`);
+            const response = await api.get(`/api/ordem_servico/clientes/cep/${cleanCEP}`);
             const data = response.data;
 
             console.log('📋 Resposta da API:', data);
@@ -346,7 +346,7 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
 
         try {
             setSaving(true);
-            const response = await api.post('/api/clientes', formData);
+            const response = await api.post('/api/ordem_servico/clientes', formData);
             toast({ title: 'Cliente cadastrado com sucesso!' });
 
             // Chama callback se fornecido

@@ -1,5 +1,5 @@
 import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString, IsInt, Min, Max, ArrayMinSize, ArrayMaxSize, ValidateNested, IsNotEmpty } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export enum OrigemSolicitacao {
     WHATSAPP = 'WHATSAPP',
@@ -255,25 +255,65 @@ export class UpdateOrdemServicoDTO {
 
 export class OrdemServicoFilters {
     // Busca textual livre - sem validação (pode ser qualquer string)
+    @IsOptional()
+    @IsString()
     search?: string;
 
     // Array de status - tipagem apenas, sem validação automática
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === undefined || value === null || value === '') {
+            return undefined;
+        }
+
+        const rawValues = Array.isArray(value) ? value : String(value).split(',');
+        return rawValues
+            .map((entry) => Number(String(entry).trim()))
+            .filter((entry) => Number.isFinite(entry));
+    })
+    @IsArray()
+    @IsNumber({}, { each: true })
     status?: StatusOS[];
 
     // IDs - tipagem como string, validação manual no service se necessário
+    @IsOptional()
+    @IsString()
     cliente_id?: string;
+
+    @IsOptional()
+    @IsString()
     usuario_responsavel_id?: string;
 
     // Datas - tipagem como string, parsing manual no service
+    @IsOptional()
+    @IsString()
     data_inicio?: string;
+
+    @IsOptional()
+    @IsString()
     data_fim?: string;
 
     // Enums - tipagem apenas, sem validação automática
+    @IsOptional()
+    @IsString()
     origem_solicitacao?: OrigemSolicitacao;
+
+    @IsOptional()
+    @IsString()
     tipo_servico?: string;
 
     // Paginação - tipagem como number, conversão manual no service
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
     page?: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(100)
     limit?: number;
 }
 

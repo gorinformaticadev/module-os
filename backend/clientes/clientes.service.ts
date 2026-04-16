@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { AuditService } from '@core/audit/audit.service';
 import { RequestSecurityContextService } from '@common/services/request-security-context.service';
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
@@ -64,6 +64,48 @@ export class ClientesService {
         });
 
         return client ? this.serializeClient(client) : null;
+    }
+
+    async lookupCep(cep: string) {
+        const cleanCep = String(cep || '').replace(/\D/g, '');
+
+        if (cleanCep.length !== 8) {
+            throw new BadRequestException('CEP invalido.');
+        }
+
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`, {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            this.logger.warn(`ViaCEP respondeu ${response.status} para o CEP ${cleanCep}`);
+            throw new BadGatewayException('Falha ao consultar o CEP.');
+        }
+
+        const data = await response.json() as {
+            erro?: boolean;
+            logradouro?: string;
+            bairro?: string;
+            localidade?: string;
+            uf?: string;
+            cep?: string;
+        };
+
+        if (data.erro) {
+            return { success: false };
+        }
+
+        return {
+            success: true,
+            cep: data.cep ?? cleanCep,
+            logradouro: data.logradouro ?? '',
+            bairro: data.bairro ?? '',
+            localidade: data.localidade ?? '',
+            uf: data.uf ?? '',
+        };
     }
 
     async create(data: any) {

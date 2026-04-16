@@ -236,7 +236,7 @@ export default function NewOrdemRefactoredPage() {
         if (safeSearch.length >= 2) {
             try {
                 setSearchingClients(true);
-                const response = await api.get(`/api/clientes?search=${safeSearch}`);
+                const response = await api.get(`/api/ordem_servico/clientes?search=${safeSearch}`);
                 setClients(response.data);
 
                 // ✅ CORREÇÃO: Abrir lista se houver resultados

@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   Controller,
   Delete,
@@ -45,6 +46,22 @@ export class ClientesController {
   @RequireClientsPermission('view')
   async findAll(@Query() filters: any) {
     return this.clientesService.findAll(filters);
+  }
+
+  @Get('cep/:cep')
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @RequireClientsPermission('view')
+  async lookupCep(@Param('cep') cep: string) {
+    try {
+      return await this.clientesService.lookupCep(cep);
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof BadGatewayException) {
+        throw error;
+      }
+
+      this.logger.error(`Erro ao consultar CEP ${cep}`, error as Error);
+      throw new BadGatewayException('Nao foi possivel consultar o CEP.');
+    }
   }
 
   @Get(':id')
