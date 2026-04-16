@@ -1108,6 +1108,22 @@ export default function OrdemServicoConfiguracoesPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <input
+                    type="text"
+                    name="fake-username"
+                    autoComplete="username"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="hidden"
+                  />
+                  <input
+                    type="password"
+                    name="fake-password"
+                    autoComplete="current-password"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="hidden"
+                  />
                   <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
                     <div className="space-y-1">
                       <Label htmlFor="ai-enabled" className="text-base">Ativar IA no Módulo</Label>
@@ -1137,10 +1153,15 @@ export default function OrdemServicoConfiguracoesPage() {
                     <Label htmlFor="ai-api-key">API Key</Label>
                     <Input
                       id="ai-api-key"
+                      name="ordem-servico-ai-api-key"
                       type="password"
                       value={aiConfig.apiKey}
                       onChange={(e) => setAiConfig({ ...aiConfig, apiKey: e.target.value })}
                       placeholder={aiConfig.apiKey ? "********" : "Sua chave de API..."}
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
                     />
                     <p className="text-[10px] text-muted-foreground">
                       {aiConfig.provider === 'openrouter'
@@ -1163,9 +1184,15 @@ export default function OrdemServicoConfiguracoesPage() {
                     <Label htmlFor="ai-model">Modelo (ID)</Label>
                     <Input
                       id="ai-model"
+                      name="ordem-servico-ai-model"
                       value={aiConfig.model}
                       onChange={(e) => setAiConfig({ ...aiConfig, model: e.target.value })}
                       placeholder="Ex: gpt-4o-mini"
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
+                      spellCheck={false}
                     />
                   </div>
 
