@@ -16,8 +16,8 @@ import {
     UpdateOrdemServicoDTO,
     AlertaAbandonoDTO,
 } from '../shared/dto/ordem-servico.dto';
-import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 import { ClientesService } from '../../clientes/src/clientes.service';
+import { OrdemRepository } from './repositories/ordem.repository';
 import * as puppeteer from 'puppeteer';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -41,31 +41,21 @@ export class OrdensService {
     };
 
     constructor(
-        private readonly prisma: PrismaService,
-        private readonly modulePrisma: ModuleOsPrismaService,
         private readonly requestSecurityContext: RequestSecurityContextService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly ordemRepository: OrdemRepository,
         private readonly clientesService: ClientesService,
+        private readonly corePrisma: PrismaService,
     ) { }
 
-    async findOne(id: string) {
-        const ordem = await (this.modulePrisma as any).mod_ordem_servico_ordens.findFirst({
-            where: { id },
-            include: { cliente: true },
-        });
+async findOne(id: string) {
+        const ordem = await this.ordemRepository.findById(id);
 
         if (!ordem) {
             throw new NotFoundException('Ordem de servico nao encontrada');
         }
 
-        const responsavel = ordem.usuarioResponsavelId
-            ? await this.prisma.user.findFirst({
-                where: { id: ordem.usuarioResponsavelId },
-                select: { id: true, name: true, email: true },
-            })
-            : null;
-
-        return this.mapOrder(ordem, responsavel);
+        return this.mapOrder(ordem, null);
     }
 
     async isClienteAtivo(clienteId: string): Promise<boolean> {
@@ -78,21 +68,7 @@ export class OrdensService {
     }
 
     async getConfig(key: string): Promise<string | null> {
-        const result = await (this.modulePrisma as any).mod_ordem_servico_configs.findFirst({
-            where: { key },
-            select: { value: true },
-        });
-        return result?.value || null;
-    }
-
-    private async gerarNumeroOS(): Promise<string> {
-        const ultima = await (this.modulePrisma as any).mod_ordem_servico_ordens.findFirst({
-            orderBy: { createdAt: 'desc' },
-            select: { numero: true },
-        });
-
-        const ultimoNumero = Number(String(ultima?.numero || '').replace(/\D/g, '')) || 0;
-        return String(ultimoNumero + 1).padStart(6, '0');
+        return this.ordemRepository.getConfig(key);
     }
 
     private parseJson<T>(value: string | null | undefined, fallback: T): T {
@@ -154,7 +130,7 @@ export class OrdensService {
             return new Map<string, any>();
         }
 
-        const users = await this.prisma.user.findMany({
+        const users = await this.corePrisma.user.findMany({
             where: { id: { in: uniqueIds } },
             select: { id: true, name: true, email: true },
         });
@@ -181,9 +157,9 @@ export class OrdensService {
             forma_pagamento: ordem.formaPagamento,
             status: ordem.status,
             prioridade: ordem.prioridade,
-            data_abertura: ordem.dataAbertura?.toISOString() || null,
-            data_previsao: ordem.dataPrevisao?.toISOString() || null,
-            data_conclusao: ordem.dataConclusao?.toISOString() || null,
+            data_abertura: ordem.dataAbertura instanceof Date ? ordem.dataAbertura.toISOString() : null,
+            data_previsao: ordem.dataPrevisao instanceof Date ? ordem.dataPrevisao.toISOString() : null,
+            data_conclusao: ordem.dataConclusao instanceof Date ? ordem.dataConclusao.toISOString() : null,
             origem_solicitacao: ordem.origemSolicitacao,
             orcamento_aprovado: ordem.orcamentoAprovado,
             motivo_cancelamento: ordem.motivoCancelamento,
@@ -198,22 +174,22 @@ export class OrdensService {
             formatacao_backup: ordem.formatacaoBackup,
             formatacao_backup_descricao: ordem.formatacaoBackupDescricao,
             formatacao_senha: ordem.formatacaoSenha,
-            created_at: ordem.createdAt?.toISOString() || null,
-            updated_at: ordem.updatedAt?.toISOString() || null,
+            created_at: ordem.createdAt instanceof Date ? ordem.createdAt.toISOString() : null,
+            updated_at: ordem.updatedAt instanceof Date ? ordem.updatedAt.toISOString() : null,
             itens: Array.isArray(itens) ? itens : [],
             garantia_dias: ordem.garantiaDias ?? 0,
             valor_conservacao: Number(ordem.valorConservacao || 0),
             dias_atraso: ordem.diasAtraso ?? 0,
             justificativa_conservacao: ordem.justificativaConservacao,
-            data_limite_retirada: ordem.dataLimiteRetirada?.toISOString() || null,
-            data_retirada: ordem.dataRetirada?.toISOString() || null,
-            cliente: ordem.cliente
+            data_limite_retirada: ordem.dataLimiteRetirada instanceof Date ? ordem.dataLimiteRetirada.toISOString() : null,
+            data_retirada: ordem.dataRetirada instanceof Date ? ordem.dataRetirada.toISOString() : null,
+            cliente: (ordem as any).cliente
                 ? {
-                    id: ordem.cliente.id,
-                    name: ordem.cliente.name,
-                    phone_primary: ordem.cliente.phonePrimary,
-                    email: ordem.cliente.email,
-                    is_active: ordem.cliente.isActive,
+                    id: (ordem as any).cliente.id,
+                    name: (ordem as any).cliente.name,
+                    phone_primary: (ordem as any).cliente.phonePrimary,
+                    email: (ordem as any).cliente.email,
+                    is_active: (ordem as any).cliente.isActive,
                 }
                 : null,
             responsavel: responsavel
@@ -226,110 +202,56 @@ export class OrdensService {
         };
     }
 
-    async findAll(filters: OrdemServicoFilters) {
+async findAll(filters: OrdemServicoFilters) {
         this.validateOrderFilters(filters);
 
         const page = Math.max(1, Number(filters.page || 1));
         const limit = Math.min(100, Math.max(1, Number(filters.limit || 20)));
         const search = String(filters.search || '').trim();
 
-        const where: any = {
-            ...(filters.status?.length ? { status: { in: filters.status.map(Number) } } : {}),
-            ...(filters.cliente_id ? { clienteId: filters.cliente_id } : {}),
-            ...(filters.usuario_responsavel_id ? { usuarioResponsavelId: filters.usuario_responsavel_id } : {}),
-            ...(filters.data_inicio || filters.data_fim
-                ? {
-                    dataAbertura: {
-                        ...(filters.data_inicio ? { gte: new Date(filters.data_inicio) } : {}),
-                        ...(filters.data_fim ? { lte: new Date(filters.data_fim) } : {}),
-                    },
-                }
-                : {}),
-            ...(filters.origem_solicitacao ? { origemSolicitacao: filters.origem_solicitacao } : {}),
-            ...(filters.tipo_servico ? { tipoServico: filters.tipo_servico } : {}),
-            ...(search.length >= 2
-                ? {
-                    OR: [
-                        { numero: { contains: search, mode: 'insensitive' } },
-                        { descricao: { contains: search, mode: 'insensitive' } },
-                        { cliente: { name: { contains: search, mode: 'insensitive' } } },
-                    ],
-                }
-                : {}),
-        };
-
-        const [total, ordens] = await Promise.all([
-            (this.modulePrisma as any).mod_ordem_servico_ordens.count({ where }),
-            (this.modulePrisma as any).mod_ordem_servico_ordens.findMany({
-                where,
-                include: { cliente: true },
-                orderBy: { createdAt: 'desc' },
-                skip: (page - 1) * limit,
-                take: limit,
-            }),
-        ]);
-
-        const usersById = await this.loadUsersMap(ordens.map((ordem) => ordem.usuarioResponsavelId));
+        const result = await this.ordemRepository.findAllPaginated({
+            search: search.length >= 2 ? search : undefined,
+            status: filters.status?.length ? filters.status.map(Number) : undefined,
+            clienteId: filters.cliente_id,
+            usuarioResponsavelId: filters.usuario_responsavel_id,
+            dataInicio: filters.data_inicio ? new Date(filters.data_inicio) : undefined,
+            dataFim: filters.data_fim ? new Date(filters.data_fim) : undefined,
+            origemSolicitacao: filters.origem_solicitacao,
+            tipoServico: filters.tipo_servico,
+            page,
+            limit,
+        });
 
         return {
-            data: ordens.map((ordem) => this.mapOrder(ordem, usersById.get(ordem.usuarioResponsavelId) || null)),
-            total,
+            data: result.data.map((ordem) => this.mapOrder(ordem, null)),
+            total: result.total,
             page,
-            totalPages: Math.ceil(total / limit),
+            totalPages: Math.ceil(result.total / limit),
             limit,
         };
     }
 
     async create(createDto: CreateOrdemServicoDTO) {
         const actor = this.getActorOrThrow();
-        const numero = await this.gerarNumeroOS();
         const status = createDto.status ?? StatusOS.ORCAMENTO;
 
-        const ordem = await (this.modulePrisma as any).mod_ordem_servico_ordens.create({
-            data: {
-                tenantId: actor.tenantId as string,
-                numero,
-                clienteId: createDto.cliente_id,
-                tipoServico: createDto.tipo_servico,
-                prioridade: createDto.prioridade || 'MEDIA',
-                descricao: createDto.descricao,
-                status,
-                origemSolicitacao: createDto.origem_solicitacao,
-                valorServico: createDto.valor_servico ?? 0,
-                usuarioResponsavelId: this.normalizeResponsibleId(createDto.usuario_responsavel_id, actor.id as string),
-                observacoesInternas: createDto.observacoes_internas || null,
-                observacoesCliente: createDto.observacoes_cliente || null,
-                laudoTecnico: createDto.laudo_tecnico || null,
-                equipamentoTipo: createDto.equipamento_tipo || null,
-                equipamentoMarca: createDto.equipamento_marca || null,
-                equipamentoModelo: createDto.equipamento_modelo || null,
-                equipamentoSerie: createDto.equipamento_serie || null,
-                equipamentoAcessorios: createDto.equipamento_acessorios || null,
-                equipamentoEstado: createDto.equipamento_estado || null,
-                equipamentoFotos: this.stringifyJson(createDto.equipamento_fotos),
-                formatacaoSo: createDto.formatacao_so || null,
-                formatacaoBackup: createDto.formatacao_backup ?? false,
-                formatacaoBackupDescricao: createDto.formatacao_backup_descricao || null,
-                formatacaoSenha: createDto.formatacao_senha || null,
-                dataPrevisao: this.parseDate(createDto.data_previsao),
-                orcamentoAprovado: status === StatusOS.ABERTA,
-                itens: this.stringifyJson(createDto.itens),
-                garantiaDias: createDto.garantia_dias ?? 0,
-            },
-            include: { cliente: true },
+        const ordem = await this.ordemRepository.create({
+            tenantId: actor.tenantId as string,
+            clienteId: createDto.cliente_id,
+            tipoServico: createDto.tipo_servico,
+            prioridade: createDto.prioridade || 'MEDIA',
+            descricao: createDto.descricao,
+            origemSolicitacao: createDto.origem_solicitacao,
+            valorServico: createDto.valor_servico ?? 0,
+            dataPrevisao: this.parseDate(createDto.data_previsao),
+            equipamentoTipo: createDto.equipamento_tipo || undefined,
+            equipamentoMarca: createDto.equipamento_marca || undefined,
+            equipamentoModelo: createDto.equipamento_modelo || undefined,
+            equipamentoSerie: createDto.equipamento_serie || undefined,
+            equipamentoAcessorios: createDto.equipamento_acessorios || undefined,
+            equipamentoEstado: createDto.equipamento_estado || undefined,
+            equipamentoFotos: this.stringifyJson(createDto.equipamento_fotos),
         });
-
-        try {
-            await this.registrarHistorico(
-                ordem.id,
-                'CRIACAO',
-                null,
-                `Ordem de servico criada com status: ${this.getStatusLabel(status)}`,
-                `OS #${numero} criada`,
-            );
-        } catch (error) {
-            this.logger.warn('Falha nao critica ao registrar historico de criacao:', error);
-        }
 
         const mapped = this.mapOrder(ordem, {
             id: actor.id as string,
@@ -398,9 +320,17 @@ export class OrdensService {
             updatedAt: new Date(),
         };
 
-        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
-            where: { id },
-            data,
+        await this.ordemRepository.update(id, {
+            tipoServico: updateDto.tipo_servico,
+            descricao: updateDto.descricao,
+            observacoesInternas: updateDto.observacoes_internas,
+            observacoesCliente: updateDto.observacoes_cliente,
+            valorServico: updateDto.valor_servico,
+            formaPagamento: updateDto.forma_pagamento,
+            prioridade: updateDto.prioridade,
+            dataPrevisao: this.parseDate(updateDto.data_previsao),
+            status: updateDto.status,
+            motivoCancelamento: updateDto.motivo_cancelamento,
         });
 
         const atualizada = await this.findOne(id);
@@ -437,10 +367,7 @@ export class OrdensService {
             ...(novoStatus === StatusOS.FINALIZADA ? { dataConclusao: new Date() } : {}),
         };
 
-        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
-            where: { id },
-            data,
-        });
+        await this.ordemRepository.updateStatus(id, novoStatus, novoStatus === StatusOS.FINALIZADA ? new Date() : undefined, motivoCancelamento);
 
         const ordemAtualizada = await this.findOne(id);
         await this.registrarStatusHistorico(id, statusAnterior, novoStatus, observacoes || null);
@@ -464,19 +391,7 @@ export class OrdensService {
     }
 
     async remove(id: string) {
-        await (this.modulePrisma as any).mod_ordem_servico_anexos_abandono.deleteMany({
-            where: {
-                alerta: {
-                    ordemServicoId: id,
-                },
-            },
-        });
-        await (this.modulePrisma as any).mod_ordem_servico_alertas_abandono.deleteMany({ where: { ordemServicoId: id } });
-        await (this.modulePrisma as any).mod_ordem_servico_pagamentos.deleteMany({ where: { ordemServicoId: id } });
-        await (this.modulePrisma as any).mod_ordem_servico_status_historico.deleteMany({ where: { ordemServicoId: id } });
-        await (this.modulePrisma as any).mod_ordem_servico_historico.deleteMany({ where: { ordemServicoId: id } });
-        await (this.modulePrisma as any).mod_ordem_servico_order_notifications.deleteMany({ where: { ordemId: id } });
-        await (this.modulePrisma as any).mod_ordem_servico_ordens.deleteMany({ where: { id } });
+        await this.ordemRepository.deleteCascade(id);
         return { success: true };
     }
 
@@ -486,30 +401,28 @@ export class OrdensService {
             throw new BadRequestException('Orcamento nao encontrado ou ja aprovado');
         }
 
-        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
-            where: { id },
-            data: {
-                status: StatusOS.ABERTA,
-                orcamentoAprovado: true,
-                updatedAt: new Date(),
-            },
-        });
+        await this.ordemRepository.updateStatus(id, StatusOS.ABERTA, undefined, undefined);
 
-        await this.registrarStatusHistorico(id, StatusOS.ORCAMENTO, StatusOS.ABERTA, 'Orcamento aprovado pelo cliente');
-        await this.registrarHistorico(id, 'APROVACAO_ORCAMENTO', null, 'Orcamento aprovado - Status alterado para Aberta', null);
+        await this.ordemRepository.registrarStatusHistorico({
+            tenantId: ordem.tenant_id,
+            ordemServicoId: id,
+            usuarioId: this.getActorOrThrow().id as string,
+            statusAnterior: StatusOS.ORCAMENTO,
+            statusNovo: StatusOS.ABERTA,
+            observacoes: 'Orcamento aprovado pelo cliente',
+        });
 
         return this.findOne(id);
     }
 
     async getHistorico(ordemId: string) {
-        const historico = await (this.modulePrisma as any).mod_ordem_servico_historico.findMany({
-            where: { ordemServicoId: ordemId },
-            orderBy: { createdAt: 'desc' },
-        });
+        const historico = await this.ordemRepository.getHistorico(ordemId);
 
-        const users = await this.loadUsersMap(historico.map((item) => item.usuarioId));
+        const userIds = historico.map((item) => item.usuarioId).filter(Boolean);
+        const usersById = await this.loadUsersMap(userIds);
+
         return historico.map((item) => {
-            const user = users.get(item.usuarioId);
+            const user = usersById.get(item.usuarioId);
             return {
                 id: item.id,
                 ordem_servico_id: item.ordemServicoId,
@@ -518,7 +431,7 @@ export class OrdensService {
                 valor_anterior: item.valorAnterior,
                 valor_novo: item.valorNovo,
                 observacoes: item.observacoes,
-                created_at: item.createdAt?.toISOString() || null,
+                created_at: item.createdAt instanceof Date ? item.createdAt.toISOString() : null,
                 usuario_nome: user?.name || '',
                 usuario_email: user?.email || '',
             };
@@ -526,89 +439,42 @@ export class OrdensService {
     }
 
     async getDashboardData() {
-        const dados = await (this.modulePrisma as any).mod_ordem_servico_ordens.groupBy({
-            by: ['status'],
-            _count: { status: true },
-            _sum: { valorServico: true },
-        });
-
-        return dados.map((item) => ({
-            status: item.status,
-            quantidade: item._count.status,
-            valor_total: Number(item._sum.valorServico || 0),
-        }));
+        return this.ordemRepository.getDashboardData();
     }
 
     async getTiposServico() {
-        const result = await (this.modulePrisma as any).mod_ordem_servico_tipos_servico.findMany({
-            orderBy: { nome: 'asc' },
-        });
-
-        return result.map((item) => ({
-            id: item.id,
-            nome: item.nome,
-            is_default: item.isDefault === true,
-        }));
+        return this.ordemRepository.getTiposServico();
     }
 
     async getTiposEquipamento() {
-        const result = await (this.modulePrisma as any).mod_ordem_servico_tipos_equipamento.findMany({
-            orderBy: { nome: 'asc' },
-        });
-
-        return result.map((item) => ({
-            id: item.id,
-            nome: item.nome,
-        }));
+        return this.ordemRepository.getTiposEquipamento();
     }
 
     async getTechnicians() {
-        const userRoles = await (this.modulePrisma as any).mod_ordem_servico_user_roles.findMany({
-            where: { isTechnician: true },
-            select: { userId: true },
-        });
-
-        if (userRoles.length === 0) {
-            return [];
-        }
-
         const tenantId = this.getTenantIdOrThrow();
-        return this.prisma.user.findMany({
-            where: {
-                id: { in: userRoles.map((item) => item.userId) },
-                tenantId,
-                isLocked: false,
-            },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-            },
-            orderBy: { name: 'asc' },
-        });
+        return this.ordemRepository.getTechnicians(tenantId);
+    }
     }
 
     async getStatusHistorico(ordemId: string) {
-        const historico = await (this.modulePrisma as any).mod_ordem_servico_status_historico.findMany({
-            where: { ordemServicoId: ordemId },
-            orderBy: { dataAlteracao: 'desc' },
-        });
+        const historico = await this.ordemRepository.getStatusHistorico(ordemId);
 
-        const users = await this.loadUsersMap(historico.map((item) => item.usuarioId));
+        const userIds = historico.map((item) => item.usuario_id).filter(Boolean);
+        const usersById = await this.loadUsersMap(userIds);
 
         return historico.map((item) => {
-            const user = users.get(item.usuarioId);
+            const user = usersById.get(item.usuario_id);
             return {
                 id: item.id,
-                ordem_servico_id: item.ordemServicoId,
-                status_anterior: item.statusAnterior,
-                status_novo: item.statusNovo,
-                usuario_id: item.usuarioId,
+                ordem_servico_id: item.ordem_servico_id,
+                status_anterior: item.status_anterior,
+                status_novo: item.status_novo,
+                usuario_id: item.usuario_id,
                 usuario_nome: user?.name || '',
                 usuario_email: user?.email || '',
-                data_alteracao: item.dataAlteracao.toISOString(),
+                data_alteracao: item.data_alteracao,
                 observacoes: item.observacoes,
-                created_at: item.createdAt?.toISOString() || null,
+                created_at: item.created_at,
             };
         });
     }
@@ -668,16 +534,7 @@ export class OrdensService {
     }
 
     async atualizarConservacao(ordemId: string, valorConservacao: number, justificativa?: string) {
-        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
-            where: { id: ordemId },
-            data: {
-                valorConservacao,
-                justificativaConservacao: justificativa || null,
-                updatedAt: new Date(),
-            },
-        });
-
-        return this.findOne(ordemId);
+        return this.ordemRepository.updateConservacao(ordemId, valorConservacao, justificativa);
     }
 
     async validarRetirada(ordemId: string, pagamentos: PagamentoDTO[]) {
@@ -708,22 +565,21 @@ export class OrdensService {
     }
 
     async getPagamentos(ordemId: string) {
-        const pagamentos = await (this.modulePrisma as any).mod_ordem_servico_pagamentos.findMany({
-            where: { ordemServicoId: ordemId },
-            orderBy: { createdAt: 'asc' },
-        });
+        const pagamentos = await this.ordemRepository.getPagamentos(ordemId);
 
-        const users = await this.loadUsersMap(pagamentos.map((item) => item.createdBy));
+        const userIds = pagamentos.map((item) => item.createdBy).filter(Boolean);
+        const usersById = await this.loadUsersMap(userIds);
+
         return pagamentos.map((item) => ({
             id: item.id,
             ordem_servico_id: item.ordemServicoId,
             forma_pagamento: item.formaPagamento,
-            valor: Number(item.valor || 0),
+            valor: item.valor,
             parcelas: item.parcelas || 1,
             observacoes: item.observacoes,
-            created_at: item.createdAt?.toISOString() || null,
+            created_at: item.createdAt instanceof Date ? item.createdAt.toISOString() : null,
             created_by: item.createdBy,
-            created_by_nome: users.get(item.createdBy)?.name || '',
+            created_by_nome: usersById.get(item.createdBy)?.name || '',
         }));
     }
 
@@ -734,62 +590,49 @@ export class OrdensService {
             ? retiradaDTO.valor_conservacao
             : conservacao.emAtraso ? conservacao.valorConservacao : 0;
 
-        await (this.modulePrisma as any).mod_ordem_servico_pagamentos.createMany({
-            data: retiradaDTO.pagamentos.map((pagamento) => ({
+        await this.ordemRepository.createManyPagamentos(
+            retiradaDTO.pagamentos.map((pagamento) => ({
                 tenantId: actor.tenantId as string,
                 ordemServicoId: ordemId,
                 formaPagamento: pagamento.forma_pagamento,
-                valor: pagamento.valor,
+                valor: Number(pagamento.valor),
                 parcelas: pagamento.parcelas || 1,
-                observacoes: pagamento.observacoes || null,
+                observacoes: pagamento.observacoes,
                 createdBy: actor.id as string,
-            })),
-        });
-
-        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
-            where: { id: ordemId },
-            data: {
-                status: StatusOS.RETIRADO,
-                dataRetirada: new Date(),
-                valorConservacao: valorConservacaoFinal,
-                diasAtraso: conservacao.diasAtraso,
-                justificativaConservacao: retiradaDTO.justificativa_conservacao || null,
-                updatedAt: new Date(),
-            },
-        });
-
-        await this.registrarStatusHistorico(ordemId, ordem.status, StatusOS.RETIRADO, retiradaDTO.observacoes || 'Equipamento retirado pelo cliente');
-        await this.registrarHistorico(
-            ordemId,
-            'RETIRADA',
-            null,
-            `Equipamento retirado. Total: R$ ${totalOS.toFixed(2)}. Pagamentos: ${retiradaDTO.pagamentos.length} forma(s)`,
-            retiradaDTO.observacoes,
+            }))
         );
 
-        return this.findOne(ordemId);
-    }
-
-    async getAlertasAbandono(ordemId: string) {
-        const alertas = await (this.modulePrisma as any).mod_ordem_servico_alertas_abandono.findMany({
-            where: { ordemServicoId: ordemId },
-            include: { anexos: true },
-            orderBy: { numeroAlerta: 'asc' },
+        await this.ordemRepository.updateStatus(ordemId, StatusOS.RETIRADA, new Date(), undefined);
+        await this.ordemRepository.registrarStatusHistorico({
+            tenantId: actor.tenantId as string,
+            ordemServicoId: ordemId,
+            usuarioId: actor.id as string,
+            statusAnterior: ordem.status,
+            statusNovo: StatusOS.RETIRADA,
+            observacoes: retiradaDTO.observacoes || 'Equipamento retirado pelo cliente',
         });
 
-        const users = await this.loadUsersMap(alertas.map((item) => item.enviadoPor));
+return this.findOne(ordemId);
+    }
+
+async getAlertasAbandono(ordemId: string) {
+        const alertas = await this.ordemRepository.getAlertasAbandono(ordemId);
+
+        const userIds = alertas.map((item) => item.enviadoPor).filter(Boolean);
+        const usersById = await this.loadUsersMap(userIds);
+
         return alertas.map((item) => ({
             id: item.id,
             ordem_servico_id: item.ordemServicoId,
             numero_alerta: item.numeroAlerta,
-            data_envio: item.dataEnvio.toISOString(),
+            data_envio: item.dataEnvio instanceof Date ? item.dataEnvio.toISOString() : null,
             meio_comunicacao: item.meioComunicacao,
             enviado_por: item.enviadoPor,
-            enviado_por_nome: users.get(item.enviadoPor)?.name || '',
+            enviado_por_nome: usersById.get(item.enviadoPor)?.name || '',
             mensagem: item.mensagem,
             observacoes: item.observacoes,
-            created_at: item.createdAt?.toISOString() || null,
-            anexos: item.anexos.map((anexo) => ({
+            created_at: item.createdAt instanceof Date ? item.createdAt.toISOString() : null,
+            anexos: (item as any).anexos?.map((anexo: any) => ({
                 id: anexo.id,
                 alerta_id: anexo.alertaId,
                 nome_arquivo: anexo.nomeArquivo,
@@ -797,9 +640,9 @@ export class OrdensService {
                 tamanho_bytes: anexo.tamanhoBytes,
                 url_arquivo: anexo.urlArquivo,
                 descricao: anexo.descricao,
-                created_at: anexo.createdAt?.toISOString() || null,
+                created_at: anexo.createdAt instanceof Date ? anexo.createdAt.toISOString() : null,
                 uploaded_by: anexo.uploadedBy,
-            })),
+            })) || [],
         }));
     }
 
@@ -817,32 +660,31 @@ export class OrdensService {
             throw new BadRequestException(`Alerta ${alertaDTO.numero_alerta} nao pode ser registrado. O proximo alerta esperado e o ${numeroEsperado}`);
         }
 
-        const alerta = await (this.modulePrisma as any).mod_ordem_servico_alertas_abandono.create({
-            data: {
-                tenantId: actor.tenantId as string,
-                ordemServicoId: ordemId,
-                numeroAlerta: alertaDTO.numero_alerta,
-                dataEnvio: new Date(alertaDTO.data_envio),
-                meioComunicacao: alertaDTO.meio_comunicacao,
-                enviadoPor: actor.id as string,
-                mensagem: alertaDTO.mensagem || null,
-                observacoes: alertaDTO.observacoes || null,
-            },
+        const alerta = await this.ordemRepository.createAlertaAbandono({
+            tenantId: actor.tenantId as string,
+            ordemServicoId: ordemId,
+            numeroAlerta: alertaDTO.numero_alerta,
+            dataEnvio: new Date(alertaDTO.data_envio),
+            meioComunicacao: alertaDTO.meio_comunicacao,
+            enviadoPor: actor.id as string,
+            mensagem: alertaDTO.mensagem || undefined,
+            observacoes: alertaDTO.observacoes || undefined,
         });
 
-        await this.registrarHistorico(
-            ordemId,
-            'ALERTA_ABANDONO',
-            null,
-            `Alerta ${alertaDTO.numero_alerta}/3 enviado via ${alertaDTO.meio_comunicacao}`,
-            alertaDTO.observacoes,
-        );
+        await this.ordemRepository.registrarHistorico({
+            tenantId: actor.tenantId as string,
+            ordemServicoId: ordemId,
+            usuarioId: actor.id as string,
+            acao: 'ALERTA_ABANDONO',
+            valorNovo: `Alerta ${alertaDTO.numero_alerta}/3 enviado via ${alertaDTO.meio_comunicacao}`,
+            observacoes: alertaDTO.observacoes,
+        });
 
         return {
             id: alerta.id,
             ordem_servico_id: alerta.ordemServicoId,
             numero_alerta: alerta.numeroAlerta,
-            data_envio: alerta.dataEnvio.toISOString(),
+            data_envio: alerta.dataEnvio instanceof Date ? alerta.dataEnvio.toISOString() : null,
             meio_comunicacao: alerta.meioComunicacao,
             enviado_por: alerta.enviadoPor,
             mensagem: alerta.mensagem,
@@ -854,26 +696,16 @@ export class OrdensService {
 
     async registrarAnexoAlerta(alertaId: string, anexoDTO: any) {
         const actor = this.getActorOrThrow();
-        const alerta = await (this.modulePrisma as any).mod_ordem_servico_alertas_abandono.findFirst({
-            where: { id: alertaId },
-            select: { id: true },
-        });
 
-        if (!alerta) {
-            throw new NotFoundException('Alerta nao encontrado');
-        }
-
-        return (this.modulePrisma as any).mod_ordem_servico_anexos_abandono.create({
-            data: {
-                tenantId: actor.tenantId as string,
-                alertaId,
-                nomeArquivo: anexoDTO.nome_arquivo,
-                tipoArquivo: anexoDTO.tipo_arquivo || 'application/octet-stream',
-                tamanhoBytes: anexoDTO.tamanho_bytes || null,
-                urlArquivo: anexoDTO.url_arquivo,
-                descricao: anexoDTO.descricao || null,
-                uploadedBy: actor.id as string,
-            },
+        return this.ordemRepository.createAnexoAlerta({
+            tenantId: actor.tenantId as string,
+            alertaId,
+            nomeArquivo: anexoDTO.nome_arquivo,
+            tipoArquivo: anexoDTO.tipo_arquivo,
+            tamanhoBytes: anexoDTO.tamanho_bytes,
+            urlArquivo: anexoDTO.url_arquivo,
+            descricao: anexoDTO.descricao,
+            uploadedBy: actor.id as string,
         });
     }
 
@@ -897,19 +729,18 @@ export class OrdensService {
 
     async marcarComoAbandonado(ordemId: string, observacoes?: string) {
         const { ordem } = await this.validarAbandono(ordemId);
+        const actor = this.getActorOrThrow();
 
-        await (this.modulePrisma as any).mod_ordem_servico_ordens.updateMany({
-            where: { id: ordemId },
-            data: {
-                status: StatusOS.ABANDONADO,
-                updatedAt: new Date(),
-            },
+        await this.ordemRepository.updateStatus(ordemId, StatusOS.ABANDONADO, undefined, undefined);
+
+        await this.ordemRepository.registrarStatusHistorico({
+            tenantId: actor.tenantId as string,
+            ordemServicoId: ordemId,
+            usuarioId: actor.id as string,
+            statusAnterior: ordem.status,
+            statusNovo: StatusOS.ABANDONADO,
+            observacoes: observacoes || 'Equipamento marcado como abandonado apos 3 tentativas de contato',
         });
-
-        await this.registrarStatusHistorico(
-            ordemId,
-            ordem.status,
-            StatusOS.ABANDONADO,
             observacoes || 'Equipamento marcado como abandonado apos 3 tentativas de contato',
         );
         await this.registrarHistorico(
@@ -924,39 +755,13 @@ export class OrdensService {
     }
 
     async getAlertasRetirada() {
-        const ordens = await (this.modulePrisma as any).mod_ordem_servico_ordens.findMany({
-            where: {
-                status: StatusOS.FINALIZADA,
-                dataConclusao: { not: null },
-            },
-            select: { dataConclusao: true },
-        });
-
-        const result = {
-            total_pendentes: 0,
-            urgentes: 0,
-            atencao: 0,
-            normal: 0,
-            cobranca_ativa: 0,
-        };
-
-        const now = Date.now();
-        for (const ordem of ordens) {
-            if (!ordem.dataConclusao) continue;
-            result.total_pendentes += 1;
-            const diff = Math.floor((now - ordem.dataConclusao.getTime()) / 86400000);
-            if (diff > 30) result.urgentes += 1;
-            else if (diff >= 15) result.atencao += 1;
-            else result.normal += 1;
-        }
-
-        return result;
+        return this.ordemRepository.getAlertasRetirada();
     }
 
     async generatePdf(id: string): Promise<Buffer> {
         const tenantId = this.getTenantIdOrThrow();
         const ordem = await this.findOne(id);
-        const tenant = await this.prisma.tenant.findUnique({
+        const tenant = await this.corePrisma.tenant.findUnique({
             where: { id: tenantId },
             select: {
                 nomeFantasia: true,
@@ -1042,16 +847,14 @@ export class OrdensService {
         observacoes?: string | null,
     ) {
         const actor = this.getActorOrThrow();
-        await (this.modulePrisma as any).mod_ordem_servico_historico.create({
-            data: {
-                tenantId: actor.tenantId as string,
-                ordemServicoId: ordemId,
-                usuarioId: actor.id as string,
-                acao,
-                valorAnterior: valorAnterior || null,
-                valorNovo: valorNovo || null,
-                observacoes: observacoes || null,
-            },
+        await this.ordemRepository.registrarHistorico({
+            tenantId: actor.tenantId as string,
+            ordemServicoId: ordemId,
+            usuarioId: actor.id as string,
+            acao,
+            valorAnterior: valorAnterior || undefined,
+            valorNovo: valorNovo || undefined,
+            observacoes: observacoes || undefined,
         });
     }
 
@@ -1087,15 +890,13 @@ export class OrdensService {
         observacoes?: string | null,
     ) {
         const actor = this.getActorOrThrow();
-        await (this.modulePrisma as any).mod_ordem_servico_status_historico.create({
-            data: {
-                tenantId: actor.tenantId as string,
-                ordemServicoId: ordemId,
-                statusAnterior,
-                statusNovo,
-                usuarioId: actor.id as string,
-                observacoes: observacoes || null,
-            },
+        await this.ordemRepository.registrarStatusHistorico({
+            tenantId: actor.tenantId as string,
+            ordemServicoId: ordemId,
+            usuarioId: actor.id as string,
+            statusAnterior,
+            statusNovo,
+            observacoes: observacoes || undefined,
         });
     }
 
