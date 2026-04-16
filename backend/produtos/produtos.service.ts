@@ -19,7 +19,7 @@ export class ProdutosService {
         const { search, status } = filters;
         this.logger.log(`findAll chamado. Filters: ${JSON.stringify(filters)}`);
 
-        return this.prisma.mod_ordem_servico_products.findMany({
+        const products = await this.prisma.mod_ordem_servico_products.findMany({
             where: {
                 deletedAt: null,
                 ...(search
@@ -36,12 +36,16 @@ export class ProdutosService {
             },
             orderBy: { name: 'asc' },
         });
+
+        return products.map((product) => this.serializeProduct(product));
     }
 
     async findById(id: string) {
-        return this.prisma.mod_ordem_servico_products.findFirst({
+        const product = await this.prisma.mod_ordem_servico_products.findFirst({
             where: { id, deletedAt: null },
         });
+
+        return product ? this.serializeProduct(product) : null;
     }
 
     async findByCode(code: string) {
@@ -83,7 +87,7 @@ export class ProdutosService {
                 details: { productId: createdProduct.id, code: data.code, name: data.name },
             });
 
-            return createdProduct;
+            return this.serializeProduct(createdProduct);
         } catch (error) {
             this.logger.error('Erro ao criar produto:', error);
             throw new Error('Erro ao salvar produto. Verifique os dados.');
@@ -168,6 +172,24 @@ export class ProdutosService {
         return {
             tenantId,
             userId: actor?.id || undefined,
+        };
+    }
+
+    private serializeProduct(product: any) {
+        return {
+            id: product.id,
+            tenant_id: product.tenantId,
+            code: product.code,
+            name: product.name,
+            type: product.type,
+            price: Number(product.price || 0),
+            cost_price: Number(product.costPrice || 0),
+            description: product.description,
+            image_url: product.imageUrl,
+            is_active: product.isActive ?? true,
+            created_at: product.createdAt?.toISOString?.() ?? product.createdAt ?? null,
+            updated_at: product.updatedAt?.toISOString?.() ?? product.updatedAt ?? null,
+            deleted_at: product.deletedAt?.toISOString?.() ?? product.deletedAt ?? null,
         };
     }
 }
