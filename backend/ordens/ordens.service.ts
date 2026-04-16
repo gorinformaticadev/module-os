@@ -621,7 +621,11 @@ export class OrdensService {
     async calcularConservacao(ordemId: string) {
         const ordem = await this.findOne(ordemId);
         const prazoRetiradaDias = Number(await this.getConfig('prazo_retirada_dias') || 30);
-        const valorDiario = Number(await this.getConfig('valor_conservacao_diaria') || 0);
+        const valorConservacaoConfig =
+            (await this.getConfig('valor_conservacao_diario')) ??
+            (await this.getConfig('valor_conservacao_diaria')) ??
+            0;
+        const valorDiario = Number(valorConservacaoConfig || 0);
         const conservacaoHabilitada = (await this.getConfig('conservacao_habilitada')) === 'true';
 
         if (!ordem.data_conclusao) {
