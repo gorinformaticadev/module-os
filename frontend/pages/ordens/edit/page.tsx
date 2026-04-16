@@ -103,6 +103,14 @@ interface ItemOrdem {
     image_url?: string;
 }
 
+const EMPTY_ITEM_TEMP: ItemOrdem = {
+    descricao: '',
+    valor_unitario: 0,
+    quantidade: 1,
+    valor_total: 0,
+    image_url: '',
+};
+
 interface Cliente {
     id: string;
     name: string;
@@ -230,10 +238,7 @@ export default function EditOrdemPage() {
 
     // Estados para Produtos
     const [produtos, setProdutos] = useState<Produto[]>([]);
-    const [itemTemp, setItemTemp] = useState<Partial<ItemOrdem>>({
-        descricao: '',
-        quantidade: 1,
-    });
+    const [itemTemp, setItemTemp] = useState<ItemOrdem>({ ...EMPTY_ITEM_TEMP });
     // State for image preview
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -417,12 +422,7 @@ export default function EditOrdemPage() {
 
         updateFormDataWithItens(newItens);
 
-        setItemTemp({
-            descricao: '',
-            quantidade: 1,
-            valor_unitario: 0,
-            produto_id: undefined
-        });
+        setItemTemp({ ...EMPTY_ITEM_TEMP });
         setDebouncedSearch('');
         setOpenCombobox(false);
         setTimeout(() => descriptionInputRef.current?.focus(), 100);
@@ -1725,7 +1725,7 @@ export default function EditOrdemPage() {
                                     <PopoverAnchor asChild>
                                         <div className="relative">
                                             <Input
-                                                value={itemTemp.descricao}
+                                                value={itemTemp.descricao ?? ''}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                     handleDescriptionChange(e.target.value);
                                                 }}
@@ -1800,7 +1800,7 @@ export default function EditOrdemPage() {
                                         min="0"
                                         step="0.01"
                                         className="pl-9"
-                                        value={itemTemp.valor_unitario}
+                                        value={itemTemp.valor_unitario ?? 0}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemTemp({ ...itemTemp, valor_unitario: Number(e.target.value) })}
                                         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                             if (e.key === 'Enter') {
@@ -1818,7 +1818,7 @@ export default function EditOrdemPage() {
                                 <Input
                                     type="number"
                                     min="1"
-                                    value={itemTemp.quantidade}
+                                    value={itemTemp.quantidade ?? 1}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItemTemp({ ...itemTemp, quantidade: Number(e.target.value) })}
                                     onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                         if (e.key === 'Enter') {
