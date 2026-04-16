@@ -170,8 +170,7 @@ const Tooltip = ({ content, children }: { content: string; children: React.React
 // Hook toast simples
 const useToast = () => ({
   toast: ({ title, description }: { title: string; description?: string; variant?: string }) => {
-    console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
-    // Em produção, isso seria substituído por uma biblioteca de toast real
+    // Toast is handled by UI
   }
 });
 
@@ -379,10 +378,8 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
   const loadPermissions = async () => {
     try {
       setLoading(true);
-       console.log('🔍 Carregando permissões de perfil...');
 
       const response = await api.get('/api/ordem_servico/config/profile-permissions');
-      console.log('📦 Permissões carregadas:', response.data);
 
       // Inicializar permissões com valores padrão se não existirem
       const initialPermissions: Record<string, ProfilePermissions> = {};
@@ -465,7 +462,6 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
   const handleSave = async () => {
     try {
       setSaving(true);
-      console.log('Salvando permissões de perfil...', permissions);
 
       await api.post('/api/ordem_servico/config/profile-permissions', {
         permissions

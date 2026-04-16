@@ -49,7 +49,6 @@ export class OrdensController {
     private readonly logger = new Logger(OrdensController.name);
 
     constructor(private readonly ordensService: OrdensService) {
-        console.log('✅✅✅ ORDENS CONTROLLER INSTANCIADO (STANDALONE)!!! ✅✅✅');
     }
 
     @Get()

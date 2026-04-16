@@ -130,7 +130,7 @@ export default function PrintPreviewPage() {
                     setCondicoesExecucao(condicoesConfig.config_value);
                 }
             } catch (err) {
-                console.log('Condições de execução não encontradas');
+                // Silently handle missing config
             }
 
         } catch (err: any) {

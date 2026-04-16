@@ -242,8 +242,7 @@ const DialogTitle = ({ children }: { children: React.ReactNode }) => (
 // Hook toast simples
 const useToast = () => ({
   toast: ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
-    console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
-    // Em produção, isso seria substituído por uma biblioteca de toast real
+    // Toast is handled by UI
   }
 });
 
@@ -282,19 +281,14 @@ export const PermissionManagement: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Carregando usuários com permissões...');
       
       const usersData = await PermissionService.getUsersWithPermissions();
-      console.log('📦 Dados recebidos do servidor:', usersData);
-      console.log('📊 Tipo dos dados:', typeof usersData);
-      console.log('📋 É array?', Array.isArray(usersData));
       
       // Verificar se a resposta é um array válido
       if (Array.isArray(usersData)) {
-        console.log(`✅ ${usersData.length} usuários carregados`);
         setUsers(usersData);
       } else {
-        console.error('❌ Resposta da API não é um array:', usersData);
+        console.error('Resposta da API não é um array:', usersData);
         setUsers([]);
         toast({
           title: 'Erro',
@@ -303,7 +297,7 @@ export const PermissionManagement: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar usuários:', error);
+      console.error('Erro ao carregar usuários:', error);
       setUsers([]); // Garantir que seja um array vazio em caso de erro
       toast({
         title: 'Erro',

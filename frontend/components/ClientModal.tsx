@@ -125,22 +125,16 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
 
     const fetchAddressByCEP = async (cep: string) => {
         const cleanCEP = cep.replace(/\D/g, '');
-        console.log('🔍 Buscando CEP:', cleanCEP);
 
         if (cleanCEP.length !== 8) {
-            console.log('❌ CEP inválido - deve ter 8 dígitos');
             return;
         }
 
         try {
-            console.log('📡 Fazendo requisição para endpoint interno...');
             const response = await api.get(`/api/ordem_servico/clientes/cep/${cleanCEP}`);
             const data = response.data;
 
-            console.log('📋 Resposta da API:', data);
-
             if (data.success) {
-                console.log('✅ CEP encontrado, preenchendo campos...');
                 setFormData(prev => ({
                     ...prev,
                     address_street: data.logradouro || '',
@@ -155,7 +149,6 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
                     variant: 'default'
                 });
             } else {
-                console.log('❌ CEP não encontrado na base de dados');
                 toast({
                     title: 'CEP não encontrado',
                     description: 'Verifique o CEP informado.',
@@ -557,7 +550,6 @@ export default function ClientModal({ isOpen, onClose, onClientCreated }: Client
                                             }}
                                             onBlur={() => {
                                                 const cleanCEP = formData.address_zip.replace(/\D/g, '');
-                                                console.log('🔍 CEP onBlur:', cleanCEP);
                                                 if (cleanCEP.length === 8) {
                                                     fetchAddressByCEP(formData.address_zip);
                                                 }

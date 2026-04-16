@@ -68,14 +68,6 @@ export default function OrdemServicoProdutosPage() {
         try {
             setLoading(true);
             const response = await api.get('/api/ordem_servico/produtos');
-            console.log('🔍 DEBUG: Produtos recebidos:', response.data);
-
-            // Debug das URLs de imagem
-            response.data.forEach((product: any) => {
-                if (product.image_url) {
-                    console.log(`🖼️ Produto ${product.code}: URL = "${product.image_url}"`);
-                }
-            });
 
             setProducts(response.data);
         } catch (error) {

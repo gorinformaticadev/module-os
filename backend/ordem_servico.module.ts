@@ -33,8 +33,4 @@ import { OrdemServicoNotificationsModule } from './notifications/notifications.m
 })
 export class OrdemServicoModule {
     static SLUG = 'ordem_servico';
-
-    constructor() {
-        console.log('Modulo ORDEM_SERVICO carregado com todas as funcionalidades.');
-    }
 }

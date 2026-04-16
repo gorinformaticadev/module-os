@@ -43,11 +43,7 @@ import api from '@/lib/api';
 
 const useToast = () => ({
   toast: (options: { title: string; description: string; variant?: string }) => {
-    if (options.variant === 'destructive') {
-      console.error(`${options.title}: ${options.description}`);
-    } else {
-      console.log(`${options.title}: ${options.description}`);
-    }
+    // Toast is handled by UI
   }
 });
 

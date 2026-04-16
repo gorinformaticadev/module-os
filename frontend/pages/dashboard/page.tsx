@@ -223,7 +223,7 @@ const OrderTable = ({
   };
 
   const handleAction = (action: string, ordem: DashboardOrder) => {
-    console.log(`Acao ${action} para ordem ${ordem.numero}`);
+    // Handle action
   };
 
   return (

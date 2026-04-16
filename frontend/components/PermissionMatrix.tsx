@@ -148,8 +148,7 @@ const SelectItem = ({ value, children }: { value: string; children: React.ReactN
 // Hook toast simples
 const useToast = () => ({
   toast: ({ title, description }: { title: string; description?: string; variant?: string }) => {
-    console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
-    // Em produção, isso seria substituído por uma biblioteca de toast real
+    // Toast is handled by UI
   }
 });
 

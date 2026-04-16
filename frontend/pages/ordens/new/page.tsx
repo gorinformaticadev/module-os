@@ -474,21 +474,6 @@ export default function NewOrdemRefactoredPage() {
                 }
             });
 
-            // Debug: Log the payload to see what's being sent
-            console.log('🔍 Payload being sent:', JSON.stringify(payload, null, 2));
-            console.log('📸 Photos handling:', {
-                originalPhotos: formData.equipamento_fotos,
-                validPhotos: (payload as any).equipamento_fotos || 'not included',
-                hasPhotos: !!(payload as any).equipamento_fotos,
-                photosCount: (payload as any).equipamento_fotos?.length || 0
-            });
-            console.log('👤 Selected client debug:', {
-                clientId: selectedClient.id,
-                clientName: selectedClient.name,
-                isActive: selectedClient.is_active,
-                isActiveType: typeof selectedClient.is_active
-            });
-
             const response = await api.post('/api/ordem_servico/ordens', payload);
 
             toast({
