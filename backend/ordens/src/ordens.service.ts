@@ -17,6 +17,7 @@ import {
     AlertaAbandonoDTO,
 } from '../shared/dto/ordem-servico.dto';
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
+import { ClientesService } from '../../clientes/src/clientes.service';
 import * as puppeteer from 'puppeteer';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -44,6 +45,7 @@ export class OrdensService {
         private readonly modulePrisma: ModuleOsPrismaService,
         private readonly requestSecurityContext: RequestSecurityContextService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly clientesService: ClientesService,
     ) { }
 
     async findOne(id: string) {
@@ -67,15 +69,8 @@ export class OrdensService {
     }
 
     async isClienteAtivo(clienteId: string): Promise<boolean> {
-        const cliente = await (this.modulePrisma as any).mod_ordem_servico_clients.findFirst({
-            where: {
-                id: clienteId,
-                isActive: true,
-            },
-            select: { id: true },
-        });
-
-        return Boolean(cliente);
+        const cliente = await this.clientesService.findById(clienteId);
+        return cliente?.is_active === true;
     }
 
     async validarTransicaoStatus(statusAtual: number, novoStatus: number): Promise<boolean> {

@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AuditService } from '@core/audit/audit.service';
 import { RequestSecurityContextService } from '@common/services/request-security-context.service';
-import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
+import { ProdutoRepository } from './repositories/produto.repository';
 
 @Injectable()
 export class ProdutosService {
     private readonly logger = new Logger(ProdutosService.name);
 
     constructor(
-        private readonly prisma: ModuleOsPrismaService,
+        private readonly repository: ProdutoRepository,
         private readonly auditService: AuditService,
         private readonly requestSecurityContext: RequestSecurityContextService,
     ) {
@@ -19,39 +19,37 @@ export class ProdutosService {
         const { search, status } = filters;
         this.logger.log(`findAll chamado. Filters: ${JSON.stringify(filters)}`);
 
-        const products = await this.prisma.mod_ordem_servico_products.findMany({
-            where: {
-                deletedAt: null,
-                ...(search
-                    ? {
-                        OR: [
-                            { name: { contains: search, mode: 'insensitive' } },
-                            { code: { contains: search, mode: 'insensitive' } },
-                        ],
-                    }
-                    : {}),
-                ...(status !== undefined && status !== ''
-                    ? { isActive: status === 'true' || status === true }
-                    : {}),
-            },
-            orderBy: { name: 'asc' },
+        const products = await this.repository.findAll({
+            search,
+            isActive: status !== undefined && status !== '' ? status === 'true' || status === true : undefined,
         });
 
         return products.map((product) => this.serializeProduct(product));
     }
 
     async findById(id: string) {
-        const product = await this.prisma.mod_ordem_servico_products.findFirst({
-            where: { id, deletedAt: null },
-        });
-
+        const product = await this.repository.findById(id);
         return product ? this.serializeProduct(product) : null;
     }
 
     async findByCode(code: string) {
-        return this.prisma.mod_ordem_servico_products.findFirst({
-            where: { code, deletedAt: null },
-        });
+        const product = await this.repository.findByCode(code);
+        if (!product) return null;
+        return {
+            id: product.id,
+            tenant_id: product.tenantId,
+            code: product.code,
+            name: product.name,
+            type: product.type,
+            price: product.price,
+            cost_price: product.costPrice,
+            description: product.description,
+            image_url: product.imageUrl,
+            is_active: product.isActive,
+            created_at: product.createdAt?.toISOString?.() ?? null,
+            updated_at: product.updatedAt?.toISOString?.() ?? null,
+            deleted_at: null,
+        };
     }
 
     async create(data: any) {
@@ -59,25 +57,22 @@ export class ProdutosService {
             throw new Error('Codigo, Nome e Preco sao obrigatorios');
         }
 
-        const existing = await this.findByCode(data.code);
+        const existing = await this.repository.findByCode(data.code);
         if (existing) {
             throw new Error(`O codigo "${data.code}" ja esta em uso por outro produto.`);
         }
 
         try {
             const actor = this.getActorContext();
-            const createdProduct = await this.prisma.mod_ordem_servico_products.create({
-                data: {
-                    tenantId: actor.tenantId,
-                    code: data.code,
-                    name: data.name,
-                    price: data.price,
-                    costPrice: data.cost_price || 0,
-                    description: data.description || null,
-                    type: data.type || 'PRODUCT',
-                    imageUrl: data.image_url || null,
-                    isActive: data.is_active ?? true,
-                },
+            const createdProduct = await this.repository.create({
+                tenantId: actor.tenantId,
+                code: data.code,
+                name: data.name,
+                price: data.price,
+                costPrice: data.cost_price,
+                description: data.description,
+                type: data.type || 'PRODUCT',
+                imageUrl: data.image_url,
             });
 
             await this.auditService.log({
@@ -99,30 +94,27 @@ export class ProdutosService {
             throw new Error('Codigo, Nome e Preco sao obrigatorios');
         }
 
-        const existingCode = await this.findByCode(data.code);
+        const existingCode = await this.repository.findByCode(data.code);
         if (existingCode && existingCode.id !== id) {
             throw new Error(`O codigo "${data.code}" ja esta em uso por outro produto.`);
         }
 
-        try {
-            const updated = await this.prisma.mod_ordem_servico_products.updateMany({
-                where: { id, deletedAt: null },
-                data: {
-                    code: data.code,
-                    name: data.name,
-                    price: data.price,
-                    costPrice: data.cost_price || 0,
-                    description: data.description || null,
-                    type: data.type || 'PRODUCT',
-                    imageUrl: data.image_url || null,
-                    isActive: data.is_active ?? true,
-                    updatedAt: new Date(),
-                },
-            });
+        const existing = await this.repository.findById(id);
+        if (!existing) {
+            throw new Error('Produto nao encontrado');
+        }
 
-            if (updated.count === 0) {
-                throw new Error('Produto nao encontrado');
-            }
+        try {
+            await this.repository.update(id, {
+                code: data.code,
+                name: data.name,
+                price: data.price,
+                costPrice: data.cost_price,
+                description: data.description,
+                type: data.type || 'PRODUCT',
+                imageUrl: data.image_url,
+                isActive: data.is_active,
+            });
 
             const actor = this.getActorContext();
 
@@ -141,13 +133,10 @@ export class ProdutosService {
     }
 
     async delete(id: string) {
-        await this.prisma.mod_ordem_servico_products.updateMany({
-            where: { id, deletedAt: null },
-            data: {
-                deletedAt: new Date(),
-                updatedAt: new Date(),
-            },
-        });
+        const existing = await this.repository.findById(id);
+        if (!existing) {
+            throw new Error('Produto nao encontrado');
+        }
 
         const actor = this.getActorContext();
 
@@ -157,6 +146,8 @@ export class ProdutosService {
             tenantId: actor.tenantId,
             details: { productId: id },
         });
+
+        await this.repository.delete(id);
 
         return { success: true };
     }

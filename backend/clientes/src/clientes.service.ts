@@ -1,14 +1,14 @@
 import { BadGatewayException, BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { AuditService } from '@core/audit/audit.service';
 import { RequestSecurityContextService } from '@common/services/request-security-context.service';
-import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
+import { ClienteRepository } from './repositories/cliente.repository';
 
 @Injectable()
 export class ClientesService {
     private readonly logger = new Logger(ClientesService.name);
 
     constructor(
-        private readonly prisma: ModuleOsPrismaService,
+        private readonly repository: ClienteRepository,
         private readonly auditService: AuditService,
         private readonly requestSecurityContext: RequestSecurityContextService,
     ) { }
@@ -25,44 +25,16 @@ export class ClientesService {
             return [];
         }
 
-        if (safeSearch.length >= 2) {
-            const clients = await (this.prisma as any).mod_ordem_servico_clients.findMany({
-                where: {
-                    deletedAt: null,
-                    ...(statusFilter !== undefined ? { isActive: statusFilter } : {}),
-                    OR: [
-                        { name: { contains: safeSearch, mode: 'insensitive' } },
-                        { phonePrimary: { contains: safeSearch } },
-                        { email: { contains: safeSearch, mode: 'insensitive' } },
-                    ],
-                },
-                orderBy: { name: 'asc' },
-                take: 20,
-            });
-
-            return clients.map((client: any) => this.serializeClient(client));
-        }
-
-        const clients = await (this.prisma as any).mod_ordem_servico_clients.findMany({
-            where: {
-                deletedAt: null,
-                ...(statusFilter !== undefined ? { isActive: statusFilter } : {}),
-            },
-            orderBy: { name: 'asc' },
-            take: 50,
+        const clients = await this.repository.findAll({
+            search: safeSearch.length >= 2 ? safeSearch : undefined,
+            status: statusFilter,
         });
 
-        return clients.map((client: any) => this.serializeClient(client));
+        return clients.map((client) => this.serializeClient(client));
     }
 
     async findById(id: string) {
-        const client = await (this.prisma as any).mod_ordem_servico_clients.findFirst({
-            where: {
-                id,
-                deletedAt: null,
-            },
-        });
-
+        const client = await this.repository.findById(id);
         return client ? this.serializeClient(client) : null;
     }
 
@@ -115,26 +87,23 @@ export class ClientesService {
 
         try {
             const actor = this.getActorContext();
-            const createdClient = await (this.prisma as any).mod_ordem_servico_clients.create({
-                data: {
-                    tenantId: actor.tenantId,
-                    name: data.name,
-                    document: data.document || null,
-                    phonePrimary: data.phone_primary,
-                    phoneSecondary: data.phone_secondary || null,
-                    address: data.address || null,
-                    isActive: data.is_active ?? true,
-                    addressZip: data.address_zip || null,
-                    addressStreet: data.address_street || null,
-                    addressNumber: data.address_number || null,
-                    addressComplement: data.address_complement || null,
-                    addressNeighborhood: data.address_neighborhood || null,
-                    addressCity: data.address_city || null,
-                    addressState: data.address_state || null,
-                    observations: data.observations || null,
-                    imageUrl: data.image_url || null,
-                    email: data.email || null,
-                },
+            const createdClient = await this.repository.create({
+                tenantId: actor.tenantId,
+                name: data.name,
+                document: data.document,
+                phonePrimary: data.phone_primary,
+                phoneSecondary: data.phone_secondary,
+                email: data.email,
+                address: data.address,
+                addressZip: data.address_zip,
+                addressStreet: data.address_street,
+                addressNumber: data.address_number,
+                addressComplement: data.address_complement,
+                addressNeighborhood: data.address_neighborhood,
+                addressCity: data.address_city,
+                addressState: data.address_state,
+                observations: data.observations,
+                imageUrl: data.image_url,
             });
 
             await this.auditService.log({
@@ -157,32 +126,29 @@ export class ClientesService {
         }
 
         try {
-            const updated = await (this.prisma as any).mod_ordem_servico_clients.updateMany({
-                where: { id, deletedAt: null },
-                data: {
-                    name: data.name,
-                    document: data.document || null,
-                    phonePrimary: data.phone_primary,
-                    phoneSecondary: data.phone_secondary || null,
-                    address: data.address || null,
-                    isActive: data.is_active ?? true,
-                    addressZip: data.address_zip || null,
-                    addressStreet: data.address_street || null,
-                    addressNumber: data.address_number || null,
-                    addressComplement: data.address_complement || null,
-                    addressNeighborhood: data.address_neighborhood || null,
-                    addressCity: data.address_city || null,
-                    addressState: data.address_state || null,
-                    observations: data.observations || null,
-                    imageUrl: data.image_url || null,
-                    email: data.email || null,
-                    updatedAt: new Date(),
-                },
-            });
-
-            if (updated.count === 0) {
+            const existing = await this.repository.findById(id);
+            if (!existing) {
                 throw new Error('Cliente nao encontrado');
             }
+
+            await this.repository.update(id, {
+                name: data.name,
+                document: data.document,
+                phonePrimary: data.phone_primary,
+                phoneSecondary: data.phone_secondary,
+                email: data.email,
+                address: data.address,
+                addressZip: data.address_zip,
+                addressStreet: data.address_street,
+                addressNumber: data.address_number,
+                addressComplement: data.address_complement,
+                addressNeighborhood: data.address_neighborhood,
+                addressCity: data.address_city,
+                addressState: data.address_state,
+                observations: data.observations,
+                imageUrl: data.image_url,
+                isActive: data.is_active,
+            });
 
             const actor = this.getActorContext();
 
@@ -201,21 +167,15 @@ export class ClientesService {
     }
 
     async delete(id: string) {
-        const osCount = await (this.prisma as any).mod_ordem_servico_ordens.count({
-            where: { clienteId: id },
-        });
+        const existing = await this.repository.findById(id);
+        if (!existing) {
+            throw new Error('Cliente nao encontrado');
+        }
 
+        const osCount = await this.repository.countOrdensByClienteId(id);
         if (osCount > 0) {
             throw new Error('Nao e possivel excluir o cliente pois existem Ordens de Servico associadas a ele.');
         }
-
-        await (this.prisma as any).mod_ordem_servico_clients.updateMany({
-            where: { id, deletedAt: null },
-            data: {
-                deletedAt: new Date(),
-                updatedAt: new Date(),
-            },
-        });
 
         const actor = this.getActorContext();
 
@@ -225,6 +185,8 @@ export class ClientesService {
             tenantId: actor.tenantId,
             details: { clientId: id },
         });
+
+        await this.repository.delete(id);
 
         return { success: true };
     }
