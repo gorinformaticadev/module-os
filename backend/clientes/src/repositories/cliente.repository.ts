@@ -52,7 +52,7 @@ export class ClienteRepository {
   constructor(private readonly prisma: ModuleOsPrismaService) {}
 
   async findById(id: string): Promise<Cliente | null> {
-    const data = await this.prisma.mod_ordem_servico_clients.findFirst({
+    const data = await this.prisma.mod_clientes_clients.findFirst({
       where: { id, deletedAt: null },
     });
 
@@ -78,7 +78,7 @@ export class ClienteRepository {
       ];
     }
 
-    const results = await this.prisma.mod_ordem_servico_clients.findMany({
+    const results = await this.prisma.mod_clientes_clients.findMany({
       where,
       orderBy: { name: 'asc' },
       take: 20,
@@ -88,7 +88,7 @@ export class ClienteRepository {
   }
 
   async create(data: CreateClienteDTO): Promise<Cliente> {
-    const created = await this.prisma.mod_ordem_servico_clients.create({
+    const created = await this.prisma.mod_clientes_clients.create({
       data: {
         tenantId: data.tenantId,
         name: data.name,
@@ -132,7 +132,7 @@ export class ClienteRepository {
     if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-    const updated = await this.prisma.mod_ordem_servico_clients.update({
+    const updated = await this.prisma.mod_clientes_clients.update({
       where: { id },
       data: updateData,
     });
@@ -141,14 +141,14 @@ export class ClienteRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.mod_ordem_servico_clients.update({
+    await this.prisma.mod_clientes_clients.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
   }
 
   async findByDocument(document: string): Promise<Cliente | null> {
-    const data = await this.prisma.mod_ordem_servico_clients.findFirst({
+    const data = await this.prisma.mod_clientes_clients.findFirst({
       where: { document },
     });
 

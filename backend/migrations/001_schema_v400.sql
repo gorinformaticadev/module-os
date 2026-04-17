@@ -18,6 +18,16 @@ CREATE TABLE IF NOT EXISTS mod_ordem_servico_configs (
     CONSTRAINT fk_mod_os_configs_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS mod_integracoes_configs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id TEXT NOT NULL,
+    key VARCHAR(255) NOT NULL,
+    value TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_mod_integracoes_configs_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS mod_ordem_servico_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
@@ -33,7 +43,7 @@ CREATE TABLE IF NOT EXISTS mod_ordem_servico_templates (
 -- 2. CLIENTES E PRODUTOS
 -- ═══════════════════════════════════════════════════════════════════════════
 
-CREATE TABLE IF NOT EXISTS mod_ordem_servico_clients (
+CREATE TABLE IF NOT EXISTS mod_clientes_clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -55,7 +65,7 @@ CREATE TABLE IF NOT EXISTS mod_ordem_servico_clients (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,
-    CONSTRAINT fk_mod_os_clients_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    CONSTRAINT fk_mod_clientes_clients_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS mod_ordem_servico_products (
@@ -120,7 +130,7 @@ CREATE TABLE IF NOT EXISTS mod_ordem_servico_ordens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_mod_os_ordens_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    CONSTRAINT fk_mod_os_ordens_cliente FOREIGN KEY (cliente_id) REFERENCES mod_ordem_servico_clients(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_mod_os_ordens_cliente FOREIGN KEY (cliente_id) REFERENCES mod_clientes_clients(id) ON DELETE RESTRICT,
     CONSTRAINT uk_mod_os_ordens_numero UNIQUE (tenant_id, numero)
 );
 
@@ -349,8 +359,9 @@ CREATE TABLE IF NOT EXISTS mod_ordem_servico_notif_states (
 );
 
 CREATE INDEX IF NOT EXISTS idx_mod_os_configs_tenant ON mod_ordem_servico_configs(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_mod_os_clients_tenant ON mod_ordem_servico_clients(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_mod_os_clients_active ON mod_ordem_servico_clients(is_active);
+CREATE INDEX IF NOT EXISTS idx_mod_integracoes_configs_tenant ON mod_integracoes_configs(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mod_clientes_clients_tenant ON mod_clientes_clients(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mod_clientes_clients_active ON mod_clientes_clients(is_active);
 CREATE INDEX IF NOT EXISTS idx_mod_os_products_tenant ON mod_ordem_servico_products(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_mod_os_ordens_tenant ON mod_ordem_servico_ordens(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_mod_os_ordens_status ON mod_ordem_servico_ordens(status);
@@ -377,7 +388,8 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER trg_mod_os_ordens_updated_at BEFORE UPDATE ON mod_ordem_servico_ordens FOR EACH ROW EXECUTE FUNCTION update_mod_os_timestamp();
 CREATE TRIGGER trg_mod_os_configs_updated_at BEFORE UPDATE ON mod_ordem_servico_configs FOR EACH ROW EXECUTE FUNCTION update_mod_os_timestamp();
-CREATE TRIGGER trg_mod_os_clients_updated_at BEFORE UPDATE ON mod_ordem_servico_clients FOR EACH ROW EXECUTE FUNCTION update_mod_os_timestamp();
+CREATE TRIGGER trg_mod_integracoes_configs_updated_at BEFORE UPDATE ON mod_integracoes_configs FOR EACH ROW EXECUTE FUNCTION update_mod_os_timestamp();
+CREATE TRIGGER trg_mod_clientes_clients_updated_at BEFORE UPDATE ON mod_clientes_clients FOR EACH ROW EXECUTE FUNCTION update_mod_os_timestamp();
 CREATE TRIGGER trg_mod_os_user_roles_updated_at BEFORE UPDATE ON mod_ordem_servico_user_roles FOR EACH ROW EXECUTE FUNCTION update_mod_os_timestamp();
 
 CREATE OR REPLACE VIEW vw_mod_os_alertas_retirada AS

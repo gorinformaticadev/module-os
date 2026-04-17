@@ -23,7 +23,21 @@ model mod_ordem_servico_configs {
   @@map("mod_ordem_servico_configs")
 }
 
-model mod_ordem_servico_clients {
+model mod_integracoes_configs {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @map("tenant_id")
+  key       String    @db.VarChar(255)
+  value     String?
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  @@index([tenantId])
+  @@unique([tenantId, id])
+  @@unique([tenantId, key])
+  @@map("mod_integracoes_configs")
+}
+
+model mod_clientes_clients {
   id                  String                     @id @default(uuid()) @db.Uuid
   tenantId            String                     @map("tenant_id")
   name                String                     @db.VarChar(255)
@@ -50,7 +64,7 @@ model mod_ordem_servico_clients {
   @@index([tenantId])
   @@index([isActive])
   @@unique([tenantId, id])
-  @@map("mod_ordem_servico_clients")
+  @@map("mod_clientes_clients")
 }
 
 model mod_ordem_servico_products {
@@ -115,7 +129,7 @@ model mod_ordem_servico_ordens {
   dataRetirada             DateTime?                             @map("data_retirada") @db.Timestamp(6)
   createdAt                DateTime?                             @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt                DateTime?                             @default(now()) @map("updated_at") @db.Timestamp(6)
-  cliente                  mod_ordem_servico_clients             @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  cliente                  mod_clientes_clients                  @relation(fields: [clienteId], references: [id], onDelete: Restrict)
   historico                mod_ordem_servico_historico[]
   pagamentos               mod_ordem_servico_pagamentos[]
   alertasAbandono          mod_ordem_servico_alertas_abandono[]

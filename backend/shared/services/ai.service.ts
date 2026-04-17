@@ -14,7 +14,7 @@ export class AiService {
 
     private async getAiConfig() {
         try {
-            const result = await this.prisma.mod_ordem_servico_configs.findFirst({
+            const result = await this.prisma.mod_integracoes_configs.findFirst({
                 where: { key: 'ai_integration' },
                 select: { value: true },
             });

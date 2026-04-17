@@ -48,6 +48,20 @@
             "order": 2
         },
         {
+            "id": "ordem_servico-clientes",
+            "label": "Clientes",
+            "route": "/modules/ordem_servico/pages/clientes",
+            "icon": "Users",
+            "roles": [
+                "SUPER_ADMIN",
+                "ADMIN",
+                "USER",
+                "TECH"
+            ],
+            "placement": "sidebar",
+            "order": 3
+        },
+        {
             "id": "ordem_servico-produtos",
             "label": "Produtos / Servicos",
             "route": "/modules/ordem_servico/pages/produtos",
@@ -92,7 +106,7 @@
                 },
                 {
                     "label": "Menus",
-                    "value": "4"
+                    "value": "5"
                 },
                 {
                     "label": "Entrada",
@@ -118,6 +132,13 @@
                     "id": "ordem_servico-produtos",
                     "label": "Produtos / Servicos",
                     "value": "/modules/ordem_servico/pages/produtos",
+                    "column": "Atalhos",
+                    "tone": "neutral"
+                },
+                {
+                    "id": "ordem_servico-clientes",
+                    "label": "Clientes",
+                    "value": "/modules/ordem_servico/pages/clientes",
                     "column": "Atalhos",
                     "tone": "neutral"
                 }

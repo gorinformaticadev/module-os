@@ -221,7 +221,7 @@ export class ConfiguracoesService {
 
     async getAiConfig() {
         try {
-            const config = await this.readConfigValue('ai_integration');
+            const config = await this.readIntegrationConfigValue('ai_integration');
             if (!config || typeof config !== 'object') {
                 return { enabled: false };
             }
@@ -247,7 +247,7 @@ export class ConfiguracoesService {
                 }
             }
 
-            await this.upsertConfigValue('ai_integration', config);
+            await this.upsertIntegrationConfigValue('ai_integration', config);
             return { success: true };
         } catch (error) {
             this.logger.error('Erro ao atualizar configuracao de IA:', error);
@@ -257,7 +257,7 @@ export class ConfiguracoesService {
 
     private async getAiConfigInternal() {
         try {
-            return this.readConfigValue('ai_integration');
+            return this.readIntegrationConfigValue('ai_integration');
         } catch {
             return null;
         }
@@ -349,6 +349,46 @@ export class ConfiguracoesService {
 
         if (updateResult.count === 0) {
             await this.modulePrisma.mod_ordem_servico_configs.create({
+                data: {
+                    tenantId,
+                    key,
+                    value: configValue,
+                },
+            });
+        }
+    }
+
+    private async readIntegrationConfigValue(key: string) {
+        const config = await this.modulePrisma.mod_integracoes_configs.findFirst({
+            where: { key },
+            select: { value: true },
+        });
+
+        if (!config?.value) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(config.value);
+        } catch {
+            return config.value;
+        }
+    }
+
+    private async upsertIntegrationConfigValue(key: string, value: any) {
+        const tenantId = this.getTenantIdOrThrow();
+        const configValue = typeof value === 'string' ? value : JSON.stringify(value);
+
+        const updateResult = await this.modulePrisma.mod_integracoes_configs.updateMany({
+            where: { key },
+            data: {
+                value: configValue,
+                updatedAt: new Date(),
+            },
+        });
+
+        if (updateResult.count === 0) {
+            await this.modulePrisma.mod_integracoes_configs.create({
                 data: {
                     tenantId,
                     key,

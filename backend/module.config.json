@@ -44,6 +44,15 @@
         ]
       },
       {
+        "path": "/ordem_servico/clientes",
+        "component": "ordem_servicoClientesPage",
+        "title": "Clientes",
+        "protected": true,
+        "permissions": [
+          "ordem_servico.view"
+        ]
+      },
+      {
         "path": "/ordem_servico/configuracoes",
         "component": "ordem_servicoConfiguracoesPage",
         "title": "Configurações",
@@ -67,7 +76,9 @@
     ],
     "database": {
       "tables": [
-        "ordem_servico_configs"
+        "mod_ordem_servico_configs",
+        "mod_integracoes_configs",
+        "mod_clientes_clients"
       ],
       "migrations": true
     }

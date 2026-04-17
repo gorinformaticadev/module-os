@@ -109,7 +109,7 @@ export class NotificationEventListenerService {
         let clientEmail = os?.cliente?.email || os?.cliente_email || null;
 
         if (!clientEmail && os?.cliente_id) {
-            const client = await this.modulePrisma.mod_ordem_servico_clients.findFirst({
+            const client = await this.modulePrisma.mod_clientes_clients.findFirst({
                 where: { id: os.cliente_id },
                 select: { email: true },
             });
