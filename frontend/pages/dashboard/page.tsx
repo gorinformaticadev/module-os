@@ -95,26 +95,6 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
 });
 Button.displayName = "Button";
 
-const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & {
-  variant?: "default" | "secondary" | "destructive" | "outline";
-}>(({ className, variant = "default", ...props }, ref) => {
-  const variantClasses = {
-    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-    outline: "text-foreground",
-  };
-
-  return (
-    <div
-      ref={ref}
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantClasses[variant]} ${className || ''}`}
-      {...props}
-    />
-  );
-});
-Badge.displayName = "Badge";
-
 type DashboardOrderStatus = 'aberto' | 'orcamento' | 'aguardando' | 'execucao' | 'finalizada' | 'aprovada';
 
 interface DashboardOrder {
@@ -133,6 +113,9 @@ const ORDERS_ACTION_PERMISSIONS = [
   { resource: 'orders', action: 'delete' },
   { resource: 'orders', action: 'change_status' },
 ];
+
+const DASHBOARD_ACTION_BUTTON_CLASS = 'h-9 w-9 p-0';
+const DASHBOARD_ACTION_ICON_CLASS = 'h-5 w-5';
 
 const useToast = () => ({
   toast: (_options: { title: string; description: string; variant?: string }) => {
@@ -261,32 +244,14 @@ const OrderTable = ({
   onWhatsApp: (ordem: ApiOrdemServico) => void;
   onReopen: (ordem: ApiOrdemServico) => void;
 }) => {
-  const getStatusBadge = (status: DashboardOrder['status']) => {
-    const statusConfig = {
-      aberto: { label: 'Aberto', variant: 'default' as const, color: 'bg-green-500' },
-      orcamento: { label: 'Orcamento', variant: 'secondary' as const, color: 'bg-yellow-500' },
-      aguardando: { label: 'Aguardando', variant: 'outline' as const, color: 'bg-blue-500' },
-      execucao: { label: 'Em Execucao', variant: 'default' as const, color: 'bg-purple-500' },
-      finalizada: { label: 'Finalizada', variant: 'secondary' as const, color: 'bg-gray-500' },
-      aprovada: { label: 'Aprovada', variant: 'default' as const, color: 'bg-green-600' }
-    };
-
-    const config = statusConfig[status];
-    return (
-      <Badge variant={config.variant} className={`${config.color} text-white`}>
-        {config.label}
-      </Badge>
-    );
-  };
-
   return (
-    <Card className="w-full">
+    <Card className="relative z-0 w-full overflow-visible transition-[z-index] hover:z-20">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-700 dark:text-gray-200">
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-visible">
         {loading ? (
           <div className="text-center py-8 text-gray-500">
             Carregando dados do dashboard...
@@ -296,43 +261,41 @@ const OrderTable = ({
             {emptyMessage}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="relative overflow-visible">
+            <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">No</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Cliente</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Data Prev. Final</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Status</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-300">Acoes</th>
+                  <th className="w-[88px] py-3 px-2 text-left font-medium text-gray-600 dark:text-gray-300">No</th>
+                  <th className="py-3 px-2 text-left font-medium text-gray-600 dark:text-gray-300">Cliente</th>
+                  <th className="w-[122px] py-3 px-2 text-left font-medium text-gray-600 dark:text-gray-300">Prev. Final</th>
+                  <th className="w-[196px] py-3 px-2 text-right font-medium text-gray-600 dark:text-gray-300">Acoes</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((ordem) => (
                   <tr key={ordem.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="py-3 px-2 text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <td className="whitespace-nowrap py-3 px-2 text-sm font-medium text-blue-600 dark:text-blue-400">
                       {ordem.numero}
                     </td>
-                    <td className="py-3 px-2 text-sm text-gray-700 dark:text-gray-300">
-                      {ordem.cliente}
+                    <td className="max-w-0 py-3 px-2 text-sm text-gray-700 dark:text-gray-300">
+                      <span className="block truncate" title={ordem.cliente}>
+                        {ordem.cliente}
+                      </span>
                     </td>
-                    <td className="py-3 px-2 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="whitespace-nowrap py-3 px-2 text-sm text-gray-600 dark:text-gray-400">
                       {ordem.dataPrevisaoFinal}
                     </td>
-                    <td className="py-3 px-2">
-                      {getStatusBadge(ordem.status)}
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-2">
+                    <td className="py-3 px-2 align-middle">
+                      <div className="flex items-center justify-end gap-1">
                         {canViewOrderDetails && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-9 w-9 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+                            className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-blue-100 dark:hover:bg-blue-900`}
                             onClick={() => onView(ordem.ordem)}
                             title="Visualizar"
                           >
-                            <Eye className="h-4.5 w-4.5 text-blue-600" />
+                            <Eye className={`${DASHBOARD_ACTION_ICON_CLASS} text-blue-600`} />
                           </Button>
                         )}
 
@@ -342,35 +305,35 @@ const OrderTable = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-9 w-9 p-0 hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-yellow-100 dark:hover:bg-yellow-900`}
                               onClick={() => onEdit(ordem.ordem)}
                               title="Editar"
                             >
-                              <Edit className="h-4.5 w-4.5 text-yellow-600" />
+                              <Edit className={`${DASHBOARD_ACTION_ICON_CLASS} text-yellow-600`} />
                             </Button>
                           )}
 
                         {canViewOrderDetails && (
                           <div
-                            className="relative"
+                            className="relative z-[60]"
                             onMouseEnter={() => onPrintMenuEnter(ordem.id)}
                             onMouseLeave={onPrintMenuLeave}
                           >
                             <Button
                               size="sm"
                               variant="ghost"
-                              className={`h-9 min-w-9 px-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 ${printMenuOpen === ordem.id ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+                              className={`h-8 min-w-8 gap-0.5 rounded-md px-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 ${printMenuOpen === ordem.id ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
                               onClick={() => onTogglePrintMenu(ordem.id)}
                               title="Imprimir"
                             >
-                              <Printer className="h-4.5 w-4.5 text-gray-600" />
+                              <Printer className="h-[18px] w-[18px] text-gray-600" />
                               <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform ${printMenuOpen === ordem.id ? 'rotate-180' : ''}`} />
                             </Button>
 
                             {printMenuOpen === ordem.id && (
-                              <div className="absolute left-0 top-full z-50 min-w-[190px] pt-2">
-                                <div className="absolute top-0 left-0 h-2 w-full pointer-events-auto" />
-                                <div className="overflow-hidden rounded-md border border-border bg-background shadow-xl">
+                              <div className="absolute bottom-full right-0 z-[80] min-w-[190px] pb-2">
+                                <div className="absolute bottom-0 left-0 h-2 w-full pointer-events-auto" />
+                                <div className="overflow-hidden rounded-md border border-border bg-background shadow-2xl">
                                   <button
                                     type="button"
                                     onClick={() => onPrintA4(ordem.ordem)}
@@ -397,11 +360,11 @@ const OrderTable = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-9 w-9 p-0 hover:bg-green-100 dark:hover:bg-green-900"
+                            className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-green-100 dark:hover:bg-green-900`}
                             onClick={() => onWhatsApp(ordem.ordem)}
                             title="WhatsApp"
                           >
-                            <MessageCircle className="h-4.5 w-4.5 text-green-600" />
+                            <MessageCircle className={`${DASHBOARD_ACTION_ICON_CLASS} text-green-600`} />
                           </Button>
                         )}
 
@@ -410,11 +373,11 @@ const OrderTable = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-9 w-9 p-0 hover:bg-red-100 dark:hover:bg-red-900"
+                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-red-100 dark:hover:bg-red-900`}
                               onClick={() => onDelete(ordem.ordem)}
                               title="Excluir"
                             >
-                              <Trash2 className="h-4.5 w-4.5 text-red-600" />
+                              <Trash2 className={`${DASHBOARD_ACTION_ICON_CLASS} text-red-600`} />
                             </Button>
                           )}
 
@@ -424,11 +387,11 @@ const OrderTable = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-9 w-9 p-0 hover:bg-orange-100 dark:hover:bg-orange-900"
+                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-orange-100 dark:hover:bg-orange-900`}
                               onClick={() => onReopen(ordem.ordem)}
                               title="Reabrir OS"
                             >
-                              <RotateCcw className="h-4.5 w-4.5 text-orange-600" />
+                              <RotateCcw className={`${DASHBOARD_ACTION_ICON_CLASS} text-orange-600`} />
                             </Button>
                           )}
                       </div>
