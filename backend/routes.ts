@@ -1,5 +1,5 @@
-import { ProdutosController } from './produtos/produtos.controller';
-import { OrdensController } from './ordens/ordens.controller';
+import { ProdutosController } from './produtos/src/produtos.controller';
+import { OrdensController } from './ordens/src/ordens.controller';
 import { ConfiguracoesController } from './configuracoes/configuracoes.controller';
 import { PermissionController } from './shared/controllers/permission.controller';
 import { TemplateController } from './shared/controllers/template.controller';

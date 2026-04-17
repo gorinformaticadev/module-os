@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ClientesModule } from './clientes/clientes.module';
-import { ProdutosModule } from './produtos/produtos.module';
-import { OrdensModule } from './ordens/ordens.module';
+import { ClientesModule } from './clientes/src/clientes.module';
+import { ProdutosModule } from './produtos/src/produtos.module';
+import { OrdensModule } from './ordens/src/ordens.module';
 import { ConfiguracoesModule } from './configuracoes/configuracoes.module';
 import { SharedModule } from './shared/shared.module';
 import { CoreModule } from './core/core.module';

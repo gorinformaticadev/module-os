@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ModuleOsPrismaService } from '../../../prisma/module-os-prisma.service';
 import { PrismaService } from '@core/prisma/prisma.service';
 import { OrdemServico } from '../contracts/ordem.api';
-import { StatusOS } from '../../shared/dto/ordem-servico.dto';
+import { StatusOS } from '../../../shared/dto/ordem-servico.dto';
 
 interface Historico {
   id: string;
@@ -52,6 +52,7 @@ interface Config {
 interface CreateOrdemServicoDTO {
   tenantId: string;
   clienteId: string;
+  usuarioResponsavelId: string;
   tipoServico: string;
   descricao: string;
   prioridade?: 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE';
@@ -147,23 +148,24 @@ export class OrdemRepository {
   async create(data: CreateOrdemServicoDTO): Promise<OrdemServico> {
     const created = await this.prisma.mod_ordem_servico_ordens.create({
       data: {
-        tenant_id: data.tenantId,
+        tenantId: data.tenantId,
         numero: await this.gerarNumeroOS(data.tenantId),
-        cliente_id: data.clienteId,
-        tipo_servico: data.tipoServico,
+        clienteId: data.clienteId,
+        usuarioResponsavelId: data.usuarioResponsavelId,
+        tipoServico: data.tipoServico,
         descricao: data.descricao,
         prioridade: data.prioridade || 'MEDIA',
-        data_previsao: data.dataPrevisao,
-        origem_solicitacao: data.origemSolicitacao,
-        valor_servico: data.valorServico,
-        forma_pagamento: data.formaPagamento,
-        equipamento_tipo: data.equipamentoTipo,
-        equipamento_marca: data.equipamentoMarca,
-        equipamento_modelo: data.equipamentoModelo,
-        equipamento_serie: data.equipamentoSerie,
-        equipamento_acessorios: data.equipamentoAcessorios,
-        equipamento_estado: data.equipamentoEstado,
-        equipamento_fotos: data.equipamentoFotos,
+        dataPrevisao: data.dataPrevisao,
+        origemSolicitacao: data.origemSolicitacao,
+        valorServico: data.valorServico,
+        formaPagamento: data.formaPagamento,
+        equipamentoTipo: data.equipamentoTipo,
+        equipamentoMarca: data.equipamentoMarca,
+        equipamentoModelo: data.equipamentoModelo,
+        equipamentoSerie: data.equipamentoSerie,
+        equipamentoAcessorios: data.equipamentoAcessorios,
+        equipamentoEstado: data.equipamentoEstado,
+        equipamentoFotos: data.equipamentoFotos,
       },
       include: { cliente: true },
     });
@@ -174,17 +176,17 @@ export class OrdemRepository {
   async update(id: string, data: UpdateOrdemServicoDTO): Promise<OrdemServico> {
     const updateData: any = {};
 
-    if (data.tipoServico !== undefined) updateData.tipo_servico = data.tipoServico;
+    if (data.tipoServico !== undefined) updateData.tipoServico = data.tipoServico;
     if (data.descricao !== undefined) updateData.descricao = data.descricao;
-    if (data.observacoesInternas !== undefined) updateData.observacoes_internas = data.observacoesInternas;
-    if (data.observacoesCliente !== undefined) updateData.observacoes_cliente = data.observacoesCliente;
-    if (data.valorServico !== undefined) updateData.valor_servico = data.valorServico;
-    if (data.formaPagamento !== undefined) updateData.forma_pagamento = data.formaPagamento;
+    if (data.observacoesInternas !== undefined) updateData.observacoesInternas = data.observacoesInternas;
+    if (data.observacoesCliente !== undefined) updateData.observacoesCliente = data.observacoesCliente;
+    if (data.valorServico !== undefined) updateData.valorServico = data.valorServico;
+    if (data.formaPagamento !== undefined) updateData.formaPagamento = data.formaPagamento;
     if (data.prioridade !== undefined) updateData.prioridade = data.prioridade;
-    if (data.dataPrevisao !== undefined) updateData.data_previsao = data.dataPrevisao;
+    if (data.dataPrevisao !== undefined) updateData.dataPrevisao = data.dataPrevisao;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.orcamentoAprovado !== undefined) updateData.orcamento_aprovado = data.orcamentoAprovado;
-    if (data.motivoCancelamento !== undefined) updateData.motivo_cancelamento = data.motivoCancelamento;
+    if (data.orcamentoAprovado !== undefined) updateData.orcamentoAprovado = data.orcamentoAprovado;
+    if (data.motivoCancelamento !== undefined) updateData.motivoCancelamento = data.motivoCancelamento;
 
     const updated = await this.prisma.mod_ordem_servico_ordens.update({
       where: { id },
@@ -302,9 +304,9 @@ export class OrdemRepository {
   }
 
   async updateStatus(id: string, status: number, dataConclusao?: Date, motivoCancelamento?: string): Promise<OrdemServico> {
-    const updateData: any = { status, updated_at: new Date() };
-    if (dataConclusao) updateData.data_conclusao = dataConclusao;
-    if (motivoCancelamento !== undefined) updateData.motivo_cancelamento = motivoCancelamento;
+    const updateData: any = { status, updatedAt: new Date() };
+    if (dataConclusao) updateData.dataConclusao = dataConclusao;
+    if (motivoCancelamento !== undefined) updateData.motivoCancelamento = motivoCancelamento;
 
     const updated = await this.prisma.mod_ordem_servico_ordens.update({
       where: { id },
@@ -349,7 +351,7 @@ export class OrdemRepository {
     return result.map((item) => ({
       id: item.id,
       nome: item.nome,
-      isDefault: item.is_default === true,
+      isDefault: item.isDefault === true,
     }));
   }
 
@@ -406,7 +408,7 @@ export class OrdemRepository {
   async createPagamento(data: { tenantId: string; ordemServicoId: string; formaPagamento: string; valor: number; parcelas?: number; observacoes?: string; createdBy: string }): Promise<Pagamento> {
     const created = await this.prisma.mod_ordem_servico_pagamentos.create({
       data: {
-        tenant_id: data.tenantId,
+        tenantId: data.tenantId,
         ordemServicoId: data.ordemServicoId,
         formaPagamento: data.formaPagamento,
         valor: data.valor,
@@ -422,7 +424,7 @@ export class OrdemRepository {
   async createManyPagamentos(pagamentos: { tenantId: string; ordemServicoId: string; formaPagamento: string; valor: number; parcelas?: number; observacoes?: string; createdBy: string }[]): Promise<void> {
     await this.prisma.mod_ordem_servico_pagamentos.createMany({
       data: pagamentos.map((p) => ({
-        tenant_id: p.tenantId,
+        tenantId: p.tenantId,
         ordemServicoId: p.ordemServicoId,
         formaPagamento: p.formaPagamento,
         valor: p.valor,
@@ -436,7 +438,7 @@ export class OrdemRepository {
   async registrarHistorico(data: { tenantId: string; ordemServicoId: string; usuarioId: string; acao: string; valorAnterior?: string; valorNovo?: string; observacoes?: string }): Promise<Historico> {
     const created = await this.prisma.mod_ordem_servico_historico.create({
       data: {
-        tenant_id: data.tenantId,
+        tenantId: data.tenantId,
         ordemServicoId: data.ordemServicoId,
         usuarioId: data.usuarioId,
         acao: data.acao,
@@ -452,7 +454,7 @@ export class OrdemRepository {
   async registrarStatusHistorico(data: { tenantId: string; ordemServicoId: string; usuarioId: string; statusAnterior: number; statusNovo: number; observacoes?: string }): Promise<void> {
     await this.prisma.mod_ordem_servico_status_historico.create({
       data: {
-        tenant_id: data.tenantId,
+        tenantId: data.tenantId,
         ordemServicoId: data.ordemServicoId,
         usuarioId: data.usuarioId,
         statusAnterior: data.statusAnterior,
@@ -475,7 +477,7 @@ export class OrdemRepository {
   async createAlertaAbandono(data: { tenantId: string; ordemServicoId: string; numeroAlerta: number; dataEnvio: Date; meioComunicacao: string; enviadoPor: string; mensagem?: string; observacoes?: string }): Promise<any> {
     const created = await this.prisma.mod_ordem_servico_alertas_abandono.create({
       data: {
-        tenant_id: data.tenantId,
+        tenantId: data.tenantId,
         ordemServicoId: data.ordemServicoId,
         numeroAlerta: data.numeroAlerta,
         dataEnvio: data.dataEnvio,
@@ -492,7 +494,7 @@ export class OrdemRepository {
   async createAnexoAlerta(data: { tenantId: string; alertaId: string; nomeArquivo: string; tipoArquivo?: string; tamanhoBytes?: number; urlArquivo: string; descricao?: string; uploadedBy: string }): Promise<any> {
     return this.prisma.mod_ordem_servico_anexos_abandono.create({
       data: {
-        tenant_id: data.tenantId,
+        tenantId: data.tenantId,
         alertaId: data.alertaId,
         nomeArquivo: data.nomeArquivo,
         tipoArquivo: data.tipoArquivo || 'application/octet-stream',
@@ -532,9 +534,9 @@ export class OrdemRepository {
     const updated = await this.prisma.mod_ordem_servico_ordens.update({
       where: { id },
       data: {
-        valor_conservacao: valorConservacao,
-        justificativa_conservacao: justificativa,
-        updated_at: new Date(),
+        valorConservacao: valorConservacao,
+        justificativaConservacao: justificativa,
+        updatedAt: new Date(),
       },
       include: { cliente: true },
     });
@@ -556,62 +558,80 @@ export class OrdemRepository {
   private mapToDomain(data: any): OrdemServico {
     return {
       id: data.id,
-      tenantId: data.tenant_id,
+      tenantId: data.tenantId,
       numero: data.numero,
-      clienteId: data.cliente_id,
+      clienteId: data.clienteId,
       usuarioResponsavelId: data.usuarioResponsavelId ?? undefined,
-      tipoServico: data.tipo_servico,
+      tipoServico: data.tipoServico,
       descricao: data.descricao,
-      observacoesInternas: data.observacoes_internas ?? undefined,
-      observacoesCliente: data.observacoes_cliente ?? undefined,
-      valorServico: Number(data.valor_servico || 0),
-      formaPagamento: data.forma_pagamento ?? undefined,
+      observacoesInternas: data.observacoesInternas ?? undefined,
+      observacoesCliente: data.observacoesCliente ?? undefined,
+      valorServico: Number(data.valorServico || 0),
+      formaPagamento: data.formaPagamento ?? undefined,
       status: data.status,
       prioridade: data.prioridade as any || 'MEDIA',
-      dataAbertura: data.data_abertura ?? new Date(),
-      dataPrevisao: data.data_previsao ?? undefined,
-      dataConclusao: data.data_conclusao ?? undefined,
-      origemSolicitacao: data.origem_solicitacao,
-      orcamentoAprovado: data.orcamento_aprovado ?? false,
-      motivoCancelamento: data.motivo_cancelamento ?? undefined,
-      equipamentoTipo: data.equipamento_tipo ?? undefined,
-      equipamentoMarca: data.equipamento_marca ?? undefined,
-      equipamentoModelo: data.equipamento_modelo ?? undefined,
-      equipamentoSerie: data.equipamento_serie ?? undefined,
-      equipamentoAcessorios: data.equipamento_acessorios ?? undefined,
-      equipamentoEstado: data.equipamento_estado ?? undefined,
-      equipamentoFotos: data.equipamento_fotos ?? undefined,
-      laudoTecnico: data.laudo_tecnico ?? undefined,
-      createdAt: data.created_at ?? new Date(),
-      updatedAt: data.updated_at ?? new Date(),
+      dataAbertura: data.dataAbertura ?? new Date(),
+      dataPrevisao: data.dataPrevisao ?? undefined,
+      dataConclusao: data.dataConclusao ?? undefined,
+      origemSolicitacao: data.origemSolicitacao,
+      orcamentoAprovado: data.orcamentoAprovado ?? false,
+      motivoCancelamento: data.motivoCancelamento ?? undefined,
+      equipamentoTipo: data.equipamentoTipo ?? undefined,
+      equipamentoMarca: data.equipamentoMarca ?? undefined,
+      equipamentoModelo: data.equipamentoModelo ?? undefined,
+      equipamentoSerie: data.equipamentoSerie ?? undefined,
+      equipamentoAcessorios: data.equipamentoAcessorios ?? undefined,
+      equipamentoEstado: data.equipamentoEstado ?? undefined,
+      equipamentoFotos: data.equipamentoFotos ?? undefined,
+      laudoTecnico: data.laudoTecnico ?? undefined,
+      valorConservacao: data.valorConservacao ?? undefined,
+      justificativaConservacao: data.justificativaConservacao ?? undefined,
+      createdAt: data.createdAt ?? new Date(),
+      updatedAt: data.updatedAt ?? new Date(),
+      cliente: data.cliente
+        ? {
+            id: data.cliente.id,
+            name: data.cliente.name,
+            document: data.cliente.document ?? undefined,
+            phonePrimary: data.cliente.phonePrimary ?? undefined,
+            phoneSecondary: data.cliente.phoneSecondary ?? undefined,
+            email: data.cliente.email ?? undefined,
+            addressStreet: data.cliente.addressStreet ?? undefined,
+            addressNumber: data.cliente.addressNumber ?? undefined,
+            addressCity: data.cliente.addressCity ?? undefined,
+            addressState: data.cliente.addressState ?? undefined,
+            imageUrl: data.cliente.imageUrl ?? undefined,
+            isActive: data.cliente.isActive ?? true,
+          }
+        : null,
     };
   }
 
   private mapHistoricoToDomain(data: any): Historico {
     return {
       id: data.id,
-      tenantId: data.tenant_id,
+      tenantId: data.tenantId,
       ordemServicoId: data.ordemServicoId,
       usuarioId: data.usuarioId,
       acao: data.acao,
-      valorAnterior: data.valor_anterior ?? undefined,
-      valorNovo: data.valor_novo ?? undefined,
+      valorAnterior: data.valorAnterior ?? undefined,
+      valorNovo: data.valorNovo ?? undefined,
       observacoes: data.observacoes ?? undefined,
-      createdAt: data.created_at ?? new Date(),
+      createdAt: data.createdAt ?? new Date(),
     };
   }
 
   private mapPagamentoToDomain(data: any): Pagamento {
     return {
       id: data.id,
-      tenantId: data.tenant_id,
+      tenantId: data.tenantId,
       ordemServicoId: data.ordemServicoId,
-      formaPagamento: data.forma_pagamento,
+      formaPagamento: data.formaPagamento,
       valor: Number(data.valor),
       parcelas: data.parcelas ?? undefined,
       observacoes: data.observacoes ?? undefined,
-      createdAt: data.created_at ?? new Date(),
-      createdBy: data.created_by,
+      createdAt: data.createdAt ?? new Date(),
+      createdBy: data.createdBy,
     };
   }
 }

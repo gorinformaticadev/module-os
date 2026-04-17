@@ -29,7 +29,7 @@
 - Uploads ainda nao foram migrados para `SecureFilesService`.
 - A migracao completa para runtime safety dependia de refactor profundo dos services.
 
-## [3.1.0] - Atual
+## [1.0.0] - Atual
 ### Funcionalidades implementadas
 - Diretrizes de IA em `DOCS/IA_PROMPT_CRIACAO_MODULO.md`.
 - Centralizacao de uploads e alinhamento inicial com o sistema hospedeiro.

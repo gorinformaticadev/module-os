@@ -22,9 +22,9 @@ import { Request as ExpressRequest, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
-import { PermissionGuard } from '../shared/guards/permission.guard';
-import { RequireClientsPermission } from '../shared/decorators/require-permission.decorator';
-import { Permissions } from '../shared/decorators/permissions.decorator';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { RequireClientsPermission } from '../../shared/decorators/require-permission.decorator';
+import { Permissions } from '../../shared/decorators/permissions.decorator';
 import { ClientesService } from './clientes.service';
 import {
   assertTenantUploadAccess,
@@ -32,7 +32,7 @@ import {
   ORDEM_SERVICO_UPLOAD_OPTIONS,
   persistTenantModuleUpload,
   resolveTenantModuleUploadPath,
-} from '../shared/utils/upload-security.util';
+} from '../../shared/utils/upload-security.util';
 
 @Controller('ordem_servico/clientes')
 @Permissions('ordem_servico.clients')

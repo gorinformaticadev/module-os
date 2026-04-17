@@ -128,7 +128,7 @@ Para modulos baseados neste, leia tambem `DOCS/GUIA_ADAPTACAO_MODULOS_BASEADOS_N
      data: {
        slug: 'ordem_servico',
        name: 'Ordem de ServiÃ§os',
-       version: '3.1.0',
+       version: '1.0.0',
        status: 'active',
        hasBackend: true,
        hasFrontend: true

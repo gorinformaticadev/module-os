@@ -90,22 +90,22 @@ export class ClienteRepository {
   async create(data: CreateClienteDTO): Promise<Cliente> {
     const created = await this.prisma.mod_ordem_servico_clients.create({
       data: {
-        tenant_id: data.tenantId,
+        tenantId: data.tenantId,
         name: data.name,
         document: data.document,
-        phone_primary: data.phonePrimary,
-        phone_secondary: data.phoneSecondary,
+        phonePrimary: data.phonePrimary,
+        phoneSecondary: data.phoneSecondary,
         email: data.email,
         address: data.address,
-        address_zip: data.addressZip,
-        address_street: data.addressStreet,
-        address_number: data.addressNumber,
-        address_complement: data.addressComplement,
-        address_neighborhood: data.addressNeighborhood,
-        address_city: data.addressCity,
-        address_state: data.addressState,
+        addressZip: data.addressZip,
+        addressStreet: data.addressStreet,
+        addressNumber: data.addressNumber,
+        addressComplement: data.addressComplement,
+        addressNeighborhood: data.addressNeighborhood,
+        addressCity: data.addressCity,
+        addressState: data.addressState,
         observations: data.observations,
-        image_url: data.imageUrl,
+        imageUrl: data.imageUrl,
       },
     });
 
@@ -117,20 +117,20 @@ export class ClienteRepository {
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.document !== undefined) updateData.document = data.document;
-    if (data.phonePrimary !== undefined) updateData.phone_primary = data.phonePrimary;
-    if (data.phoneSecondary !== undefined) updateData.phone_secondary = data.phoneSecondary;
+    if (data.phonePrimary !== undefined) updateData.phonePrimary = data.phonePrimary;
+    if (data.phoneSecondary !== undefined) updateData.phoneSecondary = data.phoneSecondary;
     if (data.email !== undefined) updateData.email = data.email;
     if (data.address !== undefined) updateData.address = data.address;
-    if (data.addressZip !== undefined) updateData.address_zip = data.addressZip;
-    if (data.addressStreet !== undefined) updateData.address_street = data.addressStreet;
-    if (data.addressNumber !== undefined) updateData.address_number = data.addressNumber;
-    if (data.addressComplement !== undefined) updateData.address_complement = data.addressComplement;
-    if (data.addressNeighborhood !== undefined) updateData.address_neighborhood = data.addressNeighborhood;
-    if (data.addressCity !== undefined) updateData.address_city = data.addressCity;
-    if (data.addressState !== undefined) updateData.address_state = data.addressState;
+    if (data.addressZip !== undefined) updateData.addressZip = data.addressZip;
+    if (data.addressStreet !== undefined) updateData.addressStreet = data.addressStreet;
+    if (data.addressNumber !== undefined) updateData.addressNumber = data.addressNumber;
+    if (data.addressComplement !== undefined) updateData.addressComplement = data.addressComplement;
+    if (data.addressNeighborhood !== undefined) updateData.addressNeighborhood = data.addressNeighborhood;
+    if (data.addressCity !== undefined) updateData.addressCity = data.addressCity;
+    if (data.addressState !== undefined) updateData.addressState = data.addressState;
     if (data.observations !== undefined) updateData.observations = data.observations;
-    if (data.imageUrl !== undefined) updateData.image_url = data.imageUrl;
-    if (data.isActive !== undefined) updateData.is_active = data.isActive;
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
     const updated = await this.prisma.mod_ordem_servico_clients.update({
       where: { id },
@@ -166,25 +166,25 @@ export class ClienteRepository {
   private mapToDomain(data: any): Cliente {
     return {
       id: data.id,
-      tenantId: data.tenant_id,
+      tenantId: data.tenantId,
       name: data.name,
       document: data.document ?? undefined,
-      phonePrimary: data.phone_primary,
-      phoneSecondary: data.phone_secondary ?? undefined,
+      phonePrimary: data.phonePrimary,
+      phoneSecondary: data.phoneSecondary ?? undefined,
       email: data.email ?? undefined,
       address: data.address ?? undefined,
-      addressZip: data.address_zip ?? undefined,
-      addressStreet: data.address_street ?? undefined,
-      addressNumber: data.address_number ?? undefined,
-      addressComplement: data.address_complement ?? undefined,
-      addressNeighborhood: data.address_neighborhood ?? undefined,
-      addressCity: data.address_city ?? undefined,
-      addressState: data.address_state ?? undefined,
+      addressZip: data.addressZip ?? undefined,
+      addressStreet: data.addressStreet ?? undefined,
+      addressNumber: data.addressNumber ?? undefined,
+      addressComplement: data.addressComplement ?? undefined,
+      addressNeighborhood: data.addressNeighborhood ?? undefined,
+      addressCity: data.addressCity ?? undefined,
+      addressState: data.addressState ?? undefined,
       observations: data.observations ?? undefined,
-      imageUrl: data.image_url ?? undefined,
-      isActive: data.is_active ?? true,
-      createdAt: data.created_at ?? new Date(),
-      updatedAt: data.updated_at ?? new Date(),
+      imageUrl: data.imageUrl ?? undefined,
+      isActive: data.isActive ?? true,
+      createdAt: data.createdAt ?? new Date(),
+      updatedAt: data.updatedAt ?? new Date(),
     };
   }
 }

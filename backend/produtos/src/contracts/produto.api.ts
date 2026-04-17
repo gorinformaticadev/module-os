@@ -7,7 +7,12 @@ export interface Produto {
   name: string;
   type: 'PRODUCT' | 'SERVICE';
   price: number;
+  costPrice?: number;
+  description?: string;
+  imageUrl?: string;
   isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ProdutoAPI {

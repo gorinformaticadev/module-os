@@ -258,4 +258,4 @@ model ModuloMeuItem {
 Ao gerar novas migrações SQL no backend (`backend/migrations/xxx.sql`), lembre-se de espelhar o Schema Prisma seguindo essa convenção.
 
 --- 
-**Versão da Base de Regras:** 1.0 (Ref `module-os v3.1.0`)
+**Versão da Base de Regras:** 1.0 (Ref `module-os v1.0.0`)

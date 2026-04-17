@@ -87,14 +87,14 @@ export class ProdutoRepository {
   async create(data: CreateProdutoDTO): Promise<Produto> {
     const created = await this.prisma.mod_ordem_servico_products.create({
       data: {
-        tenant_id: data.tenantId,
+        tenantId: data.tenantId,
         code: data.code,
         name: data.name,
         type: data.type || 'PRODUCT',
         price: data.price,
-        cost_price: data.costPrice,
+        costPrice: data.costPrice,
         description: data.description,
-        image_url: data.imageUrl,
+        imageUrl: data.imageUrl,
       },
     });
 
@@ -108,10 +108,10 @@ export class ProdutoRepository {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.price !== undefined) updateData.price = data.price;
-    if (data.costPrice !== undefined) updateData.cost_price = data.costPrice;
+    if (data.costPrice !== undefined) updateData.costPrice = data.costPrice;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.imageUrl !== undefined) updateData.image_url = data.imageUrl;
-    if (data.isActive !== undefined) updateData.is_active = data.isActive;
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
     const updated = await this.prisma.mod_ordem_servico_products.update({
       where: { id },
@@ -131,17 +131,17 @@ export class ProdutoRepository {
   private mapToDomain(data: any): Produto {
     return {
       id: data.id,
-      tenantId: data.tenant_id,
+      tenantId: data.tenantId,
       code: data.code,
       name: data.name,
       type: data.type as 'PRODUCT' | 'SERVICE',
       price: Number(data.price),
-      costPrice: data.cost_price ? Number(data.cost_price) : undefined,
+      costPrice: data.costPrice ? Number(data.costPrice) : undefined,
       description: data.description ?? undefined,
-      imageUrl: data.image_url ?? undefined,
-      isActive: data.is_active ?? true,
-      createdAt: data.created_at ?? new Date(),
-      updatedAt: data.updated_at ?? new Date(),
+      imageUrl: data.imageUrl ?? undefined,
+      isActive: data.isActive ?? true,
+      createdAt: data.createdAt ?? new Date(),
+      updatedAt: data.updatedAt ?? new Date(),
     };
   }
 }

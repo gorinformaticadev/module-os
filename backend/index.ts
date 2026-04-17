@@ -2,26 +2,26 @@
 export * from './ordem_servico.module';
 
 // Submódulos
-export * from './clientes/clientes.module';
-export * from './produtos/produtos.module';
-export * from './ordens/ordens.module';
+export * from './clientes/src/clientes.module';
+export * from './produtos/src/produtos.module';
+export * from './ordens/src/ordens.module';
 export * from './configuracoes/configuracoes.module';
 export * from './shared/shared.module';
 export * from './core/core.module';
 
 // Controllers
-export * from './clientes/clientes.controller';
-export * from './produtos/produtos.controller';
-export * from './ordens/ordens.controller';
+export * from './clientes/src/clientes.controller';
+export * from './produtos/src/produtos.controller';
+export * from './ordens/src/ordens.controller';
 export * from './configuracoes/configuracoes.controller';
 export * from './shared/controllers/permission.controller';
 export * from './shared/controllers/template.controller';
 export * from './core/ordem-servico-config.controller';
 
 // Services
-export * from './clientes/clientes.service';
-export * from './produtos/produtos.service';
-export * from './ordens/ordens.service';
+export * from './clientes/src/clientes.service';
+export * from './produtos/src/produtos.service';
+export * from './ordens/src/ordens.service';
 export * from './configuracoes/configuracoes.service';
 export * from './shared/services/permission.service';
 export * from './shared/services/template.service';

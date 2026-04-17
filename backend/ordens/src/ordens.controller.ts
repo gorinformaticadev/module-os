@@ -4,9 +4,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import { JwtAuthGuard } from '@core/common/guards/jwt-auth.guard';
 import { OrdensService } from './ordens.service';
-import { PermissionGuard } from '../shared/guards/permission.guard';
-import { RequireOrdersPermission } from '../shared/decorators/require-permission.decorator';
-import { Permissions } from '../shared/decorators/permissions.decorator';
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { RequireOrdersPermission } from '../../shared/decorators/require-permission.decorator';
+import { Permissions } from '../../shared/decorators/permissions.decorator';
 import {
     assertTenantUploadAccess,
     buildTenantModuleUploadUrl,
@@ -14,7 +14,7 @@ import {
     persistTenantModuleUpload,
     removeTenantModuleUpload,
     resolveTenantModuleUploadPath,
-} from '../shared/utils/upload-security.util';
+} from '../../shared/utils/upload-security.util';
 import {
     CreateOrdemServicoDTO,
     UpdateOrdemServicoDTO,
@@ -40,7 +40,7 @@ import {
     AtualizarConservacaoDTO,
     StatusHistoricoResponseDTO,
     AlertaRetiradaResponseDTO
-} from '../shared/dto/ordem-servico.dto';
+} from '../../shared/dto/ordem-servico.dto';
 
 @Controller('ordem_servico/ordens')
 @Permissions('ordem_servico.orders')

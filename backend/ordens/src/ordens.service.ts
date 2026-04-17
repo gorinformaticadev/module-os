@@ -13,15 +13,17 @@ import {
     PagamentoDTO,
     RetiradaDTO,
     StatusOS,
+    TipoEquipamentoResponseDTO,
+    TipoServicoResponseDTO,
     UpdateOrdemServicoDTO,
     AlertaAbandonoDTO,
-} from '../shared/dto/ordem-servico.dto';
+} from '../../shared/dto/ordem-servico.dto';
 import { ClientesService } from '../../clientes/src/clientes.service';
 import { OrdemRepository } from './repositories/ordem.repository';
 import * as puppeteer from 'puppeteer';
 import * as path from 'path';
 import * as fs from 'fs';
-import { generatePdfHtml } from './pdf-template.util';
+import { generatePdfHtml } from '../pdf-template.util';
 
 @Injectable()
 export class OrdensService {
@@ -234,10 +236,15 @@ async findAll(filters: OrdemServicoFilters) {
     async create(createDto: CreateOrdemServicoDTO) {
         const actor = this.getActorOrThrow();
         const status = createDto.status ?? StatusOS.ORCAMENTO;
+        const usuarioResponsavelId = this.normalizeResponsibleId(
+            createDto.usuario_responsavel_id,
+            actor.id as string,
+        );
 
         const ordem = await this.ordemRepository.create({
             tenantId: actor.tenantId as string,
             clienteId: createDto.cliente_id,
+            usuarioResponsavelId,
             tipoServico: createDto.tipo_servico,
             prioridade: createDto.prioridade || 'MEDIA',
             descricao: createDto.descricao,
@@ -442,18 +449,26 @@ async findAll(filters: OrdemServicoFilters) {
         return this.ordemRepository.getDashboardData();
     }
 
-    async getTiposServico() {
-        return this.ordemRepository.getTiposServico();
+    async getTiposServico(): Promise<TipoServicoResponseDTO[]> {
+        const tipos = await this.ordemRepository.getTiposServico();
+        return tipos.map((tipo) => ({
+            id: tipo.id,
+            nome: tipo.nome,
+            is_default: tipo.isDefault,
+        }));
     }
 
-    async getTiposEquipamento() {
-        return this.ordemRepository.getTiposEquipamento();
+    async getTiposEquipamento(): Promise<TipoEquipamentoResponseDTO[]> {
+        const tipos = await this.ordemRepository.getTiposEquipamento();
+        return tipos.map((tipo) => ({
+            id: tipo.id,
+            nome: tipo.nome,
+        }));
     }
 
     async getTechnicians() {
         const tenantId = this.getTenantIdOrThrow();
         return this.ordemRepository.getTechnicians(tenantId);
-    }
     }
 
     async getStatusHistorico(ordemId: string) {
@@ -602,13 +617,13 @@ async findAll(filters: OrdemServicoFilters) {
             }))
         );
 
-        await this.ordemRepository.updateStatus(ordemId, StatusOS.RETIRADA, new Date(), undefined);
+        await this.ordemRepository.updateStatus(ordemId, StatusOS.RETIRADO, new Date(), undefined);
         await this.ordemRepository.registrarStatusHistorico({
             tenantId: actor.tenantId as string,
             ordemServicoId: ordemId,
             usuarioId: actor.id as string,
             statusAnterior: ordem.status,
-            statusNovo: StatusOS.RETIRADA,
+            statusNovo: StatusOS.RETIRADO,
             observacoes: retiradaDTO.observacoes || 'Equipamento retirado pelo cliente',
         });
 
@@ -741,8 +756,6 @@ async getAlertasAbandono(ordemId: string) {
             statusNovo: StatusOS.ABANDONADO,
             observacoes: observacoes || 'Equipamento marcado como abandonado apos 3 tentativas de contato',
         });
-            observacoes || 'Equipamento marcado como abandonado apos 3 tentativas de contato',
-        );
         await this.registrarHistorico(
             ordemId,
             'ABANDONO',

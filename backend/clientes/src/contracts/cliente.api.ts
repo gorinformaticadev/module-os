@@ -9,7 +9,19 @@ export interface Cliente {
   phonePrimary: string;
   phoneSecondary?: string;
   email?: string;
+  address?: string;
+  addressZip?: string;
+  addressStreet?: string;
+  addressNumber?: string;
+  addressComplement?: string;
+  addressNeighborhood?: string;
+  addressCity?: string;
+  addressState?: string;
+  observations?: string;
+  imageUrl?: string;
   isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ClienteAPI {
