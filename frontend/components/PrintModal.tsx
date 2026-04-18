@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -10,7 +10,9 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, Loader2, Download, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Printer, Loader2, Download } from 'lucide-react';
 import { PrintTemplateA4 } from './PrintTemplateA4';
 import { PrintTemplateThermal } from './PrintTemplateThermal';
 import api, { API_URL } from '@/lib/api';
@@ -27,6 +29,7 @@ interface PrintModalProps {
 export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId, format }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [economicPrint, setEconomicPrint] = useState(false);
     const [data, setData] = useState<{
         ordem: any;
         tenantInfo: any;
@@ -34,16 +37,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
     } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isOpen && ordemId) {
-            loadPrintData();
-        } else {
-            setData(null);
-            setError(null);
-        }
-    }, [isOpen, ordemId]);
-
-    const loadPrintData = async () => {
+    const loadPrintData = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -70,12 +64,28 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
 
             setData({ ordem, tenantInfo, condicoesExecucao });
         } catch (err) {
-            console.error('Erro ao carregar dados de impressão:', err);
-            setError('Não foi possível carregar os dados para impressão.');
+            console.error('Erro ao carregar dados de impressao:', err);
+            setError('Nao foi possivel carregar os dados para impressao.');
         } finally {
             setLoading(false);
         }
-    };
+    }, [ordemId, user]);
+
+    useEffect(() => {
+        if (isOpen && ordemId) {
+            loadPrintData();
+        } else {
+            setData(null);
+            setError(null);
+            setEconomicPrint(false);
+        }
+    }, [isOpen, ordemId, loadPrintData]);
+
+    useEffect(() => {
+        if (format !== 'a4') {
+            setEconomicPrint(false);
+        }
+    }, [format]);
 
     const handlePrint = () => {
         const printContent = document.getElementById('modal-print-area');
@@ -84,7 +94,6 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
-        // Pegar todos os estilos da página atual
         const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
             .map(style => style.outerHTML)
             .join('');
@@ -92,13 +101,13 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
         printWindow.document.write(`
             <html>
                 <head>
-                    <title>Impressão OS #${data?.ordem?.numero}</title>
+                    <title>Impressao OS #${data?.ordem?.numero}</title>
                     ${styles}
                     <style>
                         @media print {
                             @page {
-                                margin: ${format === 'thermal' ? '0' : '5mm 5mm 1mm 5mm'};
-                                size: ${format === 'thermal' ? '80mm auto' : 'auto'};
+                                margin: ${format === 'thermal' ? '0' : economicPrint ? '2mm' : '3mm'};
+                                size: ${format === 'thermal' ? '80mm auto' : economicPrint ? 'A4 landscape' : 'A4 portrait'};
                             }
                             body { margin: 0; padding: 0; }
                             .no-print { display: none !important; }
@@ -135,25 +144,39 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Erro ao baixar PDF:', error);
+        } catch (downloadError) {
+            console.error('Erro ao baixar PDF:', downloadError);
             alert('Erro ao baixar PDF.');
         }
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
-            <DialogContent className={`${format === 'thermal' ? 'max-w-xs' : 'max-w-4xl'} max-h-[95vh] flex flex-col p-0 overflow-hidden`}>
+            <DialogContent className={`${format === 'thermal' ? 'max-w-xs' : economicPrint ? 'w-[calc(100vw-2rem)] max-w-7xl' : 'max-w-4xl'} max-h-[95vh] flex flex-col p-0 overflow-hidden`}>
                 <DialogHeader className="p-4 border-b bg-muted/20 no-print">
-                    <DialogTitle className="text-lg font-bold">
-                        Prévia de Impressão ({format === 'thermal' ? '80mm' : 'A4'})
-                    </DialogTitle>
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <DialogTitle className="text-lg font-bold">
+                            Previa de Impressao ({format === 'thermal' ? '80mm' : 'A4'})
+                        </DialogTitle>
+                        {format === 'a4' && (
+                            <div className="flex items-center gap-2 rounded-md border bg-background/80 px-3 py-2">
+                                <Checkbox
+                                    id="economic-print"
+                                    checked={economicPrint}
+                                    onCheckedChange={(checked) => setEconomicPrint(checked === true)}
+                                />
+                                <Label htmlFor="economic-print" className="cursor-pointer text-sm">
+                                    Impressao economica
+                                </Label>
+                            </div>
+                        )}
+                    </div>
                     <DialogDescription className="sr-only">
-                        Visualize a ordem de serviço antes de imprimir ou gerar o PDF.
+                        Visualize a ordem de servico antes de imprimir ou gerar o PDF.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-100 flex justify-center">
+                <div className="flex-1 overflow-auto p-4 bg-gray-100 flex justify-center">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center p-12 bg-white rounded-lg shadow w-full">
                             <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
@@ -169,7 +192,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
                     ) : data ? (
                         <div
                             id="modal-print-area"
-                            className={`${format === 'thermal' ? 'w-[80mm]' : 'w-[210mm]'} bg-white shadow-lg origin-top scale-[0.85] md:scale-100`}
+                            className={`${format === 'thermal' ? 'w-[80mm]' : economicPrint ? 'w-[297mm]' : 'w-[210mm]'} bg-white shadow-lg origin-top scale-[0.55] sm:scale-[0.7] lg:scale-[0.85] 2xl:scale-100`}
                         >
                             {format === 'thermal' ? (
                                 <PrintTemplateThermal
@@ -182,6 +205,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
                                     ordem={data.ordem}
                                     tenantInfo={data.tenantInfo}
                                     condicoesExecucao={data.condicoesExecucao}
+                                    economicMode={economicPrint}
                                 />
                             )}
                         </div>
@@ -204,7 +228,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
                         className="flex-1 h-8 gap-1 shadow-sm text-[10px] px-1"
                     >
                         <Download className="h-3 w-3" />
-                        PDF
+                        {format === 'a4' && economicPrint ? 'PDF padrao' : 'PDF'}
                     </Button>
                     <Button
                         onClick={handlePrint}

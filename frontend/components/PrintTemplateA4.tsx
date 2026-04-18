@@ -56,6 +56,7 @@ interface PrintTemplateA4Props {
     ordem: OrdemServico;
     tenantInfo: TenantInfo;
     condicoesExecucao?: string;
+    economicMode?: boolean;
 }
 
 const STATUS_LABELS: Record<number, string> = {
@@ -69,7 +70,83 @@ const STATUS_LABELS: Record<number, string> = {
     7: 'Cancelado'
 };
 
-export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantInfo, condicoesExecucao }) => {
+export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantInfo, condicoesExecucao, economicMode = false }) => {
+    const decodeHtmlEntities = (html: string): string => {
+        if (typeof document === 'undefined') {
+            return html
+                .replace(/&lt;/gi, '<')
+                .replace(/&gt;/gi, '>')
+                .replace(/&quot;/gi, '"')
+                .replace(/&#39;/gi, "'")
+                .replace(/&nbsp;/gi, ' ')
+                .replace(/&amp;/gi, '&');
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = html;
+        return textarea.value;
+    };
+
+    const normalizeRichTextHtml = (html?: string): string => {
+        if (!html || !html.trim()) return '';
+
+        const decodedHtml = decodeHtmlEntities(html).trim();
+        if (!decodedHtml) return '';
+
+        if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
+            return decodedHtml
+                .replace(/<p>\s*(?:<br\s*\/?>|&nbsp;|\u00a0|\s)*<\/p>/gi, '')
+                .replace(/<p>\s*<p>/gi, '<p>')
+                .replace(/<\/p>\s*<\/p>/gi, '</p>');
+        }
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(`<div id="print-html-root">${decodedHtml}</div>`, 'text/html');
+        const root = doc.getElementById('print-html-root');
+        if (!root) return decodedHtml;
+
+        const removeEmptyBlocks = () => {
+            root.querySelectorAll('p,div').forEach((element) => {
+                const text = element.textContent?.replace(/\u00a0/g, ' ').trim() ?? '';
+                const hasMeaningfulChildren = Array.from(element.children).some((child) => child.tagName !== 'BR');
+
+                if (!text && !hasMeaningfulChildren) {
+                    element.remove();
+                }
+            });
+        };
+
+        removeEmptyBlocks();
+
+        let changed = true;
+        while (changed) {
+            changed = false;
+
+            root.querySelectorAll('p,div').forEach((element) => {
+                const childElements = Array.from(element.children);
+                const hasTextNodeContent = Array.from(element.childNodes).some(
+                    (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()
+                );
+
+                if (
+                    !element.attributes.length &&
+                    !hasTextNodeContent &&
+                    childElements.length === 1 &&
+                    ['P', 'DIV'].includes(childElements[0].tagName)
+                ) {
+                    element.replaceWith(childElements[0]);
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                removeEmptyBlocks();
+            }
+        }
+
+        return root.innerHTML.trim();
+    };
+
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('pt-BR');
@@ -96,6 +173,22 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
     };
 
     // Função para formatar CPF/CNPJ
+    const isRichTextHtmlEmpty = (html?: string): boolean => {
+        const normalizedHtml = normalizeRichTextHtml(html);
+        if (!normalizedHtml) return true;
+
+        const textContent = normalizedHtml
+            .replace(/<[^>]*>/g, '')
+            .replace(/&nbsp;/gi, ' ')
+            .trim();
+
+        return textContent.length === 0;
+    };
+
+    const normalizedDescricao = normalizeRichTextHtml(ordem.descricao);
+    const normalizedObservacoesCliente = normalizeRichTextHtml(ordem.observacoes_cliente);
+    const normalizedCondicoesExecucao = normalizeRichTextHtml(condicoesExecucao);
+
     const formatCpfCnpj = (document?: string): string => {
         if (!document) return '';
         const numbers = document.replace(/\D/g, '');
@@ -114,7 +207,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
     // Componente interno para renderizar uma única via
     // Aceita um id opcional para facilitar seleção na geração de PDF
     const SingleCopy = ({ isSecondCopy = false, id }: { isSecondCopy?: boolean; id?: string }) => (
-        <div id={id} className="single-copy-wrapper">
+        <div id={id} className={`single-copy-wrapper${isSecondCopy ? ' second-copy' : ' first-copy'}`}>
             {/* Header */}
             <div className="header-box">
                 <div className="logo-section">
@@ -224,7 +317,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     </div>
                 )}
                 {/* Descrição do defeito */}
-                <div dangerouslySetInnerHTML={{ __html: ordem.descricao }} />
+                <div dangerouslySetInnerHTML={{ __html: normalizedDescricao }} />
             </div>
 
             {/* Produtos/Serviços */}
@@ -261,18 +354,18 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
             )}
 
             {/* Condições de Execução */}
-            {!isHtmlEmpty(condicoesExecucao) && (
+            {!isRichTextHtmlEmpty(condicoesExecucao) && (
                 <>
                     <div className="section-header">Condições de Execução</div>
-                    <div className="section-content conditions-text" dangerouslySetInnerHTML={{ __html: condicoesExecucao || '' }} />
+                    <div className="section-content conditions-text" dangerouslySetInnerHTML={{ __html: normalizedCondicoesExecucao }} />
                 </>
             )}
 
             {/* Observações */}
-            {!isHtmlEmpty(ordem.observacoes_cliente) && (
+            {!isRichTextHtmlEmpty(ordem.observacoes_cliente) && (
                 <>
                     <div className="section-header">Observações</div>
-                    <div className="section-content" dangerouslySetInnerHTML={{ __html: ordem.observacoes_cliente! }} />
+                    <div className="section-content" dangerouslySetInnerHTML={{ __html: normalizedObservacoesCliente }} />
                 </>
             )}
 
@@ -335,7 +428,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
     );
 
     return (
-        <div className="print-container">
+        <div className={`print-container${economicMode ? ' economic-mode' : ''}`}>
             <style dangerouslySetInnerHTML={{
                 __html: `
                 :root {
@@ -353,8 +446,8 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 @media print {
                     @page {
-                        size: A4;
-                        margin: 10mm; /* Ajustado para 10mm para coincidir com a tela */
+                        size: ${economicMode ? 'A4 landscape' : 'A4'};
+                        margin: ${economicMode ? '2mm' : '4mm'};
                     }
                     
                     body {
@@ -379,19 +472,25 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                     .print-container {
                         width: 100%;
-                        max-width: 210mm;
+                        max-width: ${economicMode ? '297mm' : '210mm'};
                         margin: 0 auto;
                         background: var(--os-print-paper) !important;
                         color: var(--os-print-ink) !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
+
+                    .single-copy-wrapper.first-copy {
+                        min-height: ${economicMode ? '255mm' : '289mm'};
+                        box-sizing: border-box;
+                        padding-bottom: ${economicMode ? '20mm' : '15mm'};
+                    }
                 }
 
                 @media screen {
                     .print-container {
-                        width: 210mm;
-                        min-height: 297mm;
+                        width: ${economicMode ? '297mm' : '210mm'};
+                        min-height: ${economicMode ? '210mm' : '297mm'};
                         margin: 10px auto;
                         padding: 10mm; /* Ajustado para 10mm para coincidir com a impressão */
                         background: var(--os-print-paper) !important;
@@ -418,6 +517,33 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     .page-break::after {
                         content: 'Quebra de Página (2ª Via)';
                     }
+                }
+
+                .print-container.economic-mode {
+                    padding: 2mm !important;
+                }
+
+                .economic-sheet {
+                    display: flex;
+                    gap: 2mm;
+                    align-items: flex-start;
+                    justify-content: center;
+                }
+
+                .economic-copy {
+                    position: relative;
+                    width: calc(210mm * 0.69);
+                    height: calc(255mm * 0.69);
+                    overflow: hidden;
+                }
+
+                .economic-copy-scale {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 210mm;
+                    transform: scale(0.69);
+                    transform-origin: top left;
                 }
 
                 /* Header com bordas sutis */
@@ -461,14 +587,14 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 }
 
                 .company-info {
-                    font-size: 10px;
+                    font-size: 11px;
                     color: var(--os-print-ink-muted) !important;
                     line-height: 1.5;
                 }
 
                 .contact-section {
                     text-align: right;
-                    font-size: 10px;
+                    font-size: 11px;
                     color: var(--os-print-ink-muted) !important;
                     min-width: 140px;
                 }
@@ -521,7 +647,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 .info-table td {
                     border: 1px solid var(--os-print-border);
                     padding: 4px 10px;
-                    font-size: 9px;
+                    font-size: 10px;
                     color: var(--os-print-ink) !important;
                     text-align: center;
                 }
@@ -545,9 +671,9 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     border: 1px solid var(--os-print-border);
                     border-radius: 0 0 4px 4px;
                     padding: 8px 12px;
-                    font-size: 10px;
+                    font-size: 11px;
                     color: var(--os-print-ink) !important;
-                    line-height: 1.4;
+                    line-height: 1.5;
                     min-height: 20px;
                 }
 
@@ -580,7 +706,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                 .items-table td {
                     border: 1px solid var(--os-print-border);
                     padding: 4px 8px;
-                    font-size: 9px;
+                    font-size: 10px;
                     color: var(--os-print-ink) !important;
                 }
 
@@ -594,7 +720,7 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 .items-table tfoot td {
                     font-weight: 600;
-                    font-size: 10px;
+                    font-size: 11px;
                     border-top: 2px solid var(--os-print-border);
                 }
 
@@ -616,14 +742,17 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     border-top: 1px solid var(--os-print-soft);
                     padding-top: 6px;
                     margin-top: 25px;
-                    font-size: 10px;
+                    font-size: 11px;
                     font-weight: 600;
                     color: var(--os-print-soft) !important;
                 }
 
                 /* Rodapé com marca d'água */
                 .footer-watermark {
-                    margin-top: auto;
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    bottom: 5mm;
                     padding-top: 5px;
                     border-top: 1px solid var(--os-print-border);
                     text-align: right;
@@ -642,12 +771,12 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
 
                 /* Condições de execução compactas */
                 .conditions-text {
-                    font-size: 10px !important;
+                    font-size: 11px !important;
                     text-align: justify !important;
                 }
                 .conditions-text * {
-                    font-size: 10px !important;
-                    line-height: 1.2 !important;
+                    font-size: 11px !important;
+                    line-height: 1.3 !important;
                     margin-bottom: 2px !important;
                     text-align: justify !important;
                 }
@@ -694,13 +823,34 @@ export const PrintTemplateA4: React.FC<PrintTemplateA4Props> = ({ ordem, tenantI
                     display: flex;
                     flex-direction: column;
                 }
+
+                .single-copy-wrapper.first-copy {
+                    padding-bottom: 20mm;
+                }
             `}} />
 
-            <SingleCopy id="print-copy-1" />
+            {economicMode ? (
+                <div className="economic-sheet">
+                    <div className="economic-copy">
+                        <div className="economic-copy-scale">
+                            <SingleCopy id="print-copy-1" />
+                        </div>
+                    </div>
+                    <div className="economic-copy">
+                        <div className="economic-copy-scale">
+                            <SingleCopy isSecondCopy={true} />
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <SingleCopy id="print-copy-1" />
 
-            <div className="page-break" />
+                    <div className="page-break" />
 
-            <SingleCopy isSecondCopy={true} />
+                    <SingleCopy isSecondCopy={true} />
+                </>
+            )}
         </div>
     );
 };
