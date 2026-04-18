@@ -2,12 +2,8 @@
 
 Fonte deste levantamento:
 
-- `apps/backend/src/modules/ordem_servico/prisma/schema.prisma`
-- `apps/backend/src/modules/ordem_servico/migrations/001_schema_v400.sql`
-- `apps/backend/src/modules/ordem_servico/ordens/ordens.service.ts`
-- `apps/backend/src/modules/ordem_servico/clientes/clientes.service.ts`
-- `apps/backend/src/modules/ordem_servico/produtos/produtos.service.ts`
-- `apps/backend/src/modules/ordem_servico/shared/dto/ordem-servico.dto.ts`
+- `backend/prisma/schema.prisma`
+- (e demais arquivos localizados no pacote do módulo)
 
 ## Regras Gerais para Migração
 
@@ -21,7 +17,7 @@ Fonte deste levantamento:
 
 ## Relacionamentos Principais
 
-- Cliente: `mod_ordem_servico_clients`
+- Cliente: `mod_clientes_clients`
 - Produto/Serviço: `mod_ordem_servico_products`
 - Ordem de Serviço: `mod_ordem_servico_ordens`
 - Histórico textual da OS: `mod_ordem_servico_historico`
@@ -35,9 +31,9 @@ Fonte deste levantamento:
 
 ---
 
-## 1. `mod_ordem_servico_clients`
+## 1. `mod_clientes_clients`
 
-Uso: cadastro de clientes.
+Uso: cadastro de clientes (integrado ou do módulo principal).
 
 | Coluna banco | Campo lógico/API | Tipo | Obrigatório | Observação |
 |---|---|---|---|---|
@@ -65,7 +61,7 @@ Uso: cadastro de clientes.
 
 Observação de relacionamento:
 
-- A OS usa `cliente_id` apontando para `mod_ordem_servico_clients.id`.
+- A OS usa `cliente_id` apontando para `mod_clientes_clients.id`.
 
 ---
 
@@ -305,6 +301,21 @@ Uso: configurações livres do módulo, guardadas por chave.
 | `created_at` | `created_at` | TIMESTAMP | Não | Criação |
 | `updated_at` | `updated_at` | TIMESTAMP | Não | Atualização |
 
+---
+
+## 11.B `mod_integracoes_configs`
+
+Uso: configurações de integrações externas.
+
+| Coluna banco | Campo lógico/API | Tipo | Obrigatório | Observação |
+|---|---|---|---|---|
+| `id` | `id` | UUID | Sim | PK |
+| `tenant_id` | `tenant_id` | TEXT | Sim | Tenant |
+| `key` | `key` | VARCHAR(255) | Sim | Chave de integração |
+| `value` | `value` | TEXT | Não | Valor da chave |
+| `created_at` | `created_at` | TIMESTAMP | Não | Criação |
+| `updated_at` | `updated_at` | TIMESTAMP | Não | Atualização |
+
 ### Chaves já usadas pelo módulo
 
 | `key` | Conteúdo esperado em `value` | Observação |
@@ -521,7 +532,7 @@ Uso: auditoria de mudança de permissão.
 
 Se a prioridade é migrar dados operacionais de outro sistema, eu recomendo esta ordem:
 
-1. `mod_ordem_servico_clients`
+1. `mod_clientes_clients`
 2. `mod_ordem_servico_products`
 3. `mod_ordem_servico_tipos_servico`
 4. `mod_ordem_servico_tipos_equipamento`
