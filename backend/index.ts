@@ -34,6 +34,13 @@ export * from './shared/dto/ordem-servico.dto';
 export * from './shared/interfaces/permission.interface';
 export * from './shared/constants/available-permissions';
 
+// Client module interfaces and tokens (for cross-module integration)
+export * from './shared/interfaces/cliente-lookup.interface';
+export * from './shared/interfaces/cliente-deletion-guard.interface';
+export * from './shared/constants/injection-tokens';
+export * from './shared/clients-integration.module';
+export * from './clientes/src/contracts/cliente.api';
+
 const moduleContract = {
     moduleApiVersion: 1,
     name: 'ordem_servico',

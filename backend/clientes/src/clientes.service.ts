@@ -1,16 +1,21 @@
-import { BadGatewayException, BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { AuditService } from '@core/audit/audit.service';
 import { RequestSecurityContextService } from '@common/services/request-security-context.service';
 import { ClienteRepository } from './repositories/cliente.repository';
+import { IClienteLookup } from '../../shared/interfaces/cliente-lookup.interface';
+import { IClienteDeletionGuard } from '../../shared/interfaces/cliente-deletion-guard.interface';
+import { CLIENTE_DELETION_GUARD } from '../../shared/constants/injection-tokens';
 
 @Injectable()
-export class ClientesService {
+export class ClientesService implements IClienteLookup {
     private readonly logger = new Logger(ClientesService.name);
 
     constructor(
         private readonly repository: ClienteRepository,
         private readonly auditService: AuditService,
         private readonly requestSecurityContext: RequestSecurityContextService,
+        @Inject(CLIENTE_DELETION_GUARD) @Optional()
+        private readonly deletionGuard?: IClienteDeletionGuard,
     ) { }
 
     async findAll(filters: { search?: string; status?: string | boolean } = {}) {
@@ -172,9 +177,11 @@ export class ClientesService {
             throw new Error('Cliente nao encontrado');
         }
 
-        const osCount = await this.repository.countOrdensByClienteId(id);
-        if (osCount > 0) {
-            throw new Error('Nao e possivel excluir o cliente pois existem Ordens de Servico associadas a ele.');
+        if (this.deletionGuard) {
+            const result = await this.deletionGuard.canDelete(id);
+            if (!result.allowed) {
+                throw new Error(result.reason || 'Cliente nao pode ser excluido.');
+            }
         }
 
         const actor = this.getActorContext();

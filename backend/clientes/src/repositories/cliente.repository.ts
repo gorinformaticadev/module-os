@@ -157,12 +157,6 @@ export class ClienteRepository {
     return this.mapToDomain(data);
   }
 
-  async countOrdensByClienteId(clienteId: string): Promise<number> {
-    return this.prisma.mod_ordem_servico_ordens.count({
-      where: { clienteId },
-    });
-  }
-
   private mapToDomain(data: any): Cliente {
     return {
       id: data.id,

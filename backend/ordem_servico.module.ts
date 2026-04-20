@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ClientesModule } from './clientes/src/clientes.module';
 import { ProdutosModule } from './produtos/src/produtos.module';
 import { OrdensModule } from './ordens/src/ordens.module';
 import { ConfiguracoesModule } from './configuracoes/configuracoes.module';
@@ -7,6 +6,7 @@ import { SharedModule } from './shared/shared.module';
 import { CoreModule } from './core/core.module';
 import { PrismaModule } from '@core/prisma/prisma.module';
 import { AuditModule } from '@core/audit/audit.module';
+import { ClientsIntegrationModule } from './shared/clients-integration.module';
 
 import { OrdemServicoNotificationsModule } from './notifications/notifications.module';
 
@@ -16,14 +16,14 @@ import { OrdemServicoNotificationsModule } from './notifications/notifications.m
         AuditModule,
         SharedModule,
         CoreModule,
-        ClientesModule,
+        ClientsIntegrationModule,
         ProdutosModule,
         OrdensModule,
         ConfiguracoesModule,
         OrdemServicoNotificationsModule,
     ],
     exports: [
-        ClientesModule,
+        ClientsIntegrationModule,
         ProdutosModule,
         OrdensModule,
         ConfiguracoesModule,

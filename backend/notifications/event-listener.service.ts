@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RequestSecurityContextService, type SecurityActor } from '@common/services/request-security-context.service';
 import { ModuleOsPrismaService } from '../prisma/module-os-prisma.service';
 import { NotificationDispatcherService } from './dispatcher.service';
+import { IClienteLookup } from '../shared/interfaces/cliente-lookup.interface';
+import { CLIENTES_SERVICE } from '../shared/constants/injection-tokens';
 
 type EventTriggerConfig = {
     events?: string[];
@@ -19,6 +21,8 @@ export class NotificationEventListenerService {
         private readonly modulePrisma: ModuleOsPrismaService,
         private readonly dispatcher: NotificationDispatcherService,
         private readonly requestSecurityContext: RequestSecurityContextService,
+        @Inject(CLIENTES_SERVICE) @Optional()
+        private readonly clienteLookup?: IClienteLookup,
     ) { }
 
     @OnEvent('os.created')
@@ -108,11 +112,8 @@ export class NotificationEventListenerService {
     private async appendClientTargets(targets: Set<string>, os: any, tenantId: string, internalDelivery: boolean) {
         let clientEmail = os?.cliente?.email || os?.cliente_email || null;
 
-        if (!clientEmail && os?.cliente_id) {
-            const client = await this.modulePrisma.mod_clientes_clients.findFirst({
-                where: { id: os.cliente_id },
-                select: { email: true },
-            });
+        if (!clientEmail && os?.cliente_id && this.clienteLookup) {
+            const client = await this.clienteLookup.findById(os.cliente_id);
             clientEmail = client?.email || null;
         }
 

@@ -5,10 +5,9 @@ import { PrismaModule } from '@core/prisma/prisma.module';
 import { SharedModule } from '../../shared/shared.module';
 import { ModuleOsPrismaModule } from '../../prisma/module-os-prisma.module';
 import { OrdemRepository } from './repositories/ordem.repository';
-import { ClientesModule } from '../../clientes/src/clientes.module';
 
 @Module({
-    imports: [PrismaModule, ModuleOsPrismaModule, SharedModule, ClientesModule],
+    imports: [PrismaModule, ModuleOsPrismaModule, SharedModule],
     controllers: [OrdensController],
     providers: [OrdensService, OrdemRepository],
     exports: [OrdensService],

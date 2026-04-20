@@ -1,5 +1,6 @@
 import {
     BadRequestException,
+    Inject,
     Injectable,
     Logger,
     NotFoundException,
@@ -18,7 +19,8 @@ import {
     UpdateOrdemServicoDTO,
     AlertaAbandonoDTO,
 } from '../../shared/dto/ordem-servico.dto';
-import { ClientesService } from '../../clientes/src/clientes.service';
+import { IClienteLookup } from '../../shared/interfaces/cliente-lookup.interface';
+import { CLIENTES_SERVICE } from '../../shared/constants/injection-tokens';
 import { OrdemRepository } from './repositories/ordem.repository';
 import * as puppeteer from 'puppeteer';
 import * as path from 'path';
@@ -46,7 +48,7 @@ export class OrdensService {
         private readonly requestSecurityContext: RequestSecurityContextService,
         private readonly eventEmitter: EventEmitter2,
         private readonly ordemRepository: OrdemRepository,
-        private readonly clientesService: ClientesService,
+        @Inject(CLIENTES_SERVICE) private readonly clienteLookup: IClienteLookup,
         private readonly corePrisma: PrismaService,
     ) { }
 
@@ -61,7 +63,7 @@ async findOne(id: string) {
     }
 
     async isClienteAtivo(clienteId: string): Promise<boolean> {
-        const cliente = await this.clientesService.findById(clienteId);
+        const cliente = await this.clienteLookup.findById(clienteId);
         return cliente?.is_active === true;
     }
 
