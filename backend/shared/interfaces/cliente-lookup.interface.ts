@@ -1,8 +1,9 @@
 export interface ClienteMinimal {
   id: string;
+  tenantId: string;
   name: string;
   email?: string;
-  phone_primary: string;
+  phonePrimary: string;
   is_active: boolean;
 }
 

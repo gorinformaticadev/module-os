@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ClientesModule } from './clientes/src/clientes.module';
 import { ProdutosModule } from './produtos/src/produtos.module';
 import { OrdensModule } from './ordens/src/ordens.module';
 import { ConfiguracoesModule } from './configuracoes/configuracoes.module';
@@ -17,6 +18,7 @@ import { OrdemServicoNotificationsModule } from './notifications/notifications.m
         SharedModule,
         CoreModule,
         ClientsIntegrationModule,
+        ClientesModule,
         ProdutosModule,
         OrdensModule,
         ConfiguracoesModule,
@@ -24,6 +26,7 @@ import { OrdemServicoNotificationsModule } from './notifications/notifications.m
     ],
     exports: [
         ClientsIntegrationModule,
+        ClientesModule,
         ProdutosModule,
         OrdensModule,
         ConfiguracoesModule,
