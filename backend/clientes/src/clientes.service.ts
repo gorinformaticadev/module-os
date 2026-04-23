@@ -215,9 +215,10 @@ export class ClientesService implements IClienteLookup {
     private serializeClient(client: any) {
         return {
             id: client.id,
+            tenantId: client.tenantId,
             name: client.name,
             document: client.document,
-            phone_primary: client.phonePrimary,
+            phonePrimary: client.phonePrimary,
             phone_secondary: client.phoneSecondary,
             email: client.email,
             address: client.address,

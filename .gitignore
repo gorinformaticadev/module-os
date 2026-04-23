@@ -2,8 +2,3 @@ node_modules/
 .env
 dist/
 /backend/generated
-backend/seeds/legacy-os-tenant-1.seed.sql
-backend/seeds/legacy-os-gor-informatica.seed.sql
-backend/seeds/legacy-os-tenant-1.report.json
-backend/seeds/legacy-os-gor-informatica.report.json
-backend/seeds/generate-legacy-os-seed.mjs
