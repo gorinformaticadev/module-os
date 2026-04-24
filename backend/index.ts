@@ -50,6 +50,9 @@ const moduleContract = {
     description: 'Modulo de gerenciamento de ordens de servico.',
     author: 'GOR Informatica',
     icon: 'FileCog',
+    navigation: {
+        order: 2,
+    },
     enabled: true,
     defaultConfig: {
         showNotifications: true,

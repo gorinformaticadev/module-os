@@ -17,6 +17,9 @@
         }
     },
     "icon": "FileCog",
+    "navigation": {
+        "order": 2
+    },
     "menus": [
         {
             "id": "ordem_servico-dashboard",
