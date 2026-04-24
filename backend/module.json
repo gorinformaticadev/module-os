@@ -2,7 +2,7 @@
     "moduleApiVersion": 1,
     "name": "ordem_servico",
     "displayName": "Ordem de Servico",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Modulo de Gerenciamento de Ordens de Servico",
     "author": "GOR Informatica",
     "category": "custom",
