@@ -91,6 +91,19 @@ export interface HistoricoOS {
   usuario?: Usuario;
 }
 
+export type WhatsAppSendMethod = 'api' | 'web' | 'crm';
+
+export interface WhatsAppEnvioHistorico {
+  id: string;
+  ordem_servico_id: string;
+  usuario_id: string;
+  usuario_nome?: string;
+  usuario_email?: string;
+  forma_envio: WhatsAppSendMethod | string;
+  mensagem: string;
+  created_at: string;
+}
+
 // Enums
 export enum StatusOS {
   ORCAMENTO = 0,

@@ -212,6 +212,15 @@ export class OrdemRepository {
     return results.map(this.mapHistoricoToDomain);
   }
 
+  async getHistoricoByAcao(ordemId: string, acao: string): Promise<Historico[]> {
+    const results = await this.prisma.mod_ordem_servico_historico.findMany({
+      where: { ordemServicoId: ordemId, acao },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return results.map(this.mapHistoricoToDomain);
+  }
+
   async getPagamentos(ordemId: string): Promise<Pagamento[]> {
     const results = await this.prisma.mod_ordem_servico_pagamentos.findMany({
       where: { ordemServicoId: ordemId },

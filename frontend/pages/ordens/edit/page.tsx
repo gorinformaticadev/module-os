@@ -54,6 +54,7 @@ import { PagamentosModal } from '../../../components/PagamentosModal';
 import { AlertasAbandonoModal } from '../../../components/AlertasAbandonoModal';
 import { PrintModal } from '../../../components/PrintModal';
 import { WhatsAppModal } from '../../../components/WhatsAppModal';
+import { WhatsAppHistory } from '../../../components/WhatsAppHistory';
 
 // Tipos locais
 interface OrdemServico {
@@ -2027,6 +2028,35 @@ export default function EditOrdemPage() {
                         />
 
                         <StatusTimeline ordemId={ordemId!} />
+                    </CardContent>
+                </Card>
+
+                <Card className="shadow-sm border-2">
+                    <CardHeader className="bg-skin-background-elevated/50 pb-4">
+                        <div className="flex items-center gap-2">
+                            <MessageCircle className="h-5 w-5 text-green-600" />
+                            <CardTitle className="text-lg">Historico de WhatsApp</CardTitle>
+                            <TooltipProvider>
+                                <Popover>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <PopoverTrigger asChild>
+                                                <Info className="h-4 w-4 cursor-pointer text-skin-text-muted transition-colors hover:text-skin-text" />
+                                            </PopoverTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Envios de WhatsApp registrados nesta ordem</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <PopoverContent className="w-80 p-3 text-sm">
+                                        <p>Mostra quem enviou, a forma de envio, a mensagem, a data e a hora.</p>
+                                    </PopoverContent>
+                                </Popover>
+                            </TooltipProvider>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <WhatsAppHistory ordemId={ordemId!} />
                     </CardContent>
                 </Card>
 

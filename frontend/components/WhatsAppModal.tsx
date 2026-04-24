@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { OrdemServico, STATUS_LABELS } from '../types/ordem-servico.types';
-import { MessageCircle } from 'lucide-react';
+import { History, Loader2, MessageCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { WhatsAppEditor } from './WhatsAppEditor';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { WhatsAppHistory } from './WhatsAppHistory';
 
 interface WhatsAppModalProps {
     isOpen: boolean;
@@ -26,8 +28,12 @@ type SendMethod = 'api' | 'web' | 'crm';
 
 export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
     const { user } = useAuth();
+    const { toast } = useToast();
     const [message, setMessage] = useState('');
     const [method, setMethod] = useState<SendMethod>('api');
+    const [sending, setSending] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+    const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
     useEffect(() => {
         const fetchTemplateAndSetMessage = async () => {
@@ -90,14 +96,24 @@ export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
                     setMessage(`Olá! Sobre a OS #${ordem.numero} - ${ordem.descricao}`);
                 }
                 setMethod('api'); // Default
+                setShowHistory(false);
             }
         };
 
         fetchTemplateAndSetMessage();
     }, [isOpen, ordem, user]);
 
-    const handleSend = () => {
-        if (!ordem?.cliente?.phone_primary) return;
+    const handleSend = async () => {
+        if (sending || !message.trim()) return;
+
+        if (!ordem?.cliente?.phone_primary) {
+            toast({
+                title: 'Telefone ausente',
+                description: 'Cadastre um telefone principal no cliente antes de enviar.',
+                variant: 'destructive',
+            });
+            return;
+        }
 
         const phone = ordem.cliente.phone_primary.replace(/\D/g, '');
         const encodedMessage = encodeURIComponent(message);
@@ -106,14 +122,43 @@ export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
         if (method === 'api') {
             url = `https://wa.me/55${phone}?text=${encodedMessage}`;
         } else if (method === 'web') {
-            url = `https://web.whatsapp.com/send?phone=55${phone}?text=${encodedMessage}`; // Fix URL query params
+            url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodedMessage}`;
         } else {
             // CRM implementation pending
             return;
         }
 
-        window.open(url, '_blank');
-        onClose();
+        const targetWindow = window.open('', '_blank');
+        try {
+            setSending(true);
+            await api.post(`/api/ordem_servico/ordens/${ordem.id}/whatsapp-envios`, {
+                forma_envio: method,
+                mensagem: message,
+            });
+            setHistoryRefreshKey((key) => key + 1);
+
+            if (targetWindow) {
+                targetWindow.location.href = url;
+            } else {
+                window.open(url, '_blank');
+            }
+
+            toast({
+                title: 'Envio registrado',
+                description: 'O historico de WhatsApp desta OS foi atualizado.',
+            });
+            onClose();
+        } catch (error) {
+            targetWindow?.close();
+            console.error('Erro ao registrar envio de WhatsApp:', error);
+            toast({
+                title: 'Erro ao registrar envio',
+                description: 'A mensagem nao foi aberta porque o registro falhou.',
+                variant: 'destructive',
+            });
+        } finally {
+            setSending(false);
+        }
     };
 
     return (
@@ -158,13 +203,35 @@ export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
                         </RadioGroup>
                     </div>
 
+                    {ordem?.id && (
+                        <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="gap-2 px-2"
+                                onClick={() => setShowHistory((value) => !value)}
+                            >
+                                <History className="h-4 w-4" />
+                                {showHistory ? 'Ocultar historico' : 'Historico de envios'}
+                            </Button>
+                            {showHistory && (
+                                <WhatsAppHistory
+                                    ordemId={ordem.id}
+                                    refreshKey={historyRefreshKey}
+                                    compact
+                                />
+                            )}
+                        </div>
+                    )}
+
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancelar</Button>
-                    <Button onClick={handleSend} className="bg-green-600 hover:bg-green-700 text-white gap-2">
-                        <MessageCircle className="h-4 w-4" />
-                        Enviar Mensagem
+                    <Button variant="outline" onClick={onClose} disabled={sending}>Cancelar</Button>
+                    <Button onClick={handleSend} disabled={sending || !message.trim()} className="bg-green-600 hover:bg-green-700 text-white gap-2">
+                        {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                        {sending ? 'Registrando...' : 'Enviar Mensagem'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

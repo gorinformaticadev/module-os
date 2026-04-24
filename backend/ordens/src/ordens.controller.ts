@@ -39,7 +39,9 @@ import {
     ConservacaoCalculoResponseDTO,
     AtualizarConservacaoDTO,
     StatusHistoricoResponseDTO,
-    AlertaRetiradaResponseDTO
+    AlertaRetiradaResponseDTO,
+    RegistrarWhatsAppEnvioDTO,
+    WhatsAppEnvioHistoricoResponseDTO
 } from '../../shared/dto/ordem-servico.dto';
 
 @Controller('ordem_servico/ordens')
@@ -170,6 +172,38 @@ export class OrdensController {
             return await this.ordensService.getHistorico(id);
         } catch (error) {
             this.logger.error(`Erro ao buscar histórico da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    @Get(':id/whatsapp-envios')
+    @RequireOrdersPermission('view_history')
+    async getWhatsAppEnvios(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string
+    ): Promise<WhatsAppEnvioHistoricoResponseDTO[]> {
+        try {
+            this.logger.log(`Buscando envios de WhatsApp da ordem ${id}. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.getWhatsAppEnvios(id);
+        } catch (error) {
+            this.logger.error(`Erro ao buscar envios de WhatsApp da ordem ${id}:`, error);
+            throw error;
+        }
+    }
+
+    @Post(':id/whatsapp-envios')
+    @RequireOrdersPermission('view_details')
+    @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
+    async registrarWhatsAppEnvio(
+        @Req() req: ExpressRequest & { user: any },
+        @Param('id') id: string,
+        @Body() body: RegistrarWhatsAppEnvioDTO
+    ): Promise<WhatsAppEnvioHistoricoResponseDTO> {
+        try {
+            this.logger.log(`Registrando envio de WhatsApp da ordem ${id}. Tenant: ${req.user?.tenantId}`);
+            return await this.ordensService.registrarWhatsAppEnvio(id, body);
+        } catch (error) {
+            this.logger.error(`Erro ao registrar envio de WhatsApp da ordem ${id}:`, error);
             throw error;
         }
     }

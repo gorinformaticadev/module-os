@@ -18,6 +18,7 @@ import {
     TipoServicoResponseDTO,
     UpdateOrdemServicoDTO,
     AlertaAbandonoDTO,
+    RegistrarWhatsAppEnvioDTO,
 } from '../../shared/dto/ordem-servico.dto';
 import { IClienteLookup } from '../../shared/interfaces/cliente-lookup.interface';
 import { CLIENTES_SERVICE } from '../../shared/constants/injection-tokens';
@@ -30,6 +31,7 @@ import { generatePdfHtml } from '../pdf-template.util';
 @Injectable()
 export class OrdensService {
     private readonly logger = new Logger(OrdensService.name);
+    private readonly WHATSAPP_HISTORY_ACTION = 'ENVIO_WHATSAPP';
 
     private readonly TRANSICOES_PERMITIDAS: Record<number, number[]> = {
         0: [1, 7],
@@ -445,6 +447,62 @@ async findAll(filters: OrdemServicoFilters) {
                 usuario_email: user?.email || '',
             };
         });
+    }
+
+    async getWhatsAppEnvios(ordemId: string) {
+        await this.findOne(ordemId);
+        const historico = await this.ordemRepository.getHistoricoByAcao(ordemId, this.WHATSAPP_HISTORY_ACTION);
+        const userIds = historico.map((item) => item.usuarioId).filter(Boolean);
+        const usersById = await this.loadUsersMap(userIds);
+
+        return historico.map((item) => {
+            const user = usersById.get(item.usuarioId);
+            return {
+                id: item.id,
+                ordem_servico_id: item.ordemServicoId,
+                usuario_id: item.usuarioId,
+                usuario_nome: user?.name || '',
+                usuario_email: user?.email || '',
+                forma_envio: item.valorNovo || '',
+                mensagem: item.observacoes || '',
+                created_at: item.createdAt instanceof Date ? item.createdAt.toISOString() : null,
+            };
+        });
+    }
+
+    async registrarWhatsAppEnvio(ordemId: string, dto: RegistrarWhatsAppEnvioDTO) {
+        await this.findOne(ordemId);
+        const actor = this.getActorOrThrow();
+        const formaEnvio = String(dto.forma_envio || '').trim();
+        const mensagem = String(dto.mensagem || '').trim();
+
+        if (!formaEnvio) {
+            throw new BadRequestException('Forma de envio obrigatoria');
+        }
+
+        if (!mensagem) {
+            throw new BadRequestException('Mensagem obrigatoria');
+        }
+
+        const historico = await this.ordemRepository.registrarHistorico({
+            tenantId: actor.tenantId as string,
+            ordemServicoId: ordemId,
+            usuarioId: actor.id as string,
+            acao: this.WHATSAPP_HISTORY_ACTION,
+            valorNovo: formaEnvio,
+            observacoes: mensagem,
+        });
+
+        return {
+            id: historico.id,
+            ordem_servico_id: historico.ordemServicoId,
+            usuario_id: historico.usuarioId,
+            usuario_nome: actor.name || '',
+            usuario_email: actor.email || '',
+            forma_envio: formaEnvio,
+            mensagem,
+            created_at: historico.createdAt instanceof Date ? historico.createdAt.toISOString() : null,
+        };
     }
 
     async getDashboardData() {

@@ -441,6 +441,27 @@ export class HistoricoResponseDTO {
     usuario_email: string;
 }
 
+export class RegistrarWhatsAppEnvioDTO {
+    @IsString()
+    @IsNotEmpty()
+    forma_envio: string;
+
+    @IsString()
+    @IsNotEmpty()
+    mensagem: string;
+}
+
+export class WhatsAppEnvioHistoricoResponseDTO {
+    id: string;
+    ordem_servico_id: string;
+    usuario_id: string;
+    usuario_nome: string;
+    usuario_email: string;
+    forma_envio: string;
+    mensagem: string;
+    created_at: string;
+}
+
 export class UploadResponseDTO {
     url: string;
 }
