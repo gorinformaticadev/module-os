@@ -51,6 +51,14 @@ export default function OrdemServicoClientesPage() {
     const [editingClient, setEditingClient] = useState<Client | null>(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalClients, setTotalClients] = useState(0);
+    const PAGE_LIMIT = 20;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -58,17 +66,32 @@ export default function OrdemServicoClientesPage() {
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm, statusFilter, currentPage]);
 
     const fetchClients = async () => {
         try {
             setLoading(true);
-            const params: any = {};
+            const params: any = { page: currentPage, limit: PAGE_LIMIT };
             if (searchTerm) params.search = searchTerm;
-            if (statusFilter !== 'all') params.status = statusFilter === 'active' ? 'true' : 'false';
+            if (statusFilter !== 'all') params.status = statusFilter; // 'active' | 'inactive'
 
             const response = await api.get('/api/ordem_servico/clientes', { params });
-            setClients(response.data);
+            const data = response.data;
+
+            // Suporte ao novo formato paginado { items, meta } e legado (array direto)
+            if (data && Array.isArray(data.items)) {
+                setClients(data.items);
+                setTotalPages(data.meta?.totalPages ?? 1);
+                setTotalClients(data.meta?.total ?? data.items.length);
+            } else if (Array.isArray(data)) {
+                setClients(data);
+                setTotalPages(1);
+                setTotalClients(data.length);
+            } else {
+                setClients([]);
+                setTotalPages(1);
+                setTotalClients(0);
+            }
         } catch (error) {
             console.error(error);
             toast({
@@ -305,6 +328,36 @@ export default function OrdemServicoClientesPage() {
                         </div>
                     </div>
                 </CardContent>
+
+                {/* Paginação */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t">
+                        <span className="text-sm text-skin-text-muted">
+                            {totalClients} cliente{totalClients !== 1 ? 's' : ''} encontrado{totalClients !== 1 ? 's' : ''}
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                disabled={currentPage <= 1 || loading}
+                            >
+                                Anterior
+                            </Button>
+                            <span className="text-sm px-2">
+                                Página {currentPage} de {totalPages}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                disabled={currentPage >= totalPages || loading}
+                            >
+                                Próxima
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </Card>
 
             {/* Modal de Novo Cliente */}
