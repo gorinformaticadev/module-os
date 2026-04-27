@@ -3,13 +3,13 @@
 
 DO $$
 BEGIN
-    IF to_regclass('public.mod_clientes_clients') IS NULL
-       AND to_regclass('public.mod_ordem_servico_clients') IS NOT NULL THEN
-        EXECUTE 'ALTER TABLE public.mod_ordem_servico_clients RENAME TO mod_clientes_clients';
+    IF to_regclass('mod_clientes_clients') IS NULL
+       AND to_regclass('mod_ordem_servico_clients') IS NOT NULL THEN
+        EXECUTE 'ALTER TABLE mod_ordem_servico_clients RENAME TO mod_clientes_clients';
     END IF;
 END $$;
 
-CREATE TABLE IF NOT EXISTS public.mod_clientes_clients (
+CREATE TABLE IF NOT EXISTS mod_clientes_clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.mod_clientes_clients (
     deleted_at TIMESTAMP
 );
 
-ALTER TABLE public.mod_clientes_clients
+ALTER TABLE mod_clientes_clients
     ADD COLUMN IF NOT EXISTS tenant_id TEXT,
     ADD COLUMN IF NOT EXISTS name VARCHAR(255),
     ADD COLUMN IF NOT EXISTS document VARCHAR(20),
@@ -61,19 +61,19 @@ BEGIN
         SELECT 1
         FROM pg_constraint
         WHERE conname = 'fk_mod_clientes_clients_tenant'
-          AND conrelid = 'public.mod_clientes_clients'::regclass
+          AND conrelid = 'mod_clientes_clients'::regclass
     ) THEN
-        ALTER TABLE public.mod_clientes_clients
+        ALTER TABLE mod_clientes_clients
             ADD CONSTRAINT fk_mod_clientes_clients_tenant
             FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
     END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_mod_clientes_clients_tenant
-    ON public.mod_clientes_clients(tenant_id);
+    ON mod_clientes_clients(tenant_id);
 
 CREATE INDEX IF NOT EXISTS idx_mod_clientes_clients_active
-    ON public.mod_clientes_clients(is_active);
+    ON mod_clientes_clients(is_active);
 
 DO $$
 BEGIN
@@ -85,16 +85,16 @@ BEGIN
         SELECT 1
         FROM pg_trigger
         WHERE tgname = 'trg_mod_clientes_clients_updated_at'
-          AND tgrelid = 'public.mod_clientes_clients'::regclass
+          AND tgrelid = 'mod_clientes_clients'::regclass
     ) THEN
         CREATE TRIGGER trg_mod_clientes_clients_updated_at
-        BEFORE UPDATE ON public.mod_clientes_clients
+        BEFORE UPDATE ON mod_clientes_clients
         FOR EACH ROW
         EXECUTE FUNCTION public.update_mod_os_timestamp();
     END IF;
 END $$;
 
-CREATE TABLE IF NOT EXISTS public.mod_integracoes_configs (
+CREATE TABLE IF NOT EXISTS mod_integracoes_configs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
     key VARCHAR(255) NOT NULL,
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS public.mod_integracoes_configs (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE public.mod_integracoes_configs
+ALTER TABLE mod_integracoes_configs
     ADD COLUMN IF NOT EXISTS tenant_id TEXT,
     ADD COLUMN IF NOT EXISTS key VARCHAR(255),
     ADD COLUMN IF NOT EXISTS value TEXT,
@@ -116,19 +116,19 @@ BEGIN
         SELECT 1
         FROM pg_constraint
         WHERE conname = 'fk_mod_integracoes_configs_tenant'
-          AND conrelid = 'public.mod_integracoes_configs'::regclass
+          AND conrelid = 'mod_integracoes_configs'::regclass
     ) THEN
-        ALTER TABLE public.mod_integracoes_configs
+        ALTER TABLE mod_integracoes_configs
             ADD CONSTRAINT fk_mod_integracoes_configs_tenant
             FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE;
     END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_mod_integracoes_configs_tenant
-    ON public.mod_integracoes_configs(tenant_id);
+    ON mod_integracoes_configs(tenant_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_mod_integracoes_configs_tenant_key
-    ON public.mod_integracoes_configs(tenant_id, key);
+    ON mod_integracoes_configs(tenant_id, key);
 
 DO $$
 BEGIN
@@ -140,22 +140,28 @@ BEGIN
         SELECT 1
         FROM pg_trigger
         WHERE tgname = 'trg_mod_integracoes_configs_updated_at'
-          AND tgrelid = 'public.mod_integracoes_configs'::regclass
+          AND tgrelid = 'mod_integracoes_configs'::regclass
     ) THEN
         CREATE TRIGGER trg_mod_integracoes_configs_updated_at
-        BEFORE UPDATE ON public.mod_integracoes_configs
+        BEFORE UPDATE ON mod_integracoes_configs
         FOR EACH ROW
         EXECUTE FUNCTION public.update_mod_os_timestamp();
     END IF;
 END $$;
 
-INSERT INTO public.mod_integracoes_configs (tenant_id, key, value)
-SELECT c.tenant_id, c.key, c.value
-FROM public.mod_ordem_servico_configs c
-WHERE c.key = 'ai_integration'
-  AND NOT EXISTS (
-      SELECT 1
-      FROM public.mod_integracoes_configs i
-      WHERE i.tenant_id = c.tenant_id
-        AND i.key = c.key
-  );
+DO $$
+BEGIN
+    -- Migra configurações de IA da tabela antiga para a nova, se a antiga existir
+    IF to_regclass('mod_ordem_servico_configs') IS NOT NULL THEN
+        INSERT INTO mod_integracoes_configs (tenant_id, key, value)
+        SELECT c.tenant_id, c.key, c.value
+        FROM mod_ordem_servico_configs c
+        WHERE c.key = 'ai_integration'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM mod_integracoes_configs i
+              WHERE i.tenant_id = c.tenant_id
+                AND i.key = c.key
+          );
+    END IF;
+END $$;
