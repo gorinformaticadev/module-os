@@ -5,8 +5,8 @@ import {
   RequestSecurityContextService,
   type SecurityActor,
 } from "@common/services/request-security-context.service";
-import { NotificationGateway } from "../../../notifications/notification.gateway";
-import { NotificationService } from "../../../notifications/notification.service";
+import { NotificationGateway } from "@notifications/notification.gateway";
+import { NotificationService } from "@notifications/notification.service";
 import { ModuleOsPrismaService } from "../prisma/module-os-prisma.service";
 
 @Injectable()

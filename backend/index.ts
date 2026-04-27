@@ -1,5 +1,6 @@
 // Módulo principal
 export * from "./ordem_servico.module";
+export * from "./health.controller";
 
 // Submódulos
 export * from "./clientes/src/clientes.module";

@@ -11,12 +11,12 @@ import {
   SystemStrategy,
 } from "./dispatcher.service";
 import { NotificationSchedulerService } from "./scheduler.service";
-import { PrismaModule } from "../../../core/prisma/prisma.module";
+import { PrismaModule } from "@core/prisma/prisma.module";
 import { ModuleOsPrismaModule } from "../prisma/module-os-prisma.module";
 
 import { NotificationEventListenerService } from "./event-listener.service";
 import { NotificationRuleController } from "./rules.controller";
-import { NotificationsModule as RootNotificationsModule } from "../../../notifications/notifications.module";
+import { NotificationsModule as RootNotificationsModule } from "@notifications/notifications.module";
 import { SharedModule } from "../shared/shared.module";
 
 @Module({

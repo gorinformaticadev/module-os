@@ -8,6 +8,7 @@ import { CoreModule } from "./core/core.module";
 import { PrismaModule } from "@core/prisma/prisma.module";
 import { AuditModule } from "@core/audit/audit.module";
 import { ClientsIntegrationModule } from "./shared/clients-integration.module";
+import { OrdemServicoHealthController } from "./health.controller";
 
 import { OrdemServicoNotificationsModule } from "./notifications/notifications.module";
 
@@ -24,6 +25,7 @@ import { OrdemServicoNotificationsModule } from "./notifications/notifications.m
     ConfiguracoesModule,
     OrdemServicoNotificationsModule,
   ],
+  controllers: [OrdemServicoHealthController],
   exports: [
     ClientsIntegrationModule,
     ClientesModule,

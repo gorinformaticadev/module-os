@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { PrismaService } from "../../../core/prisma/prisma.service";
+import { PrismaService } from "@core/prisma/prisma.service";
 import {
   RequestSecurityContextService,
   type SecurityActor,

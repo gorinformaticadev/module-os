@@ -1,8 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { PrismaService } from "../../../core/prisma/prisma.service";
-import { NotificationGateway } from "../../../notifications/notification.gateway";
-import { NotificationService } from "../../../notifications/notification.service";
+import { PrismaService } from "@core/prisma/prisma.service";
+import { NotificationGateway } from "@notifications/notification.gateway";
+import { NotificationService } from "@notifications/notification.service";
 import { NotificationHistoryService } from "./history.service";
 
 export interface NotificationStrategy {

@@ -17,7 +17,7 @@ import {
 } from "@nestjs/common";
 import { NotificationRuleService } from "./rules.service";
 import { NotificationHistoryService } from "./history.service";
-import { JwtAuthGuard } from "../../../core/guards/jwt-auth.guard";
+import { JwtAuthGuard } from "@core/guards/jwt-auth.guard";
 import {
   validateCreatePayload,
   validateUpdatePayload,
