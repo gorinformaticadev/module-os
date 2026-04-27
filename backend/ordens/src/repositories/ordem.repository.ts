@@ -10,6 +10,8 @@ import {
   Prisma,
 } from "../../../generated/prisma-client";
 import { StatusOS } from "../../../shared/dto/ordem-servico.dto";
+import { OrdemServico } from "../contracts/ordem.api";
+
 
 interface Historico {
   id: string;

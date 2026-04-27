@@ -34,6 +34,11 @@ export interface OrdemServico {
   dataLimiteRetirada?: Date;
   dataRetirada?: Date;
   garantiaDias?: number;
+  itens?: string | any[] | null;
+  formatacaoSo?: string | null;
+  formatacaoBackup?: boolean | null;
+  formatacaoBackupDescricao?: string | null;
+  formatacaoSenha?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
   cliente?: {

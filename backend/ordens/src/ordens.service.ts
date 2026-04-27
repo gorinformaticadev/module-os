@@ -23,7 +23,7 @@ import {
 import { IClienteLookup } from "../../shared/interfaces/cliente-lookup.interface";
 import { CLIENTES_SERVICE } from "../../shared/constants/injection-tokens";
 import { OrdemRepository } from "./repositories/ordem.repository";
-import { OrdemServico } from "../contracts/ordem.api";
+import { OrdemServico } from "./contracts/ordem.api";
 
 import * as puppeteer from "puppeteer";
 import * as path from "path";
