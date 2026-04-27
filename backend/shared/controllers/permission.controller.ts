@@ -1,7 +1,7 @@
-import { PermissionGuard } from '../../shared/guards/permission.guard';
-import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
-import { Action } from '../../shared/decorators/action.decorator';
-import { Public } from '../../shared/decorators/public.decorator';
+import { PermissionGuard } from '../guards/permission.guard';
+import { ModulePermissions } from '../decorators/module-permissions.decorator';
+import { Action } from '../decorators/action.decorator';
+import { Public } from '../decorators/public.decorator';
 import {
   Body,
   Controller,
@@ -41,7 +41,7 @@ export class PermissionController {
   async getAvailableModulePermissions() {
     try {
       this.logger.log("Buscando permissoes disponiveis");
-      return this.permissionService.getAvailableModulePermissions();
+      return this.permissionService.getAvailablePermissions();
     } catch (error) {
       this.logger.error(
         "Erro ao buscar permissoes disponiveis",
@@ -60,7 +60,7 @@ export class PermissionController {
       this.logger.log(
         `Buscando usuarios com permissoes. Tenant: ${req.user?.tenantId}`,
       );
-      return await this.permissionService.getUsersWithModulePermissions();
+      return await this.permissionService.getUsersWithPermissions();
     } catch (error) {
       this.logger.error(
         "Erro ao buscar usuarios com permissoes",
@@ -90,7 +90,7 @@ export class PermissionController {
       this.logger.log(
         `Buscando permissoes do usuario ${userId}. Tenant: ${req.user?.tenantId}`,
       );
-      return await this.permissionService.getUserModulePermissions(userId);
+      return await this.permissionService.getUserPermissions(userId);
     } catch (error) {
       this.logger.error(
         `Erro ao buscar permissoes do usuario ${userId}`,
@@ -112,7 +112,7 @@ export class PermissionController {
       this.logger.log(
         `Atualizando permissoes do usuario ${userId}. Tenant: ${req.user?.tenantId}`,
       );
-      await this.permissionService.updateUserModulePermissions(
+      await this.permissionService.updateUserPermissions(
         userId,
         body.permissions || [],
         req.user.id,

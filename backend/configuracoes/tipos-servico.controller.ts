@@ -1,7 +1,7 @@
-import { PermissionGuard } from '../../shared/guards/permission.guard';
-import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
-import { Action } from '../../shared/decorators/action.decorator';
-import { Public } from '../../shared/decorators/public.decorator';
+import { PermissionGuard } from '../shared/guards/permission.guard';
+import { ModulePermissions } from '../shared/decorators/module-permissions.decorator';
+import { Action } from '../shared/decorators/action.decorator';
+import { Public } from '../shared/decorators/public.decorator';
 import {
   Body,
   Controller,
