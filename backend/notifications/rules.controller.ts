@@ -1,3 +1,7 @@
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
+import { Action } from '../../shared/decorators/action.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 import {
   Controller,
   Get,
@@ -19,12 +23,10 @@ import {
   validateUpdatePayload,
   handlePrismaError,
 } from "./dto/rule.dto";
-import { PermissionGuard } from "../shared/guards/permission.guard";
 import { RequireConfigPermission } from "../shared/decorators/require-permission.decorator";
-import { Permissions } from "../shared/decorators/permissions.decorator";
 
 @Controller("ordem_servico/notificacoes")
-@Permissions("ordem_servico.notifications")
+@ModulePermissions("ordem_servico.notifications")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class NotificationRuleController {
   constructor(

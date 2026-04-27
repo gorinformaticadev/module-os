@@ -1,3 +1,7 @@
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
+import { Action } from '../../shared/decorators/action.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 import {
   Body,
   Controller,
@@ -13,12 +17,10 @@ import {
 import { Request as ExpressRequest } from "express";
 import { JwtAuthGuard } from "@core/common/guards/jwt-auth.guard";
 import { TemplateService } from "../services/template.service";
-import { PermissionGuard } from "../guards/permission.guard";
 import { RequireConfigPermission } from "../decorators/require-permission.decorator";
-import { Permissions } from "../decorators/permissions.decorator";
 
 @Controller("ordem_servico/templates")
-@Permissions("ordem_servico.templates")
+@ModulePermissions("ordem_servico.templates")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class TemplateController {
   private readonly logger = new Logger(TemplateController.name);

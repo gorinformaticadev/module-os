@@ -1,3 +1,7 @@
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
+import { Action } from '../../shared/decorators/action.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 import {
   Body,
   Controller,
@@ -13,14 +17,12 @@ import { JwtAuthGuard } from "@core/common/guards/jwt-auth.guard";
 import { PrismaService } from "@core/prisma/prisma.service";
 import { OrdemServicoCronService } from "./ordem-servico-cron.service";
 import { Request as ExpressRequest } from "express";
-import { PermissionGuard } from "../shared/guards/permission.guard";
 import { RequireConfigPermission } from "../shared/decorators/require-permission.decorator";
-import { Permissions } from "../shared/decorators/permissions.decorator";
 import { ModuleOsPrismaService } from "../prisma/module-os-prisma.service";
 import { RequestSecurityContextService } from "@common/services/request-security-context.service";
 
 @Controller("ordem_servico/config")
-@Permissions("ordem_servico.config")
+@ModulePermissions("ordem_servico.config")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class OrdemServicoConfigController {
   // tenantId e resolvido via ALS nas services e no ModuleOsPrismaService.

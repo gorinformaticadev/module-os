@@ -1,3 +1,7 @@
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
+import { Action } from '../../shared/decorators/action.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 import {
   Body,
   Controller,
@@ -10,12 +14,10 @@ import {
 } from "@nestjs/common";
 import { JwtAuthGuard } from "@core/common/guards/jwt-auth.guard";
 import { TiposEquipamentoService } from "./tipos-equipamento.service";
-import { PermissionGuard } from "../shared/guards/permission.guard";
 import { RequireConfigPermission } from "../shared/decorators/require-permission.decorator";
-import { Permissions } from "../shared/decorators/permissions.decorator";
 
 @Controller("ordem_servico/tipos-equipamento")
-@Permissions("ordem_servico.config")
+@ModulePermissions("ordem_servico.config")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class TiposEquipamentoController {
   constructor(

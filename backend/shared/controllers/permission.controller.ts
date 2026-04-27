@@ -1,3 +1,7 @@
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
+import { Action } from '../../shared/decorators/action.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 import {
   Body,
   Controller,
@@ -24,7 +28,7 @@ type PermissionRequestUser = {
   tenantId?: string | null;
 };
 
-@Permissions('ordem_servico.permissions')
+@ModulePermissions('ordem_servico.permissions')
 @Controller("ordem_servico/permissions")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PermissionController {
@@ -34,10 +38,10 @@ export class PermissionController {
 
   @Get("available")
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  async getAvailablePermissions() {
+  async getAvailableModulePermissions() {
     try {
       this.logger.log("Buscando permissoes disponiveis");
-      return this.permissionService.getAvailablePermissions();
+      return this.permissionService.getAvailableModulePermissions();
     } catch (error) {
       this.logger.error(
         "Erro ao buscar permissoes disponiveis",
@@ -49,14 +53,14 @@ export class PermissionController {
 
   @Get("users")
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  async getUsersWithPermissions(
+  async getUsersWithModulePermissions(
     @Req() req: ExpressRequest & { user: PermissionRequestUser },
   ) {
     try {
       this.logger.log(
         `Buscando usuarios com permissoes. Tenant: ${req.user?.tenantId}`,
       );
-      return await this.permissionService.getUsersWithPermissions();
+      return await this.permissionService.getUsersWithModulePermissions();
     } catch (error) {
       this.logger.error(
         "Erro ao buscar usuarios com permissoes",
@@ -68,7 +72,7 @@ export class PermissionController {
 
   @Get("users/:userId")
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.USER, Role.CLIENT)
-  async getUserPermissions(
+  async getUserModulePermissions(
     @Req() req: ExpressRequest & { user: PermissionRequestUser },
     @Param("userId") userId: string,
   ) {
@@ -86,7 +90,7 @@ export class PermissionController {
       this.logger.log(
         `Buscando permissoes do usuario ${userId}. Tenant: ${req.user?.tenantId}`,
       );
-      return await this.permissionService.getUserPermissions(userId);
+      return await this.permissionService.getUserModulePermissions(userId);
     } catch (error) {
       this.logger.error(
         `Erro ao buscar permissoes do usuario ${userId}`,
@@ -99,7 +103,7 @@ export class PermissionController {
   @Put("users/:userId")
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Throttle({ default: { limit: 20, ttl: 60000 } })
-  async updateUserPermissions(
+  async updateUserModulePermissions(
     @Req() req: ExpressRequest & { user: PermissionRequestUser },
     @Param("userId") userId: string,
     @Body() body: { permissions: any[] },
@@ -108,7 +112,7 @@ export class PermissionController {
       this.logger.log(
         `Atualizando permissoes do usuario ${userId}. Tenant: ${req.user?.tenantId}`,
       );
-      await this.permissionService.updateUserPermissions(
+      await this.permissionService.updateUserModulePermissions(
         userId,
         body.permissions || [],
         req.user.id,

@@ -1,14 +1,16 @@
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
+import { Action } from '../../shared/decorators/action.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 import { Body, Controller, Logger, Post, Req, UseGuards } from "@nestjs/common";
 import { Request as ExpressRequest } from "express";
 import { JwtAuthGuard } from "@core/common/guards/jwt-auth.guard";
 import { AiService } from "../services/ai.service";
 import { AI_PROMPTS } from "../services/prompts";
-import { PermissionGuard } from "../guards/permission.guard";
 import { RequireOrdersPermission } from "../decorators/require-permission.decorator";
-import { Permissions } from "../decorators/permissions.decorator";
 
 @Controller("ordem_servico/ai")
-@Permissions("ordem_servico.ai")
+@ModulePermissions("ordem_servico.ai")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class AiController {
   private readonly logger = new Logger(AiController.name);

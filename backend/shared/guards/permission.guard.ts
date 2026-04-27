@@ -7,6 +7,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { PermissionService } from "../services/permission.service";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
+import { MODULE_PERMISSIONS_KEY } from "../decorators/module-permissions.decorator";
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -34,7 +35,7 @@ export class PermissionGuard implements CanActivate {
 
     // 3. Se não houver no método, tentar obter do nível de classe (Plural/Scope)
     if (!permission) {
-        const classPermissions = this.reflector.get<string[]>("permissions", context.getClass());
+        const classPermissions = this.reflector.get<string[]>(MODULE_PERMISSIONS_KEY, context.getClass());
         if (classPermissions && classPermissions.length > 0) {
             // Se houver @Permissions na classe, usamos o primeiro como recurso padrão
             // e tentamos inferir a ação pelo nome do método ou metadados extras

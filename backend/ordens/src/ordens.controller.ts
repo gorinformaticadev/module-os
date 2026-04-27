@@ -1,3 +1,7 @@
+import { PermissionGuard } from '../../shared/guards/permission.guard';
+import { ModulePermissions } from '../../shared/decorators/module-permissions.decorator';
+import { Action } from '../../shared/decorators/action.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 import {
   Controller,
   Get,
@@ -26,9 +30,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import * as fs from "fs";
 import { JwtAuthGuard } from "@core/common/guards/jwt-auth.guard";
 import { OrdensService } from "./ordens.service";
-import { PermissionGuard } from "../../shared/guards/permission.guard";
 import { RequireOrdersPermission } from "../../shared/decorators/require-permission.decorator";
-import { Permissions } from "../../shared/decorators/permissions.decorator";
 import {
   assertTenantUploadAccess,
   buildTenantModuleUploadUrl,
@@ -76,7 +78,7 @@ interface AuthenticatedRequest extends ExpressRequest {
 }
 
 @Controller("ordem_servico/ordens")
-@Permissions("ordem_servico.orders")
+@ModulePermissions("ordem_servico.orders")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class OrdensController {
   private readonly logger = new Logger(OrdensController.name);
