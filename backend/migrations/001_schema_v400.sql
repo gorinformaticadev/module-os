@@ -8,6 +8,10 @@
 -- 1. CONFIGURAÇÕES E ESTRUTURA BASE
 -- ═══════════════════════════════════════════════════════════════════════════
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+SET search_path TO public;
+
+
 CREATE TABLE IF NOT EXISTS mod_ordem_servico_configs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
