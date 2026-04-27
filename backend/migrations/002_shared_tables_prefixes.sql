@@ -25,14 +25,30 @@ CREATE TABLE IF NOT EXISTS mod_clientes_clients (
     address_neighborhood VARCHAR(100),
     address_city VARCHAR(100),
     address_state VARCHAR(2),
+    -- campos de perfil ampliado
+    person_type VARCHAR(20),
+    trade_name VARCHAR(255),
+    rg VARCHAR(20),
+    state_registration VARCHAR(30),
+    gender VARCHAR(20),
+    credit_limit NUMERIC(12,2),
+    settlement_day INTEGER,
+    customer_group VARCHAR(100),
+    customer_group_id UUID,
+    birth_date DATE,
+    registration_status VARCHAR(20) DEFAULT 'ACTIVE',
     observations TEXT,
     image_url TEXT,
     is_active BOOLEAN DEFAULT true,
+    -- auditoria
+    created_by TEXT,
+    updated_by TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
+-- Garante todas as colunas caso a tabela já existisse (upgrade idempotente)
 ALTER TABLE mod_clientes_clients
     ADD COLUMN IF NOT EXISTS tenant_id TEXT,
     ADD COLUMN IF NOT EXISTS name VARCHAR(255),
@@ -48,9 +64,22 @@ ALTER TABLE mod_clientes_clients
     ADD COLUMN IF NOT EXISTS address_neighborhood VARCHAR(100),
     ADD COLUMN IF NOT EXISTS address_city VARCHAR(100),
     ADD COLUMN IF NOT EXISTS address_state VARCHAR(2),
+    ADD COLUMN IF NOT EXISTS person_type VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS trade_name VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS rg VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS state_registration VARCHAR(30),
+    ADD COLUMN IF NOT EXISTS gender VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS credit_limit NUMERIC(12,2),
+    ADD COLUMN IF NOT EXISTS settlement_day INTEGER,
+    ADD COLUMN IF NOT EXISTS customer_group VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS customer_group_id UUID,
+    ADD COLUMN IF NOT EXISTS birth_date DATE,
+    ADD COLUMN IF NOT EXISTS registration_status VARCHAR(20) DEFAULT 'ACTIVE',
     ADD COLUMN IF NOT EXISTS observations TEXT,
     ADD COLUMN IF NOT EXISTS image_url TEXT,
     ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true,
+    ADD COLUMN IF NOT EXISTS created_by TEXT,
+    ADD COLUMN IF NOT EXISTS updated_by TEXT,
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
