@@ -1,6 +1,11 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { PermissionService } from '../services/permission.service';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { PermissionService } from "../services/permission.service";
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -10,10 +15,10 @@ export class PermissionGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermission = this.reflector.get<{ resource: string; action: string }>(
-      'permission',
-      context.getHandler(),
-    );
+    const requiredPermission = this.reflector.get<{
+      resource: string;
+      action: string;
+    }>("permission", context.getHandler());
 
     if (!requiredPermission) {
       return true;
@@ -23,7 +28,7 @@ export class PermissionGuard implements CanActivate {
     const user = request.user;
 
     if (!user || !user.id) {
-      throw new ForbiddenException('Usuario nao autenticado');
+      throw new ForbiddenException("Usuario nao autenticado");
     }
 
     try {
@@ -46,7 +51,7 @@ export class PermissionGuard implements CanActivate {
         throw error;
       }
 
-      throw new ForbiddenException('Erro ao verificar permissoes');
+      throw new ForbiddenException("Erro ao verificar permissoes");
     }
   }
 }

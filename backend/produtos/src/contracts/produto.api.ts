@@ -5,7 +5,7 @@ export interface Produto {
   tenantId: string;
   code: string;
   name: string;
-  type: 'PRODUCT' | 'SERVICE';
+  type: "PRODUCT" | "SERVICE";
   price: number;
   costPrice?: number;
   description?: string;
@@ -18,7 +18,10 @@ export interface Produto {
 export interface ProdutoAPI {
   findById(id: string): Promise<Produto | null>;
   findByCode(code: string): Promise<Produto | null>;
-  findAll(filters?: { search?: string; isActive?: boolean }): Promise<Produto[]>;
+  findAll(filters?: {
+    search?: string;
+    isActive?: boolean;
+  }): Promise<Produto[]>;
   create(data: any): Promise<Produto>;
   update(id: string, data: any): Promise<Produto>;
   delete(id: string): Promise<void>;

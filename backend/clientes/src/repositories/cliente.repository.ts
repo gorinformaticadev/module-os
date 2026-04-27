@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ModuleOsPrismaService } from '../../../prisma/module-os-prisma.service';
-import { Cliente } from '../contracts/cliente.api';
+import { Injectable, Logger } from "@nestjs/common";
+import { ModuleOsPrismaService } from "../../../prisma/module-os-prisma.service";
+import { Cliente } from "../contracts/cliente.api";
+import { mod_clientes_clients, Prisma } from "../../../generated/prisma-client";
 
 interface CreateClienteDTO {
   tenantId: string;
@@ -64,7 +65,7 @@ export class ClienteRepository {
   async findAll(filters: ClienteFilters = {}): Promise<Cliente[]> {
     const { search, status } = filters;
 
-    const where: any = { deletedAt: null };
+    const where: Prisma.mod_clientes_clientsWhereInput = { deletedAt: null };
 
     if (status !== undefined) {
       where.isActive = status;
@@ -72,15 +73,15 @@ export class ClienteRepository {
 
     if (search && search.length >= 2) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
         { phonePrimary: { contains: search } },
-        { email: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: "insensitive" } },
       ];
     }
 
     const results = await this.prisma.mod_clientes_clients.findMany({
       where,
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
       take: 20,
     });
 
@@ -113,22 +114,31 @@ export class ClienteRepository {
   }
 
   async update(id: string, data: UpdateClienteDTO): Promise<Cliente> {
-    const updateData: any = {};
+    const updateData: Prisma.mod_clientes_clientsUpdateInput = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.document !== undefined) updateData.document = data.document;
-    if (data.phonePrimary !== undefined) updateData.phonePrimary = data.phonePrimary;
-    if (data.phoneSecondary !== undefined) updateData.phoneSecondary = data.phoneSecondary;
+    if (data.phonePrimary !== undefined)
+      updateData.phonePrimary = data.phonePrimary;
+    if (data.phoneSecondary !== undefined)
+      updateData.phoneSecondary = data.phoneSecondary;
     if (data.email !== undefined) updateData.email = data.email;
     if (data.address !== undefined) updateData.address = data.address;
     if (data.addressZip !== undefined) updateData.addressZip = data.addressZip;
-    if (data.addressStreet !== undefined) updateData.addressStreet = data.addressStreet;
-    if (data.addressNumber !== undefined) updateData.addressNumber = data.addressNumber;
-    if (data.addressComplement !== undefined) updateData.addressComplement = data.addressComplement;
-    if (data.addressNeighborhood !== undefined) updateData.addressNeighborhood = data.addressNeighborhood;
-    if (data.addressCity !== undefined) updateData.addressCity = data.addressCity;
-    if (data.addressState !== undefined) updateData.addressState = data.addressState;
-    if (data.observations !== undefined) updateData.observations = data.observations;
+    if (data.addressStreet !== undefined)
+      updateData.addressStreet = data.addressStreet;
+    if (data.addressNumber !== undefined)
+      updateData.addressNumber = data.addressNumber;
+    if (data.addressComplement !== undefined)
+      updateData.addressComplement = data.addressComplement;
+    if (data.addressNeighborhood !== undefined)
+      updateData.addressNeighborhood = data.addressNeighborhood;
+    if (data.addressCity !== undefined)
+      updateData.addressCity = data.addressCity;
+    if (data.addressState !== undefined)
+      updateData.addressState = data.addressState;
+    if (data.observations !== undefined)
+      updateData.observations = data.observations;
     if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
@@ -157,7 +167,7 @@ export class ClienteRepository {
     return this.mapToDomain(data);
   }
 
-  private mapToDomain(data: any): Cliente {
+  private mapToDomain(data: mod_clientes_clients): Cliente {
     return {
       id: data.id,
       tenantId: data.tenantId,

@@ -1,12 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ModuleOsPrismaService } from '../../../prisma/module-os-prisma.service';
-import { Produto } from '../contracts/produto.api';
+import { Injectable, Logger } from "@nestjs/common";
+import { ModuleOsPrismaService } from "../../../prisma/module-os-prisma.service";
+import { Produto } from "../contracts/produto.api";
 
 interface CreateProdutoDTO {
   tenantId: string;
   code: string;
   name: string;
-  type?: 'PRODUCT' | 'SERVICE';
+  type?: "PRODUCT" | "SERVICE";
   price: number;
   costPrice?: number;
   description?: string;
@@ -16,7 +16,7 @@ interface CreateProdutoDTO {
 interface UpdateProdutoDTO {
   code?: string;
   name?: string;
-  type?: 'PRODUCT' | 'SERVICE';
+  type?: "PRODUCT" | "SERVICE";
   price?: number;
   costPrice?: number;
   description?: string;
@@ -71,14 +71,14 @@ export class ProdutoRepository {
 
     if (search && search.length >= 2) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { code: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: "insensitive" } },
+        { code: { contains: search, mode: "insensitive" } },
       ];
     }
 
     const results = await this.prisma.mod_ordem_servico_products.findMany({
       where,
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     return results.map(this.mapToDomain);
@@ -90,7 +90,7 @@ export class ProdutoRepository {
         tenantId: data.tenantId,
         code: data.code,
         name: data.name,
-        type: data.type || 'PRODUCT',
+        type: data.type || "PRODUCT",
         price: data.price,
         costPrice: data.costPrice,
         description: data.description,
@@ -109,7 +109,8 @@ export class ProdutoRepository {
     if (data.type !== undefined) updateData.type = data.type;
     if (data.price !== undefined) updateData.price = data.price;
     if (data.costPrice !== undefined) updateData.costPrice = data.costPrice;
-    if (data.description !== undefined) updateData.description = data.description;
+    if (data.description !== undefined)
+      updateData.description = data.description;
     if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
@@ -134,7 +135,7 @@ export class ProdutoRepository {
       tenantId: data.tenantId,
       code: data.code,
       name: data.name,
-      type: data.type as 'PRODUCT' | 'SERVICE',
+      type: data.type as "PRODUCT" | "SERVICE",
       price: Number(data.price),
       costPrice: data.costPrice ? Number(data.costPrice) : undefined,
       description: data.description ?? undefined,

@@ -1,53 +1,55 @@
-
 export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
-    const formatDate = (dateString: string) => {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('pt-BR');
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("pt-BR");
+  };
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return `${date.toLocaleDateString("pt-BR")} ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}`;
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value || 0);
+  };
+
+  const formatCpfCnpj = (document?: string): string => {
+    if (!document) return "";
+    const numbers = document.replace(/\D/g, "");
+
+    if (numbers.length === 11) {
+      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    } else if (numbers.length === 14) {
+      return numbers.replace(
+        /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
+        "$1.$2.$3/$4-$5",
+      );
+    }
+    return document;
+  };
+
+  const getStatusLabel = (status: number) => {
+    const labels: Record<number, string> = {
+      0: "Orçamento",
+      1: "Aberto",
+      2: "Em Análise",
+      3: "Aguardando Cliente",
+      4: "Aguardando Peças",
+      5: "Em Execução",
+      6: "Finalizado",
+      7: "Cancelado",
     };
+    return labels[status] || "Desconhecido";
+  };
 
-    const formatDateTime = (dateString: string) => {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`;
-    };
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-        }).format(value || 0);
-    };
-
-    const formatCpfCnpj = (document?: string): string => {
-        if (!document) return '';
-        const numbers = document.replace(/\D/g, '');
-
-        if (numbers.length === 11) {
-            return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-        } else if (numbers.length === 14) {
-            return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-        }
-        return document;
-    };
-
-    const getStatusLabel = (status: number) => {
-        const labels: Record<number, string> = {
-            0: 'Orçamento',
-            1: 'Aberto',
-            2: 'Em Análise',
-            3: 'Aguardando Cliente',
-            4: 'Aguardando Peças',
-            5: 'Em Execução',
-            6: 'Finalizado',
-            7: 'Cancelado'
-        };
-        return labels[status] || 'Desconhecido';
-    };
-
-    // Helper para gerar o conteúdo da OS
-    const generateCopy = () => {
-        return `
+  // Helper para gerar o conteúdo da OS
+  const generateCopy = () => {
+    return `
         <div class="single-copy-wrapper">
             <!-- Header -->
             <div class="header-box">
@@ -55,15 +57,15 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
                     ${tenantInfo.logo_url ? `<img src="${tenantInfo.logo_url}" alt="Logo" />` : '<div style="font-size: 11px; color: #ccc; font-weight: 600;">LOGO</div>'}
                 </div>
                 <div class="company-data">
-                    <div class="company-name">${tenantInfo.name || ''}</div>
+                    <div class="company-name">${tenantInfo.name || ""}</div>
                     <div class="company-info">
-                        ${tenantInfo.document ? `<div>CNPJ: ${formatCpfCnpj(tenantInfo.document)}</div>` : ''}
-                        ${tenantInfo.address ? `<div>${tenantInfo.address}</div>` : ''}
+                        ${tenantInfo.document ? `<div>CNPJ: ${formatCpfCnpj(tenantInfo.document)}</div>` : ""}
+                        ${tenantInfo.address ? `<div>${tenantInfo.address}</div>` : ""}
                     </div>
                 </div>
                 <div class="contact-section">
-                    ${tenantInfo.phone ? `<div><strong>Tel:</strong> ${tenantInfo.phone}</div>` : ''}
-                    ${tenantInfo.email ? `<div>${tenantInfo.email}</div>` : ''}
+                    ${tenantInfo.phone ? `<div><strong>Tel:</strong> ${tenantInfo.phone}</div>` : ""}
+                    ${tenantInfo.email ? `<div>${tenantInfo.email}</div>` : ""}
                 </div>
             </div>
 
@@ -88,53 +90,70 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
                         <td>${getStatusLabel(ordem.status)}</td>
                         <td>${formatDate(ordem.data_abertura)}</td>
                         <td>${formatDate(ordem.data_previsao)}</td>
-                        <td>${ordem.garantia_dias ? `${ordem.garantia_dias} dia(s)` : '-'}</td>
+                        <td>${ordem.garantia_dias ? `${ordem.garantia_dias} dia(s)` : "-"}</td>
                     </tr>
                 </tbody>
             </table>
 
             <!-- Dados do Cliente -->
-            ${ordem.cliente ? `
+            ${
+              ordem.cliente
+                ? `
                 <div class="section-header">Dados do Cliente</div>
                 <div class="section-content">
-                    <strong>Nome:</strong> ${ordem.cliente.name || ''} 
-                    | <strong>Telefone:</strong> ${ordem.cliente.phone_primary || ''}
-                    ${ordem.cliente.email ? `| <strong>Email:</strong> ${ordem.cliente.email}` : ''}
+                    <strong>Nome:</strong> ${ordem.cliente.name || ""} 
+                    | <strong>Telefone:</strong> ${ordem.cliente.phone_primary || ""}
+                    ${ordem.cliente.email ? `| <strong>Email:</strong> ${ordem.cliente.email}` : ""}
                 </div>
-            ` : ''}
+            `
+                : ""
+            }
 
             <!-- Descrição Produto/Serviço -->
             <div class="section-header">Descrição Produto/Serviço</div>
             <div class="section-content">
-                ${ordem.equipamento_tipo ? `
+                ${
+                  ordem.equipamento_tipo
+                    ? `
                     <strong>${ordem.equipamento_tipo}</strong>
-                    ${ordem.equipamento_marca ? `<span> | <strong>Marca:</strong> ${ordem.equipamento_marca}</span>` : ''}
-                    ${ordem.equipamento_modelo ? `<span> | <strong>Modelo:</strong> ${ordem.equipamento_modelo}</span>` : ''}
-                    ${ordem.equipamento_serie ? `<span> | <strong>Série:</strong> ${ordem.equipamento_serie}</span>` : ''}
+                    ${ordem.equipamento_marca ? `<span> | <strong>Marca:</strong> ${ordem.equipamento_marca}</span>` : ""}
+                    ${ordem.equipamento_modelo ? `<span> | <strong>Modelo:</strong> ${ordem.equipamento_modelo}</span>` : ""}
+                    ${ordem.equipamento_serie ? `<span> | <strong>Série:</strong> ${ordem.equipamento_serie}</span>` : ""}
                     <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 4px;">
-                        ${ordem.equipamento_acessorios ? `<div style="flex-shrink: 0;"><strong>Acessórios / Outros:</strong> ${ordem.equipamento_acessorios}</div>` : ''}
-                        ${ordem.equipamento_estado ? `<div style="flex-shrink: 0;"><strong>Estado de Entrega / Obs:</strong> ${ordem.equipamento_estado}</div>` : ''}
+                        ${ordem.equipamento_acessorios ? `<div style="flex-shrink: 0;"><strong>Acessórios / Outros:</strong> ${ordem.equipamento_acessorios}</div>` : ""}
+                        ${ordem.equipamento_estado ? `<div style="flex-shrink: 0;"><strong>Estado de Entrega / Obs:</strong> ${ordem.equipamento_estado}</div>` : ""}
                     </div>
-                ` : ''}
+                `
+                    : ""
+                }
             </div>
 
             <!-- Defeito/Solicitação -->
             <div class="section-header">Defeito/Solicitação</div>
             <div class="section-content">
-                ${(ordem.tipo_servico || ordem.formatacao_so || typeof ordem.formatacao_backup === 'boolean' || ordem.formatacao_senha) ? `
+                ${
+                  ordem.tipo_servico ||
+                  ordem.formatacao_so ||
+                  typeof ordem.formatacao_backup === "boolean" ||
+                  ordem.formatacao_senha
+                    ? `
                     <div style="margin-bottom: 12px; font-weight: 600;">
-                        ${ordem.tipo_servico || ''}
-                        ${ordem.formatacao_so ? `<span> - ${ordem.formatacao_so}</span>` : ''}
-                        ${typeof ordem.formatacao_backup === 'boolean' ? `<span> - Backup: ${ordem.formatacao_backup ? 'Sim' : 'Não'}</span>` : ''}
-                        ${ordem.formatacao_backup && ordem.formatacao_backup_descricao ? `<span> (${ordem.formatacao_backup_descricao})</span>` : ''}
-                        ${ordem.formatacao_senha ? `<span> - Senha: ${ordem.formatacao_senha}</span>` : ''}
+                        ${ordem.tipo_servico || ""}
+                        ${ordem.formatacao_so ? `<span> - ${ordem.formatacao_so}</span>` : ""}
+                        ${typeof ordem.formatacao_backup === "boolean" ? `<span> - Backup: ${ordem.formatacao_backup ? "Sim" : "Não"}</span>` : ""}
+                        ${ordem.formatacao_backup && ordem.formatacao_backup_descricao ? `<span> (${ordem.formatacao_backup_descricao})</span>` : ""}
+                        ${ordem.formatacao_senha ? `<span> - Senha: ${ordem.formatacao_senha}</span>` : ""}
                     </div>
-                ` : ''}
-                <div>${ordem.descricao || ''}</div>
+                `
+                    : ""
+                }
+                <div>${ordem.descricao || ""}</div>
             </div>
 
             <!-- Produtos/Serviços -->
-            ${ordem.itens && ordem.itens.length > 0 ? `
+            ${
+              ordem.itens && ordem.itens.length > 0
+                ? `
                 <div class="section-header">Produtos e Serviços</div>
                 <table class="items-table">
                     <thead>
@@ -146,14 +165,18 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${ordem.itens.map((item: any) => `
+                        ${ordem.itens
+                          .map(
+                            (item: any) => `
                             <tr>
                                 <td>${item.descricao}</td>
                                 <td style="text-align: center;">${item.quantidade}</td>
                                 <td style="text-align: right;">${formatCurrency(item.valor_unitario)}</td>
                                 <td style="text-align: right;">${formatCurrency(item.valor_total)}</td>
                             </tr>
-                        `).join('')}
+                        `,
+                          )
+                          .join("")}
                     </tbody>
                     <tfoot>
                         <tr>
@@ -162,32 +185,42 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
                         </tr>
                     </tfoot>
                 </table>
-            ` : ''}
+            `
+                : ""
+            }
 
             <!-- Condições de Execução -->
-            ${ordem.condicoesExecucao ? `
+            ${
+              ordem.condicoesExecucao
+                ? `
                 <div class="section-header">Condições de Execução</div>
                 <div class="section-content conditions-text">${ordem.condicoesExecucao}</div>
-            ` : ''}
+            `
+                : ""
+            }
 
             <!-- Observações -->
-            ${ordem.observacoes_cliente ? `
+            ${
+              ordem.observacoes_cliente
+                ? `
                 <div class="section-header">Observações</div>
                 <div class="section-content">${ordem.observacoes_cliente}</div>
-            ` : ''}
+            `
+                : ""
+            }
 
             <!-- Assinaturas -->
             <div class="signatures">
                 <div class="signature-box">
                     <div class="signature-line">
-                        ${ordem.usuario_responsavel?.name || 'Atendente'}
+                        ${ordem.usuario_responsavel?.name || "Atendente"}
                         <br />
                         <span style="font-size: 9px; color: #999;">Assinatura do Atendente</span>
                     </div>
                 </div>
                 <div class="signature-box">
                     <div class="signature-line">
-                        ${ordem.cliente?.name || 'Cliente'}
+                        ${ordem.cliente?.name || "Cliente"}
                         <br />
                         <span style="font-size: 9px; color: #999;">Assinatura do Cliente</span>
                     </div>
@@ -200,9 +233,9 @@ export const generatePdfHtml = (ordem: any, tenantInfo: any) => {
             </div>
         </div>
         `;
-    };
+  };
 
-    return `
+  return `
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>

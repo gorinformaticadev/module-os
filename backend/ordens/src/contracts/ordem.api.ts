@@ -54,7 +54,11 @@ export interface OrdemServico {
 
 export interface OrdemAPI {
   findById(id: string): Promise<OrdemServico | null>;
-  findAll(filters?: { search?: string; status?: number; clienteId?: string }): Promise<OrdemServico[]>;
+  findAll(filters?: {
+    search?: string;
+    status?: number;
+    clienteId?: string;
+  }): Promise<OrdemServico[]>;
   findByCliente(clienteId: string): Promise<OrdemServico[]>;
   create(data: any): Promise<OrdemServico>;
   update(id: string, data: any): Promise<OrdemServico>;

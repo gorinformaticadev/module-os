@@ -1,6 +1,9 @@
 {
   "scripts": {
-    "generate:legacy-os-seed": "node ./seeds/generate-legacy-os-seed.mjs"
+    "generate:legacy-os-seed": "node ./seeds/generate-legacy-os-seed.mjs",
+    "format": "npx prettier --write \"**/*.ts\" \"**/*.html\" \"**/*.js\"",
+    "lint": "npx prettier --check \"**/*.ts\" \"**/*.html\" \"**/*.js\"",
+    "check:theming": "node ../../../Pluggor/Scripts/check-no-hardcoded-colors.js ."
   },
   "devDependencies": {
     "prisma": "^6.19.2"
