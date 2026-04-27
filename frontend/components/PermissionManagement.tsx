@@ -12,7 +12,7 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+    className={`rounded-xl border border-skin-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
     {...props}
   />
 ));
@@ -48,7 +48,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={`text-sm text-muted-foreground ${className || ''}`}
+    className={`text-sm text-skin-text-muted ${className || ''}`}
     {...props}
   />
 ));
@@ -71,9 +71,9 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
   const variantClasses = {
     default: "bg-primary text-primary-foreground hover:bg-primary/90",
     destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    outline: "border border-skin-input-border bg-skin-background hover:bg-skin-surface-hover hover:text-skin-text",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
+    ghost: "hover:bg-skin-surface-hover hover:text-skin-text hover:shadow-none",
     link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
   
@@ -94,7 +94,7 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
     default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
     secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
     destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-    outline: "text-foreground",
+    outline: "text-skin-text",
   };
   
   return (
@@ -112,7 +112,7 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
     return (
       <input
         type={type}
-        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
+        className={`flex h-10 w-full rounded-md border border-skin-input-border bg-skin-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-skin-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
         ref={ref}
         {...props}
       />
@@ -167,7 +167,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
   ({ className, ...props }, ref) => (
     <th
       ref={ref}
-      className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 ${className || ''}`}
+      className={`h-12 px-4 text-left align-middle font-medium text-skin-text-muted [&:has([role=checkbox])]:pr-0 ${className || ''}`}
       {...props}
     />
   )
@@ -226,7 +226,7 @@ const Dialog = ({ open, onOpenChange, children }: {
 };
 
 const DialogContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`relative z-50 grid gap-4 border border-border/50 bg-background/95 dark:bg-background/95 backdrop-blur-sm p-6 shadow-2xl rounded-xl ${className}`}>
+  <div className={`relative z-50 grid gap-4 border border-skin-border/50 bg-skin-background/95 dark:bg-skin-background/95 backdrop-blur-sm p-6 shadow-2xl rounded-xl ${className}`}>
     {children}
   </div>
 );
@@ -342,8 +342,8 @@ export const PermissionManagement: React.FC = () => {
     const percentage = summary.total > 0 ? (summary.allowed / summary.total) * 100 : 0;
     
     if (percentage >= 80) return 'bg-primary';
-    if (percentage >= 50) return 'bg-yellow-500';
-    if (percentage >= 20) return 'bg-orange-500';
+    if (percentage >= 50) return 'bg-skin-warning';
+    if (percentage >= 20) return 'bg-skin-warning';
     return 'bg-destructive';
   };
 
@@ -364,7 +364,7 @@ export const PermissionManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-skin-info"></div>
         <span className="ml-3">Carregando usuários...</span>
       </div>
     );
@@ -379,7 +379,7 @@ export const PermissionManagement: React.FC = () => {
             <Shield className="h-5 w-5" />
             Gerenciamento de Permissões
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-skin-text-muted mt-1">
             Configure permissões por perfil ou específicas para cada usuário
           </p>
         </div>
@@ -394,7 +394,7 @@ export const PermissionManagement: React.FC = () => {
             Configurar Perfis
           </Button>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-skin-text-muted" />
             <Input
               placeholder="Buscar usuários..."
               value={searchTerm}
@@ -472,7 +472,7 @@ export const PermissionManagement: React.FC = () => {
         </CardHeader>
         <CardContent>
           {!Array.isArray(filteredUsers) || filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-skin-text-muted">
               {searchTerm ? 'Nenhum usuário encontrado com esse termo.' : 'Nenhum usuário encontrado.'}
             </div>
           ) : (
@@ -505,7 +505,7 @@ export const PermissionManagement: React.FC = () => {
                                 </Badge>
                               )}
                             </div>
-                            <span className="text-xs text-muted-foreground">{user.email}</span>
+                            <span className="text-xs text-skin-text-muted">{user.email}</span>
                           </div>
                         </div>
                       </TableCell>

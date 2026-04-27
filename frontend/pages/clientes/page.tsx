@@ -151,7 +151,7 @@ export default function OrdemServicoClientesPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">Clientes</h1>
-                    <p className="text-muted-foreground mt-2">
+                    <p className="text-skin-text-muted mt-2">
                         Gerencie sua carteira de clientes
                     </p>
                 </div>
@@ -178,7 +178,7 @@ export default function OrdemServicoClientesPage() {
                         </div>
                         <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                             <div className="relative flex-1 md:w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-skin-text-muted" />
                                 <Input
                                     placeholder="Buscar por nome, cpf ou telefone..."
                                     className="pl-10"
@@ -210,7 +210,7 @@ export default function OrdemServicoClientesPage() {
                     <div className="border rounded-lg overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-slate-50 dark:bg-slate-900">
+                                <thead className="bg-skin-background dark:bg-skin-background-hover">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-sm font-semibold">Nome / Documento</th>
                                         <th className="px-4 py-3 text-left text-sm font-semibold">Contato</th>
@@ -221,7 +221,7 @@ export default function OrdemServicoClientesPage() {
                                 <tbody className="divide-y">
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                                            <td colSpan={4} className="px-4 py-8 text-center text-skin-text-muted">
                                                 <div className="flex justify-center items-center gap-2">
                                                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                                                     Carregando clientes...
@@ -230,7 +230,7 @@ export default function OrdemServicoClientesPage() {
                                         </tr>
                                     ) : clients.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="px-4 py-12 text-center text-muted-foreground">
+                                            <td colSpan={4} className="px-4 py-12 text-center text-skin-text-muted">
                                                 <div className="flex flex-col items-center gap-3">
                                                     <p className="text-lg font-semibold">Nenhum cliente encontrado</p>
                                                     <p className="text-sm max-w-sm mx-auto">
@@ -241,7 +241,7 @@ export default function OrdemServicoClientesPage() {
                                         </tr>
                                     ) : (
                                         clients.map((client) => (
-                                            <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+                                            <tr key={client.id} className="hover:bg-skin-background dark:hover:bg-skin-background-hover transition-colors">
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-3">
                                                         <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
@@ -256,9 +256,9 @@ export default function OrdemServicoClientesPage() {
                                                             )}
                                                         </div>
                                                         <div className="flex flex-col min-w-0">
-                                                            <span className="font-semibold truncate text-slate-900 dark:text-slate-100">{client.name}</span>
+                                                            <span className="font-semibold truncate text-skin-background-hover dark:text-skin-background">{client.name}</span>
                                                             {client.document && (
-                                                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                                                                <div className="flex items-center gap-1 text-[10px] text-skin-text-muted font-medium">
                                                                     <FileText className="h-2.5 w-2.5" />
                                                                     {client.document}
                                                                 </div>
@@ -273,7 +273,7 @@ export default function OrdemServicoClientesPage() {
                                                             {client.phone_primary}
                                                         </div>
                                                         {(client.address_street || client.address_city || client.address_state) && (
-                                                            <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[200px]" title={`${client.address_street || ''}${client.address_street && client.address_number ? ', ' : ''}${client.address_number || ''}`}>
+                                                            <div className="flex items-center gap-1 text-xs text-skin-text-muted truncate max-w-[200px]" title={`${client.address_street || ''}${client.address_street && client.address_number ? ', ' : ''}${client.address_number || ''}`}>
                                                                 <MapPin className="h-3 w-3" />
                                                                 {client.address_city || ''}{client.address_city && client.address_state ? ' - ' : ''}{client.address_state || ''}
                                                             </div>
@@ -293,7 +293,7 @@ export default function OrdemServicoClientesPage() {
                                                     <Button variant="ghost" size="sm" onClick={() => openEdit(client)}>
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(client.id)}>
+                                                    <Button variant="ghost" size="sm" className="text-skin-danger hover:text-skin-danger hover:bg-skin-danger/10" onClick={() => handleDelete(client.id)}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </td>
@@ -334,7 +334,7 @@ export default function OrdemServicoClientesPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-2 text-center">
-                        <Trash2 className="h-12 w-12 text-red-500 mx-auto" />
+                        <Trash2 className="h-12 w-12 text-skin-danger mx-auto" />
                     </div>
                     <DialogFooter className="flex gap-2 justify-center sm:justify-center">
                         <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>

@@ -976,13 +976,13 @@ export default function EditOrdemPage() {
                         <h1 className="text-2xl font-bold tracking-tight">
                             Editar OS #{ordem.numero}
                         </h1>
-                        <p className="text-muted-foreground">
+                        <p className="text-skin-text-muted">
                             Altere os dados da ordem de serviço
                         </p>
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => handleWhatsApp()} title="Enviar WhatsApp" className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700">
+                    <Button variant="outline" onClick={() => handleWhatsApp()} title="Enviar WhatsApp" className="text-skin-success border-skin-success hover:bg-skin-success/10 hover:text-skin-success">
                         <MessageCircle className="h-4 w-4 mr-2" />
                         WhatsApp
                     </Button>
@@ -1016,13 +1016,13 @@ export default function EditOrdemPage() {
 
                 {/* Alerta: Status Terminal (Somente Leitura) */}
                 {(ordem.status === StatusOS.RETIRADO || ordem.status === StatusOS.ABANDONADO || ordem.status === StatusOS.CANCELADA) && (
-                    <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 flex items-center gap-3">
-                        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                    <div className="bg-skin-warning/10 border-2 border-skin-warning rounded-lg p-4 flex items-center gap-3">
+                        <AlertTriangle className="h-5 w-5 text-skin-warning shrink-0" />
                         <div>
-                            <p className="font-medium text-amber-800">
+                            <p className="font-medium text-skin-warning-hover">
                                 Esta ordem está com status {STATUS_LABELS[ordem.status]} (somente leitura)
                             </p>
-                            <p className="text-sm text-amber-600">
+                            <p className="text-sm text-skin-warning">
                                 Ordens com status terminal não podem ser editadas.
                             </p>
                         </div>
@@ -1031,17 +1031,17 @@ export default function EditOrdemPage() {
 
                 {/* Seção: Ações de Finalização (quando status = FINALIZADA) */}
                 {ordem.status === StatusOS.FINALIZADA && (
-                    <Card className="shadow-sm border-2 border-emerald-200 bg-emerald-50/30">
-                        <CardHeader className="bg-emerald-100/50 pb-4">
+                    <Card className="shadow-sm border-2 border-skin-success bg-skin-success/10/30">
+                        <CardHeader className="bg-skin-success/10/50 pb-4">
                             <div className="flex items-center gap-2">
-                                <Package className="h-5 w-5 text-emerald-600" />
-                                <CardTitle className="text-lg text-emerald-800">Ações de Finalização</CardTitle>
+                                <Package className="h-5 w-5 text-skin-success" />
+                                <CardTitle className="text-lg text-skin-success-hover">Ações de Finalização</CardTitle>
                                 <TooltipProvider>
                                     <Popover>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <PopoverTrigger asChild>
-                                                    <Info className="h-4 w-4 text-emerald-600 cursor-pointer hover:text-emerald-700 transition-colors" />
+                                                    <Info className="h-4 w-4 text-skin-success cursor-pointer hover:text-skin-success-hover transition-colors" />
                                                 </PopoverTrigger>
                                             </TooltipTrigger>
                                             <TooltipContent>
@@ -1067,14 +1067,14 @@ export default function EditOrdemPage() {
                                 <div className="space-y-4">
                                     <div className="p-4 bg-white rounded-lg border shadow-sm space-y-3">
                                         <h4 className="font-semibold text-sm flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                            <CheckCircle2 className="h-4 w-4 text-skin-success" />
                                             Registrar Retirada
                                         </h4>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-xs text-skin-text-muted">
                                             O cliente compareceu para retirar o equipamento. Registre os pagamentos e finalize a entrega.
                                         </p>
                                         <Button
-                                            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+                                            className="w-full gap-2 bg-skin-success hover:bg-skin-success-hover"
                                             onClick={() => setIsRetiradaModalOpen(true)}
                                         >
                                             <Package className="h-4 w-4" />
@@ -1084,15 +1084,15 @@ export default function EditOrdemPage() {
 
                                     <div className="p-4 bg-white rounded-lg border shadow-sm space-y-3">
                                         <h4 className="font-semibold text-sm flex items-center gap-2">
-                                            <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                            <AlertTriangle className="h-4 w-4 text-skin-warning" />
                                             Processo de Abandono
                                         </h4>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-xs text-skin-text-muted">
                                             O cliente não compareceu? Inicie o processo de abandono com 3 tentativas de contato.
                                         </p>
                                         <Button
                                             variant="outline"
-                                            className="w-full gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                            className="w-full gap-2 border-skin-warning text-skin-warning-hover hover:bg-skin-warning/10"
                                             onClick={() => setIsAbandonoModalOpen(true)}
                                         >
                                             <Clock className="h-4 w-4" />
@@ -1148,14 +1148,14 @@ export default function EditOrdemPage() {
                                                     className="h-full w-full object-cover"
                                                 />
                                             ) : (
-                                                <User className="h-8 w-8 text-muted-foreground" />
+                                                <User className="h-8 w-8 text-skin-text-muted" />
                                             )}
                                         </div>
                                     </div>
                                     {/* Dados Principais */}
                                     <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         <div>
-                                            <h3 className="font-bold text-xl leading-tight text-foreground truncate">
+                                            <h3 className="font-bold text-xl leading-tight text-skin-text truncate">
                                                 {ordem.cliente.name}
                                             </h3>
                                             <div className="flex items-center gap-2 mt-2">
@@ -1163,7 +1163,7 @@ export default function EditOrdemPage() {
                                                     Cliente Fixo
                                                 </Badge>
                                                 {ordem.cliente.is_active ? (
-                                                    <Badge variant="outline" className="text-[10px] h-5 border-emerald-500/50 text-emerald-600 bg-emerald-50/50">
+                                                    <Badge variant="outline" className="text-[10px] h-5 border-skin-success/50 text-skin-success bg-skin-success/10/50">
                                                         Ativo
                                                     </Badge>
                                                 ) : (
@@ -1172,35 +1172,35 @@ export default function EditOrdemPage() {
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground font-medium mt-1">
+                                            <p className="text-sm text-skin-text-muted font-medium mt-1">
                                                 {ordem.cliente.document || 'Sem documento'}
                                             </p>
                                         </div>
 
                                         <div className="space-y-1">
-                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contatos</p>
+                                            <p className="text-xs font-semibold text-skin-text-muted uppercase tracking-wider">Contatos</p>
                                             <div className="flex items-center gap-2">
-                                                <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                <Phone className="h-4 w-4 text-skin-text-muted shrink-0" />
                                                 <span className="text-sm font-medium">{ordem.cliente.phone_primary}</span>
                                             </div>
                                             {ordem.cliente.phone_secondary && (
                                                 <div className="flex items-center gap-2 pl-6">
-                                                    <span className="text-sm text-muted-foreground">{ordem.cliente.phone_secondary}</span>
+                                                    <span className="text-sm text-skin-text-muted">{ordem.cliente.phone_secondary}</span>
                                                 </div>
                                             )}
                                         </div>
 
                                         <div className="space-y-1">
-                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Endereço</p>
+                                            <p className="text-xs font-semibold text-skin-text-muted uppercase tracking-wider">Endereço</p>
                                             {(ordem.cliente.address_street || ordem.cliente.address_city) ? (
                                                 <div className="flex items-start gap-2">
-                                                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                                                    <MapPin className="h-4 w-4 text-skin-text-muted shrink-0 mt-0.5" />
                                                     <div className="text-sm">
-                                                        <p className="font-medium text-foreground/80">
+                                                        <p className="font-medium text-skin-text/80">
                                                             {ordem.cliente.address_street}
                                                             {ordem.cliente.address_number ? `, ${ordem.cliente.address_number}` : ''}
                                                         </p>
-                                                        <p className="text-xs text-muted-foreground">
+                                                        <p className="text-xs text-skin-text-muted">
                                                             {[
                                                                 ordem.cliente.address_city,
                                                                 ordem.cliente.address_state
@@ -1211,7 +1211,7 @@ export default function EditOrdemPage() {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <span className="text-sm text-muted-foreground italic">Endereço não cadastrado</span>
+                                                <span className="text-sm text-skin-text-muted italic">Endereço não cadastrado</span>
                                             )}
                                         </div>
                                     </div>
@@ -1244,7 +1244,7 @@ export default function EditOrdemPage() {
                                     {tiposServico.map((tipo) => (
                                         <SelectItem key={tipo.id} value={tipo.nome}>
                                             {tipo.nome}
-                                            {tipo.is_default && <span className="text-xs text-muted-foreground ml-2">(Padrão)</span>}
+                                            {tipo.is_default && <span className="text-xs text-skin-text-muted ml-2">(Padrão)</span>}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -1306,7 +1306,7 @@ export default function EditOrdemPage() {
                                     {technicians.map(t => (
                                         <SelectItem key={t.id} value={t.id}>
                                             {t.name}
-                                            {t.email && <span className="text-xs text-muted-foreground ml-2">({t.email})</span>}
+                                            {t.email && <span className="text-xs text-skin-text-muted ml-2">({t.email})</span>}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -1340,7 +1340,7 @@ export default function EditOrdemPage() {
                                 value={formData.garantia_dias || ''}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, garantia_dias: parseInt(e.target.value) || 0 })}
                             />
-                            <p className="text-[10px] text-muted-foreground italic">Período de garantia em dias para o serviço realizado.</p>
+                            <p className="text-[10px] text-skin-text-muted italic">Período de garantia em dias para o serviço realizado.</p>
                         </div>
 
                         {/* Campos Condicionais: FORMATAÇÃO */}
@@ -1460,29 +1460,29 @@ export default function EditOrdemPage() {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                                         <div className="space-y-1">
-                                            <span className="font-bold block uppercase text-[10px] text-muted-foreground">Resumo Técnico</span>
-                                            <p className="text-foreground leading-relaxed">
+                                            <span className="font-bold block uppercase text-[10px] text-skin-text-muted">Resumo Técnico</span>
+                                            <p className="text-skin-text leading-relaxed">
                                                 {typeof aiAnalysis === 'string' ? aiAnalysis : aiAnalysis.resumo || aiAnalysis.text}
                                             </p>
                                         </div>
                                         {aiAnalysis.causas && (
                                             <div className="space-y-1">
-                                                <span className="font-bold block uppercase text-[10px] text-muted-foreground">Possíveis Causas</span>
-                                                <p className="text-foreground leading-relaxed">{aiAnalysis.causas}</p>
+                                                <span className="font-bold block uppercase text-[10px] text-skin-text-muted">Possíveis Causas</span>
+                                                <p className="text-skin-text leading-relaxed">{aiAnalysis.causas}</p>
                                             </div>
                                         )}
                                         {aiAnalysis.sugestoes && (
                                             <div className="space-y-1">
-                                                <span className="font-bold block uppercase text-[10px] text-muted-foreground">Peças/Serviços Sugeridos</span>
-                                                <p className="text-foreground leading-relaxed">{aiAnalysis.sugestoes}</p>
+                                                <span className="font-bold block uppercase text-[10px] text-skin-text-muted">Peças/Serviços Sugeridos</span>
+                                                <p className="text-skin-text leading-relaxed">{aiAnalysis.sugestoes}</p>
                                             </div>
                                         )}
                                         {aiAnalysis.complexidade && (
                                             <div className="space-y-1">
-                                                <span className="font-bold block uppercase text-[10px] text-muted-foreground">Complexidade Estimada</span>
-                                                <span className={`px-2 py-0.5 rounded-full inline-block font-medium ${aiAnalysis.complexidade === 'Baixo' ? 'bg-green-500/10 text-green-600' :
-                                                    aiAnalysis.complexidade === 'Médio' ? 'bg-yellow-500/10 text-yellow-600' :
-                                                        'bg-red-500/10 text-red-600'
+                                                <span className="font-bold block uppercase text-[10px] text-skin-text-muted">Complexidade Estimada</span>
+                                                <span className={`px-2 py-0.5 rounded-full inline-block font-medium ${aiAnalysis.complexidade === 'Baixo' ? 'bg-skin-success/10 text-skin-success' :
+                                                    aiAnalysis.complexidade === 'Médio' ? 'bg-skin-warning/10 text-skin-warning' :
+                                                        'bg-skin-danger/10 text-skin-danger'
                                                     }`}>
                                                     {aiAnalysis.complexidade}
                                                 </span>
@@ -1492,7 +1492,7 @@ export default function EditOrdemPage() {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="mt-3 h-7 text-[10px] text-muted-foreground hover:text-foreground p-0 h-auto"
+                                        className="mt-3 h-7 text-[10px] text-skin-text-muted hover:text-skin-text p-0 h-auto"
                                         onClick={() => setAiAnalysis(null)}
                                     >
                                         Limpar sugestão
@@ -1576,7 +1576,7 @@ export default function EditOrdemPage() {
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-2">
                                     Acessórios / Outros
-                                    <span className="text-[10px] text-muted-foreground font-normal">(Cabos, capas, carregador...)</span>
+                                    <span className="text-[10px] text-skin-text-muted font-normal">(Cabos, capas, carregador...)</span>
                                 </Label>
                                 <Textarea
                                     placeholder="Descreva o que foi deixado com o equipamento..."
@@ -1588,7 +1588,7 @@ export default function EditOrdemPage() {
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-2">
                                     Estado de Entrega / Obs
-                                    <span className="text-[10px] text-muted-foreground font-normal">(Riscos, trincas, marcas...)</span>
+                                    <span className="text-[10px] text-skin-text-muted font-normal">(Riscos, trincas, marcas...)</span>
                                 </Label>
                                 <Textarea
                                     placeholder="Descreva o estado físico do equipamento..."
@@ -1662,7 +1662,7 @@ export default function EditOrdemPage() {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <PopoverTrigger asChild>
-                                                <Info className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" />
+                                                <Info className="h-4 w-4 text-skin-text-muted cursor-pointer hover:text-skin-text transition-colors" />
                                             </PopoverTrigger>
                                         </TooltipTrigger>
                                         <TooltipContent>
@@ -1759,8 +1759,8 @@ export default function EditOrdemPage() {
                                             />
                                             {debouncedSearch.length >= 2 && filteredProducts.length === 0 && !itemTemp.produto_id && (
                                                 <div className="absolute right-3 top-2.5 flex items-center gap-2" title="Item personalizado (não cadastrado)">
-                                                    <span className="text-xs text-blue-500 font-medium hidden sm:inline-block">Item personalizado</span>
-                                                    <Info className="h-5 w-5 text-blue-500 cursor-help" />
+                                                    <span className="text-xs text-skin-info font-medium hidden sm:inline-block">Item personalizado</span>
+                                                    <Info className="h-5 w-5 text-skin-info cursor-help" />
                                                 </div>
                                             )}
                                         </div>
@@ -1782,8 +1782,8 @@ export default function EditOrdemPage() {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="p-3 text-sm text-muted-foreground bg-blue-50/50 flex items-center gap-2">
-                                                    <Info className="h-4 w-4 text-blue-500" />
+                                                <div className="p-3 text-sm text-skin-text-muted bg-skin-info/10/50 flex items-center gap-2">
+                                                    <Info className="h-4 w-4 text-skin-info" />
                                                     <span>Item personalizado (não cadastrado)</span>
                                                 </div>
                                             )}
@@ -1795,7 +1795,7 @@ export default function EditOrdemPage() {
                             <div className="md:col-span-3 space-y-2">
                                 <Label>Valor Unit.</Label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-muted-foreground">R$</span>
+                                    <span className="absolute left-3 top-2.5 text-skin-text-muted">R$</span>
                                     <Input
                                         type="number"
                                         min="0"
@@ -2034,7 +2034,7 @@ export default function EditOrdemPage() {
                 <Card className="shadow-sm border-2">
                     <CardHeader className="bg-skin-background-elevated/50 pb-4">
                         <div className="flex items-center gap-2">
-                            <MessageCircle className="h-5 w-5 text-green-600" />
+                            <MessageCircle className="h-5 w-5 text-skin-success" />
                             <CardTitle className="text-lg">Historico de WhatsApp</CardTitle>
                             <TooltipProvider>
                                 <Popover>
@@ -2090,15 +2090,15 @@ export default function EditOrdemPage() {
             {/* Business Rules Summary Footer */}
             <div className="grid grid-cols-1 gap-6 rounded-xl border border-dashed border-skin-border bg-skin-background-elevated/50 p-6 text-sm text-skin-text-muted md:grid-cols-3">
                 <div className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-5 w-5 text-skin-success shrink-0" />
                     <p><strong>Edição:</strong> Apenas campos editáveis podem ser alterados. O cliente permanece fixo.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-blue-500 shrink-0" />
+                    <Info className="h-5 w-5 text-skin-info shrink-0" />
                     <p><strong>Status:</strong> Apenas transições válidas são permitidas conforme regras de negócio.</p>
                 </div>
                 <div className="flex gap-3">
-                    <AlertCircle className="h-5 w-5 text-orange-500 shrink-0" />
+                    <AlertCircle className="h-5 w-5 text-skin-warning shrink-0" />
                     <p><strong>Histórico:</strong> Todas as alterações são registradas no histórico da ordem.</p>
                 </div>
             </div>
@@ -2109,7 +2109,7 @@ export default function EditOrdemPage() {
                     <div className="relative max-w-4xl max-h-[90vh] p-2 animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
 
                         <button
-                            className="absolute -top-4 -right-4 bg-white text-black rounded-full p-1 shadow-lg hover:bg-gray-200 transition-colors z-10"
+                            className="absolute -top-4 -right-4 bg-white text-black rounded-full p-1 shadow-lg hover:bg-skin-text-muted/10 transition-colors z-10"
                             onClick={() => setPreviewImage(null)}
                         >
                             <X className="h-6 w-6" />

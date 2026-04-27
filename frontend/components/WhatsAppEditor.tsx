@@ -154,7 +154,7 @@ export function WhatsAppEditor({
             {/* Variáveis */}
             {variables.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="text-xs text-skin-text-muted flex items-center gap-1">
                         <Variable className="h-3 w-3" />
                         Variáveis:
                     </span>
@@ -171,7 +171,7 @@ export function WhatsAppEditor({
                 </div>
             )}
 
-            <div className="text-xs text-muted-foreground bg-muted p-2 rounded border mt-2">
+            <div className="text-xs text-skin-text-muted bg-muted p-2 rounded border mt-2">
                 <p className="font-semibold mb-1">Dicas de formatação:</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <span>*negrito*</span>

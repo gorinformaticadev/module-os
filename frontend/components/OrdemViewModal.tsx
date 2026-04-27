@@ -65,9 +65,9 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
 
     const getPrioridadeBadge = (prioridade: string) => {
         const colors: any = {
-            BAIXA: 'bg-green-100 text-green-700 border-green-200',
-            MEDIA: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-            ALTA: 'bg-red-100 text-red-700 border-red-200'
+            BAIXA: 'bg-skin-success/10 text-skin-success border-skin-success',
+            MEDIA: 'bg-skin-warning/10 text-skin-warning border-skin-warning',
+            ALTA: 'bg-skin-danger/10 text-skin-danger border-skin-danger'
         };
         return (
             <Badge variant="outline" className={colors[prioridade] || ''}>
@@ -79,7 +79,7 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-                <DialogHeader className="p-6 pb-2 sticky top-0 bg-background z-10 border-b">
+                <DialogHeader className="p-6 pb-2 sticky top-0 bg-skin-background z-10 border-b">
                     <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
@@ -96,13 +96,13 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                                 </div>
                             </div>
                         </div>
-                        <div className="text-right text-sm text-muted-foreground">
+                        <div className="text-right text-sm text-skin-text-muted">
                             <div className="flex items-center gap-1 justify-end">
                                 <Calendar className="h-4 w-4" />
                                 <span>Abertura: {formatDate(ordem.data_abertura)}</span>
                             </div>
                             {ordem.data_previsao && (
-                                <div className="flex items-center gap-1 justify-end mt-1 font-medium text-orange-600">
+                                <div className="flex items-center gap-1 justify-end mt-1 font-medium text-skin-warning">
                                     <Clock className="h-4 w-4" />
                                     <span>Previsão: {formatDate(ordem.data_previsao)}</span>
                                 </div>
@@ -141,7 +141,7 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                         {/* Cliente Info */}
                         <Card className="border-none shadow-none bg-muted/30">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-semibold uppercase flex items-center gap-2 text-muted-foreground">
+                                <CardTitle className="text-sm font-semibold uppercase flex items-center gap-2 text-skin-text-muted">
                                     <User className="h-4 w-4" />
                                     Dados do Cliente
                                 </CardTitle>
@@ -150,24 +150,24 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                                 <div>
                                     <div className="text-sm font-bold">{ordem.cliente?.name}</div>
                                     {ordem.cliente?.document && (
-                                        <div className="text-xs text-muted-foreground">{ordem.cliente.document}</div>
+                                        <div className="text-xs text-skin-text-muted">{ordem.cliente.document}</div>
                                     )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-sm">
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Telefone</span>
+                                        <span className="text-xs text-skin-text-muted block">Telefone</span>
                                         <span>{ordem.cliente?.phone_primary}</span>
                                     </div>
                                     {ordem.cliente?.phone_secondary && (
                                         <div>
-                                            <span className="text-xs text-muted-foreground block">Tel. Secundário</span>
+                                            <span className="text-xs text-skin-text-muted block">Tel. Secundário</span>
                                             <span className="truncate block">{ordem.cliente.phone_secondary}</span>
                                         </div>
                                     )}
                                 </div>
                                 {ordem.cliente?.address_street && (
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Endereço</span>
+                                        <span className="text-xs text-skin-text-muted block">Endereço</span>
                                         <span className="text-xs">
                                             {ordem.cliente.address_street}, {ordem.cliente.address_number}
                                             {ordem.cliente.address_neighborhood && ` - ${ordem.cliente.address_neighborhood}`}
@@ -181,7 +181,7 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                         {/* Equipamento Info */}
                         <Card className="border-none shadow-none bg-muted/30">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-semibold uppercase flex items-center gap-2 text-muted-foreground">
+                                <CardTitle className="text-sm font-semibold uppercase flex items-center gap-2 text-skin-text-muted">
                                     <Monitor className="h-4 w-4" />
                                     Equipamento
                                 </CardTitle>
@@ -189,19 +189,19 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                             <CardContent className="space-y-3">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Tipo</span>
+                                        <span className="text-xs text-skin-text-muted block">Tipo</span>
                                         <span className="font-medium">{ordem.equipamento_tipo || '-'}</span>
                                     </div>
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Marca/Modelo</span>
+                                        <span className="text-xs text-skin-text-muted block">Marca/Modelo</span>
                                         <span className="font-medium">{ordem.equipamento_marca} {ordem.equipamento_modelo}</span>
                                     </div>
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Número de Série</span>
+                                        <span className="text-xs text-skin-text-muted block">Número de Série</span>
                                         <span>{ordem.equipamento_serie || '-'}</span>
                                     </div>
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Responsável</span>
+                                        <span className="text-xs text-skin-text-muted block">Responsável</span>
                                         <span>{ordem.usuario_responsavel?.name || 'Não atribuído'}</span>
                                     </div>
                                 </div>
@@ -210,13 +210,13 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                                     <div className="flex flex-wrap gap-x-6 gap-y-3 pt-2 border-t border-muted/50">
                                         {ordem.equipamento_acessorios && (
                                             <div className="flex-shrink-0 max-w-[45%]">
-                                                <span className="text-xs text-muted-foreground block">Acessórios / Outros</span>
+                                                <span className="text-xs text-skin-text-muted block">Acessórios / Outros</span>
                                                 <span className="text-xs">{ordem.equipamento_acessorios}</span>
                                             </div>
                                         )}
                                         {ordem.equipamento_estado && (
                                             <div className="flex-shrink-0 max-w-[45%]">
-                                                <span className="text-xs text-muted-foreground block">Estado de Entrega / Obs</span>
+                                                <span className="text-xs text-skin-text-muted block">Estado de Entrega / Obs</span>
                                                 <span className="text-xs">{ordem.equipamento_estado}</span>
                                             </div>
                                         )}
@@ -228,31 +228,31 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
 
                     {/* Detalhes do Serviço */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold uppercase text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm font-semibold uppercase text-skin-text-muted">
                             <Wrench className="h-4 w-4" />
                             Descrição do Serviço
                         </div>
                         <div className="bg-muted/30 rounded-lg p-4 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4 border-muted">
                                 <div>
-                                    <span className="text-xs text-muted-foreground block">Tipo de Serviço</span>
+                                    <span className="text-xs text-skin-text-muted block">Tipo de Serviço</span>
                                     <span className="font-medium">{ordem.tipo_servico}</span>
                                 </div>
                                 {ordem.formatacao_so && (
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Sistema Operacional</span>
+                                        <span className="text-xs text-skin-text-muted block">Sistema Operacional</span>
                                         <span className="font-medium">{ordem.formatacao_so}</span>
                                     </div>
                                 )}
                                 {ordem.formatacao_senha && (
                                     <div>
-                                        <span className="text-xs text-muted-foreground block">Senha</span>
+                                        <span className="text-xs text-skin-text-muted block">Senha</span>
                                         <span className="font-medium">{ordem.formatacao_senha}</span>
                                     </div>
                                 )}
                                 {ordem.formatacao_backup !== undefined && (
                                     <div className="md:col-span-2 flex flex-col gap-1">
-                                        <span className="text-xs text-muted-foreground block font-bold uppercase text-[10px]">Backup</span>
+                                        <span className="text-xs text-skin-text-muted block font-bold uppercase text-[10px]">Backup</span>
                                         <div className="flex items-start gap-2">
                                             <Badge variant={ordem.formatacao_backup ? 'default' : 'secondary'} className="h-5 shrink-0">
                                                 {ordem.formatacao_backup ? 'Sim' : 'Não'}
@@ -269,7 +269,7 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                             </div>
 
                             <div>
-                                <span className="text-xs text-muted-foreground block mb-1 font-semibold uppercase">Defeito/Solicitação</span>
+                                <span className="text-xs text-skin-text-muted block mb-1 font-semibold uppercase">Defeito/Solicitação</span>
                                 <div
                                     className="text-sm prose prose-sm max-w-none"
                                     dangerouslySetInnerHTML={{ __html: ordem.descricao }}
@@ -279,9 +279,9 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                             {ordem.laudo_tecnico && (
                                 <div>
                                     <Separator className="my-4" />
-                                    <span className="text-xs text-muted-foreground block mb-1 font-semibold uppercase">Laudo Técnico</span>
+                                    <span className="text-xs text-skin-text-muted block mb-1 font-semibold uppercase">Laudo Técnico</span>
                                     <div
-                                        className="text-sm prose prose-sm max-w-none bg-blue-50/50 p-3 rounded"
+                                        className="text-sm prose prose-sm max-w-none bg-skin-info/10/50 p-3 rounded"
                                         dangerouslySetInnerHTML={{ __html: ordem.laudo_tecnico }}
                                     />
                                 </div>
@@ -292,7 +292,7 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                     {/* Produtos e Serviços (Itens) */}
                     {ordem.itens && ordem.itens.length > 0 && (
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-sm font-semibold uppercase text-muted-foreground">
+                            <div className="flex items-center gap-2 text-sm font-semibold uppercase text-skin-text-muted">
                                 <Package className="h-4 w-4" />
                                 Produtos e Serviços
                             </div>
@@ -318,7 +318,7 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                                     </tbody>
                                     <tfoot className="bg-muted/20 font-bold">
                                         <tr>
-                                            <td colSpan={3} className="px-4 py-3 text-right text-muted-foreground">VALOR TOTAL DA OS:</td>
+                                            <td colSpan={3} className="px-4 py-3 text-right text-skin-text-muted">VALOR TOTAL DA OS:</td>
                                             <td className="px-4 py-3 text-right text-primary text-lg">
                                                 {formatCurrency(ordem.valor_servico)}
                                             </td>
@@ -334,12 +334,12 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                         {/* Observações do Cliente */}
                         {ordem.observacoes_cliente && (
                             <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-sm font-semibold uppercase text-muted-foreground">
+                                <div className="flex items-center gap-2 text-sm font-semibold uppercase text-skin-text-muted">
                                     <AlertCircle className="h-4 w-4" />
                                     Observações do Cliente
                                 </div>
                                 <div
-                                    className="bg-yellow-50/50 border border-yellow-100 rounded-lg p-3 text-sm text-yellow-800 italic prose prose-sm max-w-none"
+                                    className="bg-skin-warning/10/50 border border-skin-warning rounded-lg p-3 text-sm text-skin-warning-hover italic prose prose-sm max-w-none"
                                     dangerouslySetInnerHTML={{ __html: ordem.observacoes_cliente }}
                                 />
                             </div>
@@ -348,12 +348,12 @@ export const OrdemViewModal: React.FC<OrdemViewModalProps> = ({ isOpen, onClose,
                         {/* Observações Internas */}
                         {ordem.observacoes_internas && (
                             <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-sm font-semibold uppercase text-muted-foreground">
+                                <div className="flex items-center gap-2 text-sm font-semibold uppercase text-skin-text-muted">
                                     <Search className="h-4 w-4" />
                                     Observações Internas (Uso Técnico)
                                 </div>
                                 <div
-                                    className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 text-sm text-blue-800 italic prose prose-sm max-w-none"
+                                    className="bg-skin-info/10/50 border border-skin-info rounded-lg p-3 text-sm text-skin-info-hover italic prose prose-sm max-w-none"
                                     dangerouslySetInnerHTML={{ __html: ordem.observacoes_internas }}
                                 />
                             </div>

@@ -11,7 +11,7 @@ interface PermissionDeniedProps {
 
 // Componentes UI simples
 const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>{children}</div>
+  <div className={`bg-white border border-skin-border rounded-lg shadow-sm ${className}`}>{children}</div>
 );
 
 const CardHeader = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -23,7 +23,7 @@ const CardTitle = ({ children, className = "" }: { children: React.ReactNode; cl
 );
 
 const CardDescription = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <p className={`text-sm text-gray-600 mt-1 ${className}`}>{children}</p>
+  <p className={`text-sm text-skin-text-muted mt-1 ${className}`}>{children}</p>
 );
 
 const CardContent = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -38,8 +38,8 @@ const Button = ({ children, onClick, variant = "default", className = "" }: {
 }) => {
   const baseClasses = "px-4 py-2 rounded-md font-medium text-sm transition-colors";
   const variantClasses = variant === "outline" 
-    ? "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50" 
-    : "bg-blue-600 text-white hover:bg-blue-700";
+    ? "border border-skin-text-muted bg-white text-skin-text-muted hover:bg-skin-surface" 
+    : "bg-skin-primary text-white hover:bg-skin-primary-hover";
   
   return (
     <button 
@@ -75,11 +75,11 @@ export const PermissionDenied: React.FC<PermissionDeniedProps> = ({
       <Card className="w-full max-w-md text-center">
         <CardHeader className="pb-4">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-red-100 rounded-full">
-              <ShieldX className="h-8 w-8 text-red-600" />
+            <div className="p-3 bg-skin-danger/10 rounded-full">
+              <ShieldX className="h-8 w-8 text-skin-danger" />
             </div>
           </div>
-          <CardTitle className="text-xl text-red-600">
+          <CardTitle className="text-xl text-skin-danger">
             Acesso Negado
           </CardTitle>
           <CardDescription className="text-base">
@@ -89,12 +89,12 @@ export const PermissionDenied: React.FC<PermissionDeniedProps> = ({
         
         <CardContent className="pt-0">
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-skin-text-muted">
               Entre em contato com o administrador do sistema para solicitar as permissões necessárias.
             </p>
             
             {(resource || action) && (
-              <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-500">
+              <div className="bg-skin-surface p-3 rounded-lg text-xs text-skin-text-muted">
                 <div className="space-y-1">
                   {resource && (
                     <div>

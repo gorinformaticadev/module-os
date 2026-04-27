@@ -102,7 +102,7 @@ export function RichTextEditor({ value, onChange, disabled }: RichTextEditorProp
     }
 
     return (
-        <div className="flex flex-col gap-2 rounded-md border border-input bg-card">
+        <div className="flex flex-col gap-2 rounded-md border border-skin-input-border bg-card">
             <div className="flex flex-wrap items-center gap-1 border-b p-2">
                 <Toggle
                     size="sm"
@@ -154,7 +154,7 @@ export function RichTextEditor({ value, onChange, disabled }: RichTextEditorProp
                             {TEXT_COLOR_PRESETS.map((color) => (
                                 <button
                                     key={color}
-                                    className="h-6 w-6 rounded-full border border-gray-300"
+                                    className="h-6 w-6 rounded-full border border-skin-text-muted"
                                     style={{ backgroundColor: color }}
                                     onClick={() => editor.chain().focus().setColor(color).run()}
                                 />

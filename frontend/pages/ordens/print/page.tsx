@@ -190,7 +190,7 @@ export default function PrintPreviewPage() {
                 <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-                    <p className="text-muted-foreground">Carregando dados para impressão...</p>
+                    <p className="text-skin-text-muted">Carregando dados para impressão...</p>
                 </div>
             </div>
             </ModulePageGuard>
@@ -203,7 +203,7 @@ export default function PrintPreviewPage() {
                 <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-4 text-destructive">Erro</h2>
-                    <p className="text-muted-foreground mb-4">{error || 'Dados não encontrados'}</p>
+                    <p className="text-skin-text-muted mb-4">{error || 'Dados não encontrados'}</p>
                     <Button onClick={() => router.push('/modules/ordem_servico/pages/ordens')}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Voltar para Ordens
@@ -217,7 +217,7 @@ export default function PrintPreviewPage() {
     return (
         <ModulePageGuard resource="orders" action="view_details">
             <div>
-            <div className="no-print sticky top-0 z-50 bg-background border-b p-4 flex justify-between items-center shadow-sm">
+            <div className="no-print sticky top-0 z-50 bg-skin-background border-b p-4 flex justify-between items-center shadow-sm">
                 <Button variant="outline" onClick={() => router.push('/modules/ordem_servico/pages/ordens')}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Voltar

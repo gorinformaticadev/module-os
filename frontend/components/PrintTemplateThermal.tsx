@@ -74,9 +74,9 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
     };
 
     return (
-        <div className="thermal-container font-sans text-[11px] leading-tight text-black bg-white p-2 max-w-[80mm] mx-auto border border-gray-100">
+        <div className="thermal-container font-sans text-[11px] leading-tight text-black bg-white p-2 max-w-[80mm] mx-auto border border-skin-text-muted">
             {/* Header: Logo e Info lado a lado */}
-            <div className="flex items-start mb-3 border-b border-gray-400 pb-2">
+            <div className="flex items-start mb-3 border-b border-skin-text-muted pb-2">
                 <div className="w-[80px] mr-2">
                     {tenantInfo.logo_url && (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -126,7 +126,7 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
             <div className="flex flex-wrap items-baseline gap-1 mb-3">
                 <span className="font-bold text-[12px]">{ordem.cliente?.name || 'Não informado'}</span>
                 <span className="font-bold text-[11px]"> | Tel: </span>
-                <span className="text-[11px] border-b border-dashed border-red-500 text-red-600">{ordem.cliente?.phone_primary}</span>
+                <span className="text-[11px] border-b border-dashed border-skin-danger text-skin-danger">{ordem.cliente?.phone_primary}</span>
             </div>
 
             {/* Section: EQUIPAMENTO */}
@@ -140,7 +140,7 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
                 {ordem.equipamento_serie && <span> - S/N: {ordem.equipamento_serie}</span>}
             </div>
             {(ordem.equipamento_acessorios || ordem.equipamento_estado) && (
-                <div className="text-[9px] mb-3 border border-dashed border-gray-300 p-1 flex flex-wrap gap-x-3 gap-y-1">
+                <div className="text-[9px] mb-3 border border-dashed border-skin-text-muted p-1 flex flex-wrap gap-x-3 gap-y-1">
                     {ordem.equipamento_acessorios && (
                         <div className="flex-shrink-0">
                             <span className="font-bold">Acessórios / Outros:</span> {ordem.equipamento_acessorios}
@@ -156,9 +156,9 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
 
             {/* Section: SERVIÇO/DEFEITO */}
             <div className="font-bold text-[11px] text-justify mb-3 whitespace-pre-wrap">
-                <div className="mb-1 border-b border-dashed border-gray-300 pb-1">{ordem.tipo_servico || 'Tipo de serviço não informado'}</div>
+                <div className="mb-1 border-b border-dashed border-skin-text-muted pb-1">{ordem.tipo_servico || 'Tipo de serviço não informado'}</div>
                 {(ordem.formatacao_so || ordem.formatacao_backup !== undefined || ordem.formatacao_senha) && (
-                    <div className="text-[10px] mb-2 p-1 bg-gray-50 border border-gray-200 font-normal">
+                    <div className="text-[10px] mb-2 p-1 bg-skin-surface border border-skin-border font-normal">
                         {ordem.formatacao_so && <div><span className="font-bold">S.O.:</span> {ordem.formatacao_so}</div>}
                         {ordem.formatacao_backup !== undefined && (
                             <div className="mt-1">
@@ -205,7 +205,7 @@ export const PrintTemplateThermal: React.FC<PrintTemplateThermalProps> = ({ orde
                     ))}
                 </div>
             ) : (
-                <div className="text-center text-gray-500 italic mb-2">Nenhum item cadastrado</div>
+                <div className="text-center text-skin-text-muted italic mb-2">Nenhum item cadastrado</div>
             )}
 
             {/* Pagamento e QR Code */}

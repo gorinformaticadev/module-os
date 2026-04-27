@@ -416,7 +416,7 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                     {/* Imagem de Perfil */}
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative group">
-                            <div className="h-32 w-32 rounded-3xl bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
+                            <div className="h-32 w-32 rounded-3xl bg-skin-background/10 dark:bg-skin-background-hover border-2 border-dashed border-skin-background dark:border-skin-background flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50 shadow-inner">
                                 {formData.image_url ? (
                                     <>
                                         <ProtectedModuleImage
@@ -431,13 +431,13 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                                    <div className="flex flex-col items-center gap-1 text-skin-text-muted">
                                         {compressing ? (
                                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                         ) : (
                                             <>
                                                 <User className="h-12 w-12 opacity-20" />
-                                                <span className="text-[10px] font-medium uppercase tracking-tighter text-slate-400">Sem Foto</span>
+                                                <span className="text-[10px] font-medium uppercase tracking-tighter text-skin-background">Sem Foto</span>
                                             </>
                                         )}
                                     </div>
@@ -461,15 +461,15 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 onChange={handleImageUpload}
                             />
                         </div>
-                        <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest font-bold">Foto do Cliente</p>
+                        <p className="text-[10px] text-skin-text-muted text-center uppercase tracking-widest font-bold">Foto do Cliente</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2 space-y-2">
-                            <Label htmlFor="edit-client-name" className="text-xs font-bold uppercase tracking-wider text-slate-500">Nome Completo *</Label>
+                            <Label htmlFor="edit-client-name" className="text-xs font-bold uppercase tracking-wider text-skin-background">Nome Completo *</Label>
                             <Input
                                 id="edit-client-name"
-                                className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                 value={formData.name}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Nome do cliente"
@@ -477,10 +477,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="edit-client-document" className="text-xs font-bold uppercase tracking-wider text-slate-500">CPF / CNPJ</Label>
+                            <Label htmlFor="edit-client-document" className="text-xs font-bold uppercase tracking-wider text-skin-background">CPF / CNPJ</Label>
                             <Input
                                 id="edit-client-document"
-                                className={`h-11 bg-slate-50/50 dark:bg-slate-900/50 ${validationErrors.document ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-800'}`}
+                                className={`h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 ${validationErrors.document ? 'border-skin-danger focus:ring-skin-danger' : 'border-skin-background dark:border-skin-background'}`}
                                 value={formData.document}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                     const maskedValue = maskDocument(e.target.value);
@@ -491,13 +491,13 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 placeholder="000.000.000-00"
                             />
                             {validationErrors.document && (
-                                <p className="text-[10px] text-red-500 font-bold ml-1">{validationErrors.document}</p>
+                                <p className="text-[10px] text-skin-danger font-bold ml-1">{validationErrors.document}</p>
                             )}
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Status da Conta</Label>
-                            <div className="flex items-center space-x-3 h-11 px-3 rounded-lg bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-skin-background">Status da Conta</Label>
+                            <div className="flex items-center space-x-3 h-11 px-3 rounded-lg bg-skin-background/50 dark:bg-skin-background-hover/50 border border-skin-background dark:border-skin-background">
                                 <Switch
                                     id="edit-client-active"
                                     checked={formData.is_active}
@@ -508,10 +508,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="edit-client-phone1" className="text-xs font-bold uppercase tracking-wider text-slate-500">Telefone Principal *</Label>
+                            <Label htmlFor="edit-client-phone1" className="text-xs font-bold uppercase tracking-wider text-skin-background">Telefone Principal *</Label>
                             <Input
                                 id="edit-client-phone1"
-                                className={`h-11 bg-slate-50/50 dark:bg-slate-900/50 ${validationErrors.phone_primary ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-800'}`}
+                                className={`h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 ${validationErrors.phone_primary ? 'border-skin-danger focus:ring-skin-danger' : 'border-skin-background dark:border-skin-background'}`}
                                 value={formData.phone_primary}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                     const maskedValue = maskPhone(e.target.value);
@@ -522,15 +522,15 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 placeholder="(00) 00000-0000"
                             />
                             {validationErrors.phone_primary && (
-                                <p className="text-[10px] text-red-500 font-bold ml-1">{validationErrors.phone_primary}</p>
+                                <p className="text-[10px] text-skin-danger font-bold ml-1">{validationErrors.phone_primary}</p>
                             )}
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="edit-client-phone2" className="text-xs font-bold uppercase tracking-wider text-slate-500">Telefone Secundário</Label>
+                            <Label htmlFor="edit-client-phone2" className="text-xs font-bold uppercase tracking-wider text-skin-background">Telefone Secundário</Label>
                             <Input
                                 id="edit-client-phone2"
-                                className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                 value={formData.phone_secondary}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, phone_secondary: maskPhone(e.target.value) })}
                                 placeholder="(00) 00000-0000"
@@ -538,11 +538,11 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="edit-client-email" className="text-xs font-bold uppercase tracking-wider text-slate-500">Email</Label>
+                            <Label htmlFor="edit-client-email" className="text-xs font-bold uppercase tracking-wider text-skin-background">Email</Label>
                             <Input
                                 id="edit-client-email"
                                 type="email"
-                                className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                 value={formData.email}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
                                 placeholder="cliente@email.com"
@@ -550,10 +550,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                         </div>
 
                         <div className="md:col-span-2 space-y-2">
-                            <Label htmlFor="edit-client-observations" className="text-xs font-bold uppercase tracking-wider text-slate-500">Observações Gerais</Label>
+                            <Label htmlFor="edit-client-observations" className="text-xs font-bold uppercase tracking-wider text-skin-background">Observações Gerais</Label>
                             <Textarea
                                 id="edit-client-observations"
-                                className="min-h-[100px] bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 resize-none"
+                                className="min-h-[100px] bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background resize-none"
                                 value={formData.observations}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, observations: e.target.value })}
                                 placeholder="Notas sobre o cliente, preferências, histórico relevante..."
@@ -564,10 +564,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                             <Button
                                 type="button"
                                 variant="ghost"
-                                className="w-full flex justify-between items-center group hover:bg-slate-100 dark:hover:bg-slate-800"
+                                className="w-full flex justify-between items-center group hover:bg-skin-background/10 dark:hover:bg-skin-background-hover"
                                 onClick={() => setShowAddress(!showAddress)}
                             >
-                                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Informações de Endereço</span>
+                                <span className="text-xs font-bold uppercase tracking-wider text-skin-background">Informações de Endereço</span>
                                 {showAddress ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </Button>
                         </div>
@@ -575,11 +575,11 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                         {showAddress && (
                             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-client-zip" className="text-xs font-bold uppercase tracking-wider text-slate-500">CEP</Label>
+                                    <Label htmlFor="edit-client-zip" className="text-xs font-bold uppercase tracking-wider text-skin-background">CEP</Label>
                                     <div className="flex gap-2">
                                         <Input
                                             id="edit-client-zip"
-                                            className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                            className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                             value={formData.address_zip}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                 const maskedCEP = maskCEP(e.target.value);
@@ -626,10 +626,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-client-street" className="text-xs font-bold uppercase tracking-wider text-slate-500">Rua</Label>
+                                    <Label htmlFor="edit-client-street" className="text-xs font-bold uppercase tracking-wider text-skin-background">Rua</Label>
                                     <Input
                                         id="edit-client-street"
-                                        className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                        className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                         value={formData.address_street}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, address_street: e.target.value })}
                                         placeholder="Rua / Avenida"
@@ -637,10 +637,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-client-number" className="text-xs font-bold uppercase tracking-wider text-slate-500">Número</Label>
+                                    <Label htmlFor="edit-client-number" className="text-xs font-bold uppercase tracking-wider text-skin-background">Número</Label>
                                     <Input
                                         id="edit-client-number"
-                                        className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                        className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                         value={formData.address_number}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, address_number: e.target.value })}
                                         placeholder="123"
@@ -648,10 +648,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-client-complement" className="text-xs font-bold uppercase tracking-wider text-slate-500">Complemento</Label>
+                                    <Label htmlFor="edit-client-complement" className="text-xs font-bold uppercase tracking-wider text-skin-background">Complemento</Label>
                                     <Input
                                         id="edit-client-complement"
-                                        className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                        className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                         value={formData.address_complement}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, address_complement: e.target.value })}
                                         placeholder="Apto, Sala, etc."
@@ -659,10 +659,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-client-neighborhood" className="text-xs font-bold uppercase tracking-wider text-slate-500">Bairro</Label>
+                                    <Label htmlFor="edit-client-neighborhood" className="text-xs font-bold uppercase tracking-wider text-skin-background">Bairro</Label>
                                     <Input
                                         id="edit-client-neighborhood"
-                                        className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                        className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                         value={formData.address_neighborhood}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, address_neighborhood: e.target.value })}
                                         placeholder="Bairro"
@@ -670,10 +670,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-client-city" className="text-xs font-bold uppercase tracking-wider text-slate-500">Cidade</Label>
+                                    <Label htmlFor="edit-client-city" className="text-xs font-bold uppercase tracking-wider text-skin-background">Cidade</Label>
                                     <Input
                                         id="edit-client-city"
-                                        className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                        className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                         value={formData.address_city}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, address_city: e.target.value })}
                                         placeholder="Cidade"
@@ -681,10 +681,10 @@ export default function ClientEditModal({ isOpen, onClose, client, onClientUpdat
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-client-state" className="text-xs font-bold uppercase tracking-wider text-slate-500">UF</Label>
+                                    <Label htmlFor="edit-client-state" className="text-xs font-bold uppercase tracking-wider text-skin-background">UF</Label>
                                     <Input
                                         id="edit-client-state"
-                                        className="h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+                                        className="h-11 bg-skin-background/50 dark:bg-skin-background-hover/50 border-skin-background dark:border-skin-background"
                                         value={formData.address_state}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, address_state: e.target.value })}
                                         placeholder="UF"

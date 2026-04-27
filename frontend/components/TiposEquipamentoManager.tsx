@@ -10,7 +10,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+      className={`rounded-xl border border-skin-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
       {...props}
     />
   )
@@ -33,7 +33,7 @@ CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={`text-xs text-muted-foreground ${className || ''}`} {...props} />
+    <p ref={ref} className={`text-xs text-skin-text-muted ${className || ''}`} {...props} />
   )
 );
 CardDescription.displayName = "CardDescription";
@@ -54,9 +54,9 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
   const variantClasses = {
     default: "bg-primary text-primary-foreground hover:bg-primary/90",
     destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    outline: "border border-skin-input-border bg-skin-background hover:bg-skin-surface-hover hover:text-skin-text",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
+    ghost: "hover:bg-skin-surface-hover hover:text-skin-text hover:shadow-none",
     link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
 
@@ -75,7 +75,7 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
     return (
       <input
         type={type}
-        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
+        className={`flex h-10 w-full rounded-md border border-skin-input-border bg-skin-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-skin-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
         ref={ref}
         {...props}
       />
@@ -238,9 +238,9 @@ export function TiposEquipamentoManager() {
         )}
 
         {loading ? (
-          <div className="text-center py-3 text-muted-foreground text-xs">Carregando...</div>
+          <div className="text-center py-3 text-skin-text-muted text-xs">Carregando...</div>
         ) : tipos.length === 0 ? (
-          <div className="text-center py-3 text-muted-foreground border-2 border-dashed rounded-lg">
+          <div className="text-center py-3 text-skin-text-muted border-2 border-dashed rounded-lg">
             <AlertTriangle className="h-8 w-8 mx-auto mb-1 opacity-50" />
             <p className="text-xs font-medium">Nenhum tipo encontrado</p>
             <p className="text-xs opacity-75">Clique em "Novo Tipo"</p>
@@ -256,11 +256,11 @@ export function TiposEquipamentoManager() {
                 </div>
                 <div className="flex gap-2 ml-2">
                   <Edit2
-                    className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors"
+                    className="h-4 w-4 text-skin-text-muted hover:text-primary cursor-pointer transition-colors"
                     onClick={() => handleEdit(tipo)}
                   />
                   <Trash2
-                    className="h-4 w-4 text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
+                    className="h-4 w-4 text-skin-text-muted hover:text-destructive cursor-pointer transition-colors"
                     onClick={() => handleDelete(tipo.id, tipo.nome)}
                   />
                 </div>

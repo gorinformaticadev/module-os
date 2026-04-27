@@ -149,16 +149,16 @@ export const STATUS_LABELS: Record<StatusOS, string> = {
 };
 
 export const STATUS_COLORS: Record<StatusOS, string> = {
-  [StatusOS.ORCAMENTO]: 'bg-yellow-500',
-  [StatusOS.ABERTA]: 'bg-green-500',
-  [StatusOS.EM_ANALISE]: 'bg-blue-500',
-  [StatusOS.AGUARDANDO_CLIENTE]: 'bg-orange-500',
-  [StatusOS.AGUARDANDO_PECAS]: 'bg-purple-500',
-  [StatusOS.EM_EXECUCAO]: 'bg-indigo-500',
-  [StatusOS.FINALIZADA]: 'bg-gray-500',
-  [StatusOS.CANCELADA]: 'bg-red-500',
-  [StatusOS.RETIRADO]: 'bg-teal-500',
-  [StatusOS.ABANDONADO]: 'bg-stone-500'
+  [StatusOS.ORCAMENTO]: 'bg-skin-warning',
+  [StatusOS.ABERTA]: 'bg-skin-success',
+  [StatusOS.EM_ANALISE]: 'bg-skin-info',
+  [StatusOS.AGUARDANDO_CLIENTE]: 'bg-skin-warning/80',
+  [StatusOS.AGUARDANDO_PECAS]: 'bg-skin-secondary',
+  [StatusOS.EM_EXECUCAO]: 'bg-skin-primary',
+  [StatusOS.FINALIZADA]: 'bg-skin-text-muted',
+  [StatusOS.CANCELADA]: 'bg-skin-danger',
+  [StatusOS.RETIRADO]: 'bg-skin-success/60',
+  [StatusOS.ABANDONADO]: 'bg-skin-border'
 };
 
 export const ORIGEM_LABELS: Record<OrigemSolicitacao, string> = {

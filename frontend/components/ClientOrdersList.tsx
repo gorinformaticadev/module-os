@@ -87,7 +87,7 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
     return (
         <div className="mt-3 p-3 bg-muted/30 rounded-md border border-muted-foreground/20">
             <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-foreground">
+                <h4 className="text-sm font-semibold text-skin-text">
                     Ordens Anteriores ({orders.length})
                 </h4>
                 {loading && (
@@ -110,7 +110,7 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
                     </Button>
                 </div>
             ) : orders.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-2">
+                <p className="text-xs text-skin-text-muted text-center py-2">
                     Nenhuma ordem anterior encontrada.
                 </p>
             ) : (
@@ -118,14 +118,14 @@ export default function ClientOrdersList({ clientId, clientName }: Props) {
                     {orders.map((order) => (
                         <div
                             key={order.id}
-                            className="flex items-center justify-between p-2 bg-background/50 rounded border border-muted-foreground/10 hover:bg-background/80 transition-colors"
+                            className="flex items-center justify-between p-2 bg-skin-background/50 rounded border border-muted-foreground/10 hover:bg-skin-background/80 transition-colors"
                         >
                             <div className="flex flex-col min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                     <span className="font-mono text-xs font-semibold text-primary">
                                         #{order.numero}
                                     </span>
-                                    <span className="text-xs text-muted-foreground">
+                                    <span className="text-xs text-skin-text-muted">
                                         {formatDate(order.data_abertura)}
                                     </span>
                                 </div>

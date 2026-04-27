@@ -159,7 +159,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
                             Previa de Impressao ({format === 'thermal' ? '80mm' : 'A4'})
                         </DialogTitle>
                         {format === 'a4' && (
-                            <div className="flex items-center gap-2 rounded-md border bg-background/80 px-3 py-2">
+                            <div className="flex items-center gap-2 rounded-md border bg-skin-background/80 px-3 py-2">
                                 <Checkbox
                                     id="economic-print"
                                     checked={economicPrint}
@@ -176,11 +176,11 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-auto p-4 bg-gray-100 flex justify-center">
+                <div className="flex-1 overflow-auto p-4 bg-skin-surface flex justify-center">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center p-12 bg-white rounded-lg shadow w-full">
                             <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                            <p className="text-sm text-muted-foreground">Preparando documento...</p>
+                            <p className="text-sm text-skin-text-muted">Preparando documento...</p>
                         </div>
                     ) : error ? (
                         <div className="p-8 bg-white rounded-lg shadow text-center w-full">
@@ -217,7 +217,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ isOpen, onClose, ordemId
                         variant="outline"
                         onClick={onClose}
                         disabled={loading}
-                        className="flex-1 h-8 text-[10px] border-red-200 text-red-500 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all font-medium px-1"
+                        className="flex-1 h-8 text-[10px] border-skin-danger text-skin-danger hover:bg-skin-danger/10 hover:text-skin-danger hover:border-skin-danger transition-all font-medium px-1"
                     >
                         CANCELAR
                     </Button>

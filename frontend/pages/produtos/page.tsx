@@ -291,7 +291,7 @@ export default function OrdemServicoProdutosPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">Produtos e Serviços</h1>
-                    <p className="text-muted-foreground mt-2">
+                    <p className="text-skin-text-muted mt-2">
                         Gerenciamento de catálogo
                     </p>
                 </div>
@@ -299,7 +299,7 @@ export default function OrdemServicoProdutosPage() {
                 {canCreateProduct && (
                     <Button
                         onClick={handleOpenNew}
-                        className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                        className="gap-2 bg-skin-primary hover:bg-skin-primary-hover text-white"
                     >
                         <Plus className="h-4 w-4" />
                         CADASTRAR NOVO ITEM
@@ -312,7 +312,7 @@ export default function OrdemServicoProdutosPage() {
                     <CardTitle>Lista de Itens</CardTitle>
                     <div className="flex flex-col md:flex-row gap-4 mt-4">
                         <div className="flex-1 relative">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-skin-text-muted" />
                             <Input
                                 placeholder="Pesquisar por Nome ou Código..."
                                 value={searchTerm}
@@ -322,7 +322,7 @@ export default function OrdemServicoProdutosPage() {
                         </div>
                         <div className="w-full md:w-48">
                             <select
-                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full items-center justify-between rounded-md border border-skin-input-border bg-skin-background px-3 py-2 text-sm ring-offset-background placeholder:text-skin-text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 value={filterStatus}
                                 onChange={e => setFilterStatus(e.target.value)}
                             >
@@ -333,7 +333,7 @@ export default function OrdemServicoProdutosPage() {
                         </div>
                         <div className="w-full md:w-48">
                             <select
-                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full items-center justify-between rounded-md border border-skin-input-border bg-skin-background px-3 py-2 text-sm ring-offset-background placeholder:text-skin-text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 value={filterType}
                                 onChange={e => setFilterType(e.target.value)}
                             >
@@ -373,24 +373,24 @@ export default function OrdemServicoProdutosPage() {
                                                         onClick={() => setPreviewImage(p.image_url)}
                                                         fallback={
                                                             <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">
-                                                                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                                <ImageIcon className="h-4 w-4 text-skin-text-muted" />
                                                             </div>
                                                         }
                                                     />
                                                 ) : (
                                                 <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">
-                                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                    <ImageIcon className="h-4 w-4 text-skin-text-muted" />
                                                 </div>
                                                 )}
                                             </td>
                                             <td className="p-3 font-mono">{p.code}</td>
                                             <td className="p-3">{p.name}</td>
                                             <td className="p-3">
-                                                <Badge variant="outline" className={p.type === 'SERVICE' ? 'border-orange-500 text-orange-600' : 'border-blue-500 text-blue-600'}>
+                                                <Badge variant="outline" className={p.type === 'SERVICE' ? 'border-skin-warning text-skin-warning' : 'border-skin-info text-skin-info'}>
                                                     {p.type === 'SERVICE' ? 'Serviço' : 'Produto'}
                                                 </Badge>
                                             </td>
-                                            <td className="p-3 text-green-600 font-bold">
+                                            <td className="p-3 text-skin-success font-bold">
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price)}
                                             </td>
                                             <td className="p-3">
@@ -421,7 +421,7 @@ export default function OrdemServicoProdutosPage() {
                                                     </Button>
                                                 )}
                                                 {canDeleteProduct && (
-                                                    <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(p.id)}>
+                                                    <Button size="icon" variant="ghost" className="text-skin-danger hover:text-skin-danger hover:bg-skin-danger/10" onClick={() => handleDelete(p.id)}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 )}
@@ -430,7 +430,7 @@ export default function OrdemServicoProdutosPage() {
                                     ))}
                                     {filteredProducts.length === 0 && (
                                         <tr>
-                                            <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                                            <td colSpan={7} className="p-8 text-center text-skin-text-muted">
                                                 Nenhum produto cadastrado.
                                             </td>
                                         </tr>
@@ -456,18 +456,18 @@ export default function OrdemServicoProdutosPage() {
                         <div className="flex items-center justify-between border p-3 rounded-md">
                             <Label className="text-base">É um Serviço?</Label>
                             <div className="flex items-center gap-2">
-                                <span className={formData.type === 'PRODUCT' ? 'font-bold' : 'text-muted-foreground'}>Produto</span>
+                                <span className={formData.type === 'PRODUCT' ? 'font-bold' : 'text-skin-text-muted'}>Produto</span>
                                 <Switch
                                     checked={formData.type === 'SERVICE'}
                                     onCheckedChange={c => setFormData({ ...formData, type: c ? 'SERVICE' : 'PRODUCT' })}
                                 />
-                                <span className={formData.type === 'SERVICE' ? 'font-bold' : 'text-muted-foreground'}>Serviço</span>
+                                <span className={formData.type === 'SERVICE' ? 'font-bold' : 'text-skin-text-muted'}>Serviço</span>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Código <span className="text-red-500">*</span></Label>
+                                <Label>Código <span className="text-skin-danger">*</span></Label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={formData.code}
@@ -480,7 +480,7 @@ export default function OrdemServicoProdutosPage() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label>Nome <span className="text-red-500">*</span></Label>
+                                <Label>Nome <span className="text-skin-danger">*</span></Label>
                                 <Input
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -506,7 +506,7 @@ export default function OrdemServicoProdutosPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>Preço Venda (R$) <span className="text-red-500">*</span></Label>
+                                <Label>Preço Venda (R$) <span className="text-skin-danger">*</span></Label>
                                 <Input
                                     value={formData.price}
                                     onChange={handlePriceChange}
@@ -547,10 +547,10 @@ export default function OrdemServicoProdutosPage() {
                                         onChange={handleFileChange}
                                         disabled={uploading || !canUploadProductImage}
                                     />
-                                    {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
-                                    {!canUploadProductImage && <p className="text-xs text-muted-foreground mt-1">Sem permissÃ£o para upload de imagens.</p>}
+                                    {uploading && <p className="text-xs text-skin-text-muted mt-1">Enviando...</p>}
+                                    {!canUploadProductImage && <p className="text-xs text-skin-text-muted mt-1">Sem permissÃ£o para upload de imagens.</p>}
                                     {formData.image_url && formData.image_url.trim() !== '' && (
-                                        <p className="text-xs text-muted-foreground mt-1">
+                                        <p className="text-xs text-skin-text-muted mt-1">
                                             URL: {formData.image_url}
                                         </p>
                                     )}
@@ -591,8 +591,8 @@ export default function OrdemServicoProdutosPage() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 text-center">
-                        <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                        <p className="text-muted-foreground">
+                        <Trash2 className="h-12 w-12 text-skin-danger mx-auto mb-4" />
+                        <p className="text-skin-text-muted">
                             Tem certeza que deseja excluir este item permanentemente?
                             <br />
                             Essa ação não pode ser desfeita.

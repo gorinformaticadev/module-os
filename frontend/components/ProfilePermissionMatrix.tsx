@@ -33,7 +33,7 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+    className={`rounded-xl border border-skin-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
     {...props}
   />
 ));
@@ -69,7 +69,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={`text-sm text-muted-foreground ${className || ''}`}
+    className={`text-sm text-skin-text-muted ${className || ''}`}
     {...props}
   />
 ));
@@ -92,9 +92,9 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
   const variantClasses = {
     default: "bg-primary text-primary-foreground hover:bg-primary/90",
     destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    outline: "border border-skin-input-border bg-skin-background hover:bg-skin-surface-hover hover:text-skin-text",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
+    ghost: "hover:bg-skin-surface-hover hover:text-skin-text hover:shadow-none",
     link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
 
@@ -115,7 +115,7 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
     default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
     secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
     destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-    outline: "text-foreground",
+    outline: "text-skin-text",
   };
 
   return (
@@ -158,7 +158,7 @@ const Tooltip = ({ content, children }: { content: string; children: React.React
         {children}
       </div>
       {isVisible && (
-        <div className="absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg -top-2 left-6 transform -translate-y-full whitespace-nowrap max-w-xs">
+        <div className="absolute z-50 px-3 py-2 text-sm text-white bg-skin-text-muted-hover rounded-lg shadow-lg -top-2 left-6 transform -translate-y-full whitespace-nowrap max-w-xs">
           {content}
           <div className="absolute top-full left-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
         </div>
@@ -488,10 +488,10 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
 
   const getProfileBadgeColor = (profile: Profile) => {
     switch (profile) {
-      case 'admin': return 'bg-purple-500 text-white';
-      case 'technician': return 'bg-blue-500 text-white';
-      case 'attendant': return 'bg-green-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'admin': return 'bg-skin-secondary text-white';
+      case 'technician': return 'bg-skin-info text-white';
+      case 'attendant': return 'bg-skin-success text-white';
+      default: return 'bg-skin-text-muted text-white';
     }
   };
 
@@ -517,12 +517,12 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'Dashboard': return 'bg-blue-500';
-      case 'Ordens de Serviço': return 'bg-green-500';
-      case 'Clientes': return 'bg-purple-500';
-      case 'Produtos': return 'bg-orange-500';
-      case 'Configurações': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'Dashboard': return 'bg-skin-info';
+      case 'Ordens de Serviço': return 'bg-skin-success';
+      case 'Clientes': return 'bg-skin-secondary';
+      case 'Produtos': return 'bg-skin-warning';
+      case 'Configurações': return 'bg-skin-danger';
+      default: return 'bg-skin-text-muted';
     }
   };
 
@@ -537,7 +537,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-skin-info"></div>
         <span className="ml-3">Carregando permissões...</span>
       </div>
     );
@@ -548,7 +548,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Matriz de Permissões por Perfil</h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-skin-text-muted">
             Configure as permissões para cada perfil de usuário no módulo
           </p>
         </div>
@@ -574,24 +574,24 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+              <div className="w-3 h-3 rounded-full bg-skin-secondary"></div>
               <div>
                 <div className="font-medium">Administrador</div>
-                <div className="text-xs text-muted-foreground">Acesso total ao sistema</div>
+                <div className="text-xs text-skin-text-muted">Acesso total ao sistema</div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <div className="w-3 h-3 rounded-full bg-skin-info"></div>
               <div>
                 <div className="font-medium">Técnico</div>
-                <div className="text-xs text-muted-foreground">Executa ordens de serviço</div>
+                <div className="text-xs text-skin-text-muted">Executa ordens de serviço</div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 border rounded-lg">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <div className="w-3 h-3 rounded-full bg-skin-success"></div>
               <div>
                 <div className="font-medium">Atendente</div>
-                <div className="text-xs text-muted-foreground">Atendimento ao cliente</div>
+                <div className="text-xs text-skin-text-muted">Atendimento ao cliente</div>
               </div>
             </div>
           </div>
@@ -643,7 +643,7 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <span className="font-medium text-sm truncate">{rule.name}</span>
                             <Tooltip content={rule.description}>
-                              <Info className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors flex-shrink-0" />
+                              <Info className="h-3 w-3 text-skin-text-muted hover:text-primary transition-colors flex-shrink-0" />
                             </Tooltip>
                           </div>
                         </div>
@@ -695,10 +695,10 @@ export const ProfilePermissionMatrix: React.FC<ProfilePermissionMatrixProps> = (
                     <span className="font-medium">{getProfileLabel(profile)}</span>
                     <Badge variant="outline">{percentage}%</Badge>
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-skin-text-muted">
                     {allowedCount} de {totalCount} permissões
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div className="w-full bg-skin-text-muted/10 rounded-full h-2 mt-2">
                     <div
                       className={`h-2 rounded-full ${getProfileBadgeColor(profile)}`}
                       style={{ width: `${percentage}%` }}

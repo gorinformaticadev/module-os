@@ -34,7 +34,7 @@ function formatRelativeTime(dateString: string): string {
 }
 
 function getStatusColor(status: number): string {
-    return STATUS_COLORS[status as StatusOS] || 'bg-gray-500';
+    return STATUS_COLORS[status as StatusOS] || 'bg-skin-text-muted';
 }
 
 function getStatusLabel(status: number): string {
@@ -72,7 +72,7 @@ export function StatusTimeline({ ordemId, onLoad }: StatusTimelineProps) {
         return (
             <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                <span className="ml-2 text-sm text-muted-foreground">Carregando histórico...</span>
+                <span className="ml-2 text-sm text-skin-text-muted">Carregando histórico...</span>
             </div>
         );
     }
@@ -87,7 +87,7 @@ export function StatusTimeline({ ordemId, onLoad }: StatusTimelineProps) {
 
     if (historico.length === 0) {
         return (
-            <div className="text-center py-4 text-sm text-muted-foreground">
+            <div className="text-center py-4 text-sm text-skin-text-muted">
                 Nenhuma mudança de status registrada.
             </div>
         );
@@ -106,19 +106,19 @@ export function StatusTimeline({ ordemId, onLoad }: StatusTimelineProps) {
 
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm gap-1">
                             {/* Info Principal Linha Única */}
-                            <div className="flex flex-wrap items-center gap-x-2 text-muted-foreground">
-                                <div className="flex items-center gap-1 font-medium text-foreground">
+                            <div className="flex flex-wrap items-center gap-x-2 text-skin-text-muted">
+                                <div className="flex items-center gap-1 font-medium text-skin-text">
                                     <User className="h-3.5 w-3.5" />
                                     <span>{item.usuario_nome || 'Sistema'}</span>
                                 </div>
 
-                                <span className="text-muted-foreground/40 hidden sm:inline">•</span>
+                                <span className="text-skin-text-muted/40 hidden sm:inline">•</span>
 
                                 <div className="flex items-center gap-1.5">
                                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${getStatusColor(item.status_anterior)}`}>
                                         {getStatusLabel(item.status_anterior)}
                                     </span>
-                                    <ArrowRight className="h-3 w-3 text-muted-foreground/60" />
+                                    <ArrowRight className="h-3 w-3 text-skin-text-muted/60" />
                                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${getStatusColor(item.status_novo)}`}>
                                         {getStatusLabel(item.status_novo)}
                                     </span>
@@ -126,14 +126,14 @@ export function StatusTimeline({ ordemId, onLoad }: StatusTimelineProps) {
                             </div>
 
                             {/* Data */}
-                            <div className="text-xs text-muted-foreground/70 whitespace-nowrap">
+                            <div className="text-xs text-skin-text-muted/70 whitespace-nowrap">
                                 {formatRelativeTime(item.data_alteracao)}
                             </div>
                         </div>
 
                         {/* Observações (se houver, logo abaixo) */}
                         {item.observacoes && (
-                            <p className="mt-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1 border border-border/50 inline-block">
+                            <p className="mt-1 text-xs text-skin-text-muted bg-muted/30 rounded px-2 py-1 border border-skin-border/50 inline-block">
                                 {item.observacoes}
                             </p>
                         )}

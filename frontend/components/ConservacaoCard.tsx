@@ -59,7 +59,7 @@ export function ConservacaoCard({ ordemId, valorServico, onConservacaoCalculada 
             <div className="bg-muted/30 rounded-lg border p-4">
                 <div className="flex items-center justify-center py-4">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-                    <span className="ml-2 text-sm text-muted-foreground">Calculando...</span>
+                    <span className="ml-2 text-sm text-skin-text-muted">Calculando...</span>
                 </div>
             </div>
         );
@@ -78,17 +78,17 @@ export function ConservacaoCard({ ordemId, valorServico, onConservacaoCalculada 
     const totalRetirada = valorServico + (conservacao.emAtraso ? conservacao.valorConservacao : 0);
 
     return (
-        <div className={`rounded-lg border p-4 ${conservacao.emAtraso ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' : 'bg-muted/30'}`}>
+        <div className={`rounded-lg border p-4 ${conservacao.emAtraso ? 'bg-skin-warning/10 dark:bg-skin-warning-hover/20 border-skin-warning dark:border-skin-warning' : 'bg-muted/30'}`}>
             <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                     {conservacao.emAtraso ? (
                         <>
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            <span className="text-amber-700 dark:text-amber-400">Taxa de Conservação</span>
+                            <AlertTriangle className="h-4 w-4 text-skin-warning" />
+                            <span className="text-skin-warning-hover dark:text-skin-warning">Taxa de Conservação</span>
                         </>
                     ) : (
                         <>
-                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <Clock className="h-4 w-4 text-skin-text-muted" />
                             <span>Prazo de Retirada</span>
                         </>
                     )}
@@ -98,26 +98,26 @@ export function ConservacaoCard({ ordemId, valorServico, onConservacaoCalculada 
                     className="p-1 hover:bg-muted rounded transition-colors"
                     title="Recalcular"
                 >
-                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                    <RefreshCw className="h-4 w-4 text-skin-text-muted" />
                 </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
                 {/* Data Limite */}
                 <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="h-4 w-4 text-skin-text-muted" />
                     <div>
-                        <p className="text-xs text-muted-foreground">Data Limite</p>
+                        <p className="text-xs text-skin-text-muted">Data Limite</p>
                         <p className="font-medium">{formatDate(conservacao.dataLimite)}</p>
                     </div>
                 </div>
 
                 {/* Dias de Atraso */}
                 <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Clock className="h-4 w-4 text-skin-text-muted" />
                     <div>
-                        <p className="text-xs text-muted-foreground">Dias de Atraso</p>
-                        <p className={`font-medium ${conservacao.emAtraso ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                        <p className="text-xs text-skin-text-muted">Dias de Atraso</p>
+                        <p className={`font-medium ${conservacao.emAtraso ? 'text-skin-warning dark:text-skin-warning' : ''}`}>
                             {conservacao.diasAtraso} dia{conservacao.diasAtraso !== 1 ? 's' : ''}
                         </p>
                     </div>
@@ -125,9 +125,9 @@ export function ConservacaoCard({ ordemId, valorServico, onConservacaoCalculada 
 
                 {/* Valor do Serviço */}
                 <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <DollarSign className="h-4 w-4 text-skin-text-muted" />
                     <div>
-                        <p className="text-xs text-muted-foreground">Valor do Serviço</p>
+                        <p className="text-xs text-skin-text-muted">Valor do Serviço</p>
                         <p className="font-medium">{formatCurrency(valorServico)}</p>
                     </div>
                 </div>
@@ -135,10 +135,10 @@ export function ConservacaoCard({ ordemId, valorServico, onConservacaoCalculada 
                 {/* Taxa de Conservação */}
                 {conservacao.emAtraso && (
                     <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <AlertTriangle className="h-4 w-4 text-skin-warning" />
                         <div>
-                            <p className="text-xs text-muted-foreground">Taxa de Conservação</p>
-                            <p className="font-medium text-amber-600 dark:text-amber-400">
+                            <p className="text-xs text-skin-text-muted">Taxa de Conservação</p>
+                            <p className="font-medium text-skin-warning dark:text-skin-warning">
                                 + {formatCurrency(conservacao.valorConservacao)}
                             </p>
                         </div>
@@ -147,15 +147,15 @@ export function ConservacaoCard({ ordemId, valorServico, onConservacaoCalculada 
             </div>
 
             {/* Total */}
-            <div className="mt-4 pt-3 border-t border-border">
+            <div className="mt-4 pt-3 border-t border-skin-border">
                 <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Total para Retirada</span>
-                    <span className={`text-lg font-bold ${conservacao.emAtraso ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}>
+                    <span className={`text-lg font-bold ${conservacao.emAtraso ? 'text-skin-warning dark:text-skin-warning' : 'text-primary'}`}>
                         {formatCurrency(totalRetirada)}
                     </span>
                 </div>
                 {conservacao.emAtraso && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-skin-text-muted mt-1">
                         Taxa diária: {formatCurrency(conservacao.valorDiario)} x {conservacao.diasAtraso} dias
                     </p>
                 )}
@@ -163,7 +163,7 @@ export function ConservacaoCard({ ordemId, valorServico, onConservacaoCalculada 
 
             {/* Info sobre configuração */}
             {!conservacao.conservacaoHabilitada && (
-                <p className="text-xs text-muted-foreground mt-3 bg-muted/50 rounded p-2">
+                <p className="text-xs text-skin-text-muted mt-3 bg-muted/50 rounded p-2">
                     Taxa de conservação está desabilitada nas configurações.
                 </p>
             )}

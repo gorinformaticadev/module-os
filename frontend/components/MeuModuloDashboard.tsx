@@ -8,12 +8,12 @@ export const moduloOsDashboard: React.FC = () => {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+        <div className="bg-white rounded-lg shadow p-4 border border-skin-border">
           <div className="p-2">
             <h2 className="text-xl font-semibold mb-2">
               Widget do Ordem de Serviços
             </h2>
-            <p className="text-gray-700">
+            <p className="text-skin-text-muted">
               Informações do módulo funcionando perfeitamente.
             </p>
           </div>

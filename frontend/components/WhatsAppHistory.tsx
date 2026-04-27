@@ -55,7 +55,7 @@ export function WhatsAppHistory({ ordemId, refreshKey = 0, compact = false }: Wh
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center py-6 text-sm text-skin-text-muted">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mr-2" />
                 Carregando historico...
             </div>
@@ -68,8 +68,8 @@ export function WhatsAppHistory({ ordemId, refreshKey = 0, compact = false }: Wh
 
     if (historico.length === 0) {
         return (
-            <div className="text-center py-6 text-sm text-muted-foreground">
-                <MessageCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
+            <div className="text-center py-6 text-sm text-skin-text-muted">
+                <MessageCircle className="h-8 w-8 mx-auto mb-2 text-skin-text-muted/60" />
                 Nenhum envio de WhatsApp registrado.
             </div>
         );
@@ -87,18 +87,18 @@ export function WhatsAppHistory({ ordemId, refreshKey = 0, compact = false }: Wh
                                         <User className="h-3.5 w-3.5" />
                                         {item.usuario_nome || 'Sistema'}
                                     </span>
-                                    <span className="inline-flex items-center gap-1 rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 border border-green-100">
+                                    <span className="inline-flex items-center gap-1 rounded bg-skin-success/10 px-2 py-0.5 text-xs font-medium text-skin-success border border-skin-success">
                                         <Send className="h-3 w-3" />
                                         {METHOD_LABELS[item.forma_envio] || item.forma_envio}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1 text-xs text-skin-text-muted">
                                     <History className="h-3.5 w-3.5" />
                                     {formatDateTime(item.created_at)}
                                 </div>
                             </div>
                         </div>
-                        <p className="mt-3 whitespace-pre-wrap rounded bg-muted/30 border px-3 py-2 text-sm text-muted-foreground">
+                        <p className="mt-3 whitespace-pre-wrap rounded bg-muted/30 border px-3 py-2 text-sm text-skin-text-muted">
                             {item.mensagem}
                         </p>
                     </div>

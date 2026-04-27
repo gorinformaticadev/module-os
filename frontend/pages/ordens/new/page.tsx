@@ -637,7 +637,7 @@ export default function NewOrdemRefactoredPage() {
                                     <Button variant="outline" className="w-full gap-2 border-dashed" onClick={() => setIsClientModalOpen(true)}>
                                         <UserPlus className="h-4 w-4" /> Cadastrar Novo Cliente
                                     </Button>
-                                    <p className="text-[10px] text-center text-muted-foreground italic">
+                                    <p className="text-[10px] text-center text-skin-text-muted italic">
                                         Cadastre um novo cliente diretamente aqui.
                                     </p>
                                 </div>
@@ -650,7 +650,7 @@ export default function NewOrdemRefactoredPage() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-6 w-6 rounded-full hover:bg-blue-500/10 hover:text-blue-600 transition-colors"
+                                        className="h-6 w-6 rounded-full hover:bg-skin-info/10 hover:text-skin-info transition-colors"
                                         onClick={() => setIsEditClientModalOpen(true)}
                                         title="Editar cliente"
                                     >
@@ -687,13 +687,13 @@ export default function NewOrdemRefactoredPage() {
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="px-2 py-0.5 rounded text-[10px] bg-primary text-primary-foreground font-bold uppercase tracking-wider">Selecionado</span>
                                             {selectedClient.is_active ? (
-                                                <Badge variant="outline" className="text-[10px] h-5 border-emerald-500/50 text-emerald-600 bg-emerald-50/50">Ativo</Badge>
+                                                <Badge variant="outline" className="text-[10px] h-5 border-skin-success/50 text-skin-success bg-skin-success/10/50">Ativo</Badge>
                                             ) : (
                                                 <Badge variant="destructive" className="text-[10px] h-5">Inativo</Badge>
                                             )}
                                         </div>
-                                        <h3 className="font-bold text-xl leading-tight text-foreground truncate">{selectedClient.name}</h3>
-                                        <p className="text-sm text-muted-foreground font-medium">{selectedClient.document || 'Sem documento'}</p>
+                                        <h3 className="font-bold text-xl leading-tight text-skin-text truncate">{selectedClient.name}</h3>
+                                        <p className="text-sm text-skin-text-muted font-medium">{selectedClient.document || 'Sem documento'}</p>
                                     </div>
                                 </div>
 
@@ -702,7 +702,7 @@ export default function NewOrdemRefactoredPage() {
                                         <Phone className="h-4 w-4 text-primary shrink-0" />
                                         <span className="text-sm font-semibold">{selectedClient.phone_primary}</span>
                                         {selectedClient.phone_secondary && (
-                                            <span className="text-xs text-muted-foreground italic border-l pl-2">{selectedClient.phone_secondary}</span>
+                                            <span className="text-xs text-skin-text-muted italic border-l pl-2">{selectedClient.phone_secondary}</span>
                                         )}
                                     </div>
 
@@ -710,10 +710,10 @@ export default function NewOrdemRefactoredPage() {
                                         <div className="flex items-start gap-2">
                                             <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                                             <div className="text-sm">
-                                                <p className="font-medium text-foreground/80">
+                                                <p className="font-medium text-skin-text/80">
                                                     {selectedClient.address_street}{selectedClient.address_number ? `, ${selectedClient.address_number}` : ''}
                                                 </p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-xs text-skin-text-muted">
                                                     {[selectedClient.address_neighborhood, selectedClient.address_city, selectedClient.address_state]
                                                         .filter(Boolean)
                                                         .join(' - ')}
@@ -730,15 +730,15 @@ export default function NewOrdemRefactoredPage() {
                                                 onClick={() => setIsObservationsExpanded(!isObservationsExpanded)}
                                             >
                                                 <div className="flex items-center gap-2">
-                                                    <AlertCircle className="h-3 w-3 text-amber-500" />
-                                                    <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-tighter">
+                                                    <AlertCircle className="h-3 w-3 text-skin-warning" />
+                                                    <span className="text-[10px] font-bold uppercase text-skin-text-muted tracking-tighter">
                                                         Informações do Cliente
                                                     </span>
                                                 </div>
                                                 {isObservationsExpanded ? (
-                                                    <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                                                    <ChevronUp className="h-3 w-3 text-skin-text-muted" />
                                                 ) : (
-                                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                                    <ChevronDown className="h-3 w-3 text-skin-text-muted" />
                                                 )}
                                             </div>
 
@@ -746,10 +746,10 @@ export default function NewOrdemRefactoredPage() {
                                                 <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                                                     {/* Observações */}
                                                     <div>
-                                                        <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                        <h4 className="text-[9px] font-bold uppercase text-skin-text-muted tracking-wider mb-1">
                                                             Observações
                                                         </h4>
-                                                        <p className="text-xs text-muted-foreground italic">
+                                                        <p className="text-xs text-skin-text-muted italic">
                                                             {selectedClient.observations}
                                                         </p>
                                                     </div>
@@ -758,21 +758,21 @@ export default function NewOrdemRefactoredPage() {
                                                     <div className="grid grid-cols-2 gap-3 pt-2 border-t border-muted-foreground/10">
                                                         {selectedClient.document && (
                                                             <div>
-                                                                <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                                <h4 className="text-[9px] font-bold uppercase text-skin-text-muted tracking-wider mb-1">
                                                                     Documento
                                                                 </h4>
-                                                                <p className="text-xs font-mono text-foreground/80">
+                                                                <p className="text-xs font-mono text-skin-text/80">
                                                                     {selectedClient.document}
                                                                 </p>
                                                             </div>
                                                         )}
 
                                                         <div>
-                                                            <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                            <h4 className="text-[9px] font-bold uppercase text-skin-text-muted tracking-wider mb-1">
                                                                 Status
                                                             </h4>
                                                             <div className="flex items-center gap-1">
-                                                                <div className={`h-2 w-2 rounded-full ${selectedClient.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
+                                                                <div className={`h-2 w-2 rounded-full ${selectedClient.is_active ? 'bg-skin-success' : 'bg-skin-danger'}`} />
                                                                 <span className="text-xs font-medium">
                                                                     {selectedClient.is_active ? 'Ativo' : 'Inativo'}
                                                                 </span>
@@ -781,10 +781,10 @@ export default function NewOrdemRefactoredPage() {
 
                                                         {selectedClient.phone_secondary && (
                                                             <div>
-                                                                <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                                <h4 className="text-[9px] font-bold uppercase text-skin-text-muted tracking-wider mb-1">
                                                                     Tel. Secundário
                                                                 </h4>
-                                                                <p className="text-xs text-foreground/80">
+                                                                <p className="text-xs text-skin-text/80">
                                                                     {selectedClient.phone_secondary}
                                                                 </p>
                                                             </div>
@@ -792,10 +792,10 @@ export default function NewOrdemRefactoredPage() {
 
                                                         {(selectedClient.address_zip || selectedClient.address_complement) && (
                                                             <div>
-                                                                <h4 className="text-[9px] font-bold uppercase text-muted-foreground tracking-wider mb-1">
+                                                                <h4 className="text-[9px] font-bold uppercase text-skin-text-muted tracking-wider mb-1">
                                                                     Detalhes Endereço
                                                                 </h4>
-                                                                <div className="text-xs text-foreground/80 space-y-0.5">
+                                                                <div className="text-xs text-skin-text/80 space-y-0.5">
                                                                     {selectedClient.address_zip && (
                                                                         <p>CEP: {selectedClient.address_zip}</p>
                                                                     )}
@@ -808,7 +808,7 @@ export default function NewOrdemRefactoredPage() {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <p className="text-xs text-muted-foreground italic line-clamp-2 mt-2">
+                                                <p className="text-xs text-skin-text-muted italic line-clamp-2 mt-2">
                                                     {selectedClient.observations}
                                                 </p>
                                             )}
@@ -847,7 +847,7 @@ export default function NewOrdemRefactoredPage() {
                                         {tiposServico.map((tipo) => (
                                             <SelectItem key={tipo.id} value={tipo.nome}>
                                                 {tipo.nome}
-                                                {tipo.is_default && <span className="text-xs text-muted-foreground ml-2">(Padrão)</span>}
+                                                {tipo.is_default && <span className="text-xs text-skin-text-muted ml-2">(Padrão)</span>}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -862,8 +862,8 @@ export default function NewOrdemRefactoredPage() {
                                 >
                                     <SelectTrigger className={
                                         formData.status === 0
-                                            ? "border-yellow-500/50 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400"
-                                            : "border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400"
+                                            ? "border-skin-warning/50 bg-skin-warning/10 text-skin-warning dark:text-skin-warning"
+                                            : "border-skin-success/50 bg-skin-success/10 text-skin-success dark:text-skin-success"
                                     }>
                                         <SelectValue />
                                     </SelectTrigger>
@@ -873,7 +873,7 @@ export default function NewOrdemRefactoredPage() {
                                     </SelectContent>
                                 </Select>
                                 {formData.status === 0 && (
-                                    <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-medium">📌 Notas: Não gera faturamento nem compromisso imediato.</p>
+                                    <p className="text-[10px] text-skin-warning dark:text-skin-warning font-medium">📌 Notas: Não gera faturamento nem compromisso imediato.</p>
                                 )}
                             </div>
 
@@ -922,7 +922,7 @@ export default function NewOrdemRefactoredPage() {
                                         {technicians.map(t => (
                                             <SelectItem key={t.id} value={t.id}>
                                                 {t.name}
-                                                {t.email && <span className="text-xs text-muted-foreground ml-2">({t.email})</span>}
+                                                {t.email && <span className="text-xs text-skin-text-muted ml-2">({t.email})</span>}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -1054,29 +1054,29 @@ export default function NewOrdemRefactoredPage() {
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                                             <div className="space-y-1">
-                                                <span className="font-bold block uppercase text-[10px] text-muted-foreground">Resumo Técnico</span>
-                                                <p className="text-foreground leading-relaxed">
+                                                <span className="font-bold block uppercase text-[10px] text-skin-text-muted">Resumo Técnico</span>
+                                                <p className="text-skin-text leading-relaxed">
                                                     {typeof aiAnalysis === 'string' ? aiAnalysis : aiAnalysis.resumo || aiAnalysis.text}
                                                 </p>
                                             </div>
                                             {aiAnalysis.causas && (
                                                 <div className="space-y-1">
-                                                    <span className="font-bold block uppercase text-[10px] text-muted-foreground">Possíveis Causas</span>
-                                                    <p className="text-foreground leading-relaxed">{aiAnalysis.causas}</p>
+                                                    <span className="font-bold block uppercase text-[10px] text-skin-text-muted">Possíveis Causas</span>
+                                                    <p className="text-skin-text leading-relaxed">{aiAnalysis.causas}</p>
                                                 </div>
                                             )}
                                             {aiAnalysis.sugestoes && (
                                                 <div className="space-y-1">
-                                                    <span className="font-bold block uppercase text-[10px] text-muted-foreground">Peças/Serviços Sugeridos</span>
-                                                    <p className="text-foreground leading-relaxed">{aiAnalysis.sugestoes}</p>
+                                                    <span className="font-bold block uppercase text-[10px] text-skin-text-muted">Peças/Serviços Sugeridos</span>
+                                                    <p className="text-skin-text leading-relaxed">{aiAnalysis.sugestoes}</p>
                                                 </div>
                                             )}
                                             {aiAnalysis.complexidade && (
                                                 <div className="space-y-1">
-                                                    <span className="font-bold block uppercase text-[10px] text-muted-foreground">Complexidade Estimada</span>
-                                                    <span className={`px-2 py-0.5 rounded-full inline-block font-medium ${aiAnalysis.complexidade === 'Baixo' ? 'bg-green-500/10 text-green-600' :
-                                                        aiAnalysis.complexidade === 'Médio' ? 'bg-yellow-500/10 text-yellow-600' :
-                                                            'bg-red-500/10 text-red-600'
+                                                    <span className="font-bold block uppercase text-[10px] text-skin-text-muted">Complexidade Estimada</span>
+                                                    <span className={`px-2 py-0.5 rounded-full inline-block font-medium ${aiAnalysis.complexidade === 'Baixo' ? 'bg-skin-success/10 text-skin-success' :
+                                                        aiAnalysis.complexidade === 'Médio' ? 'bg-skin-warning/10 text-skin-warning' :
+                                                            'bg-skin-danger/10 text-skin-danger'
                                                         }`}>
                                                         {aiAnalysis.complexidade}
                                                     </span>
@@ -1086,7 +1086,7 @@ export default function NewOrdemRefactoredPage() {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="mt-3 h-7 text-[10px] text-muted-foreground hover:text-foreground p-0 h-auto"
+                                            className="mt-3 h-7 text-[10px] text-skin-text-muted hover:text-skin-text p-0 h-auto"
                                             onClick={() => setAiAnalysis(null)}
                                         >
                                             Limpar sugestão
@@ -1253,7 +1253,7 @@ export default function NewOrdemRefactoredPage() {
                                     </>
                                 ) : (
                                     <div
-                                        className="border-2 border-dashed border-muted rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary/30 hover:bg-primary/5 cursor-pointer transition-all"
+                                        className="border-2 border-dashed border-muted rounded-lg p-6 flex flex-col items-center justify-center text-skin-text-muted hover:border-primary/30 hover:bg-primary/5 cursor-pointer transition-all"
                                         onClick={() => document.getElementById('photo-upload')?.click()}
                                     >
                                         <Camera className="h-8 w-8 mb-2 opacity-20" />
@@ -1268,7 +1268,7 @@ export default function NewOrdemRefactoredPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Section 4: VALORES */}
                         <Card className="shadow-sm border-2">
-                            <CardHeader className="bg-slate-50/50 pb-4">
+                            <CardHeader className="bg-skin-background/50 pb-4">
                                 <div className="flex items-center gap-2">
                                     <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">4</span>
                                     <CardTitle className="text-lg">Valores</CardTitle>
@@ -1278,7 +1278,7 @@ export default function NewOrdemRefactoredPage() {
                                 <div className="space-y-2">
                                     <Label>Valor Estimado (R$)</Label>
                                     <div className="relative">
-                                        <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-skin-text-muted" />
                                         <Input
                                             placeholder="0,00"
                                             className="pl-9"
@@ -1298,14 +1298,14 @@ export default function NewOrdemRefactoredPage() {
                                             ref={valueInputRef}
                                         />
                                     </div>
-                                    <p className="text-[10px] text-muted-foreground italic">Nota: Não gera cobrança automática nesta etapa.</p>
+                                    <p className="text-[10px] text-skin-text-muted italic">Nota: Não gera cobrança automática nesta etapa.</p>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Section 5: OBSERVAÇÕES */}
                         <Card className="shadow-sm border-2">
-                            <CardHeader className="bg-slate-50/50 pb-4">
+                            <CardHeader className="bg-skin-background/50 pb-4">
                                 <div className="flex items-center gap-2">
                                     <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">5</span>
                                     <CardTitle className="text-lg">Observações</CardTitle>

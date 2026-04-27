@@ -48,64 +48,64 @@ const DurationPicker: React.FC<DurationPickerProps> = ({ value, onChange, label 
         <div className="space-y-2">
             {label && <label className="text-sm font-medium flex items-center gap-2">
                 {label}
-                <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                <span className="text-xs font-normal text-skin-text-muted bg-muted px-2 py-0.5 rounded-full">
                     {formatDuration(localValue)}
                 </span>
             </label>}
 
-            <div className="flex items-center gap-2 p-2 border rounded-lg bg-background/50 focus-within:ring-2 ring-primary/20 transition-all">
-                <Clock className="w-4 h-4 text-muted-foreground flex-none" />
+            <div className="flex items-center gap-2 p-2 border rounded-lg bg-skin-background/50 focus-within:ring-2 ring-primary/20 transition-all">
+                <Clock className="w-4 h-4 text-skin-text-muted flex-none" />
 
                 <div className="flex items-center gap-1 flex-1">
                     <div className="flex flex-col items-center">
                         <input
                             type="number"
                             min="0"
-                            className="w-12 text-center bg-transparent border-b border-border focus:border-primary outline-none text-sm p-1"
+                            className="w-12 text-center bg-transparent border-b border-skin-border focus:border-primary outline-none text-sm p-1"
                             placeholder="DD"
                             value={localValue.days || ''}
                             onChange={(e) => handleChange('days', e.target.value)}
                         />
-                        <span className="text-[10px] text-muted-foreground uppercase">Dias</span>
+                        <span className="text-[10px] text-skin-text-muted uppercase">Dias</span>
                     </div>
-                    <span className="text-muted-foreground pb-4">:</span>
+                    <span className="text-skin-text-muted pb-4">:</span>
                     <div className="flex flex-col items-center">
                         <input
                             type="number"
                             min="0"
                             max="23"
-                            className="w-10 text-center bg-transparent border-b border-border focus:border-primary outline-none text-sm p-1"
+                            className="w-10 text-center bg-transparent border-b border-skin-border focus:border-primary outline-none text-sm p-1"
                             placeholder="HH"
                             value={localValue.hours || ''}
                             onChange={(e) => handleChange('hours', e.target.value)}
                         />
-                        <span className="text-[10px] text-muted-foreground uppercase">Hrs</span>
+                        <span className="text-[10px] text-skin-text-muted uppercase">Hrs</span>
                     </div>
-                    <span className="text-muted-foreground pb-4">:</span>
+                    <span className="text-skin-text-muted pb-4">:</span>
                     <div className="flex flex-col items-center">
                         <input
                             type="number"
                             min="0"
                             max="59"
-                            className="w-10 text-center bg-transparent border-b border-border focus:border-primary outline-none text-sm p-1"
+                            className="w-10 text-center bg-transparent border-b border-skin-border focus:border-primary outline-none text-sm p-1"
                             placeholder="MM"
                             value={localValue.minutes || ''}
                             onChange={(e) => handleChange('minutes', e.target.value)}
                         />
-                        <span className="text-[10px] text-muted-foreground uppercase">Min</span>
+                        <span className="text-[10px] text-skin-text-muted uppercase">Min</span>
                     </div>
-                    <span className="text-muted-foreground pb-4">:</span>
+                    <span className="text-skin-text-muted pb-4">:</span>
                     <div className="flex flex-col items-center">
                         <input
                             type="number"
                             min="0"
                             max="59"
-                            className="w-10 text-center bg-transparent border-b border-border focus:border-primary outline-none text-sm p-1"
+                            className="w-10 text-center bg-transparent border-b border-skin-border focus:border-primary outline-none text-sm p-1"
                             placeholder="SS"
                             value={localValue.seconds || ''}
                             onChange={(e) => handleChange('seconds', e.target.value)}
                         />
-                        <span className="text-[10px] text-muted-foreground uppercase">Seg</span>
+                        <span className="text-[10px] text-skin-text-muted uppercase">Seg</span>
                     </div>
                 </div>
             </div>

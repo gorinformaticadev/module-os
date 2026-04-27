@@ -192,12 +192,12 @@ export function PagamentosModal({ isOpen, onClose, ordem, onSuccess }: Pagamento
                         </div>
                         
                         {loadingConservacao ? (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2 text-sm text-skin-text-muted">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 Calculando conservação...
                             </div>
                         ) : conservacao?.emAtraso && (
-                            <div className="flex justify-between text-sm text-amber-600 dark:text-amber-400">
+                            <div className="flex justify-between text-sm text-skin-warning dark:text-skin-warning">
                                 <span className="flex items-center gap-1">
                                     <AlertTriangle className="h-3 w-3" />
                                     Taxa de Conservação ({conservacao.diasAtraso} dias)
@@ -243,7 +243,7 @@ export function PagamentosModal({ isOpen, onClose, ordem, onSuccess }: Pagamento
                             <div key={index} className="flex gap-3 items-start p-3 bg-card rounded-lg border">
                                 <div className="flex-1 grid grid-cols-2 gap-3">
                                     <div>
-                                        <Label className="text-xs text-muted-foreground">Forma</Label>
+                                        <Label className="text-xs text-skin-text-muted">Forma</Label>
                                         <Select
                                             value={pagamento.forma_pagamento}
                                             onValueChange={(value) => handlePagamentoChange(index, 'forma_pagamento', value)}
@@ -260,9 +260,9 @@ export function PagamentosModal({ isOpen, onClose, ordem, onSuccess }: Pagamento
                                     </div>
                                     
                                     <div>
-                                        <Label className="text-xs text-muted-foreground">Valor</Label>
+                                        <Label className="text-xs text-skin-text-muted">Valor</Label>
                                         <div className="relative">
-                                            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-skin-text-muted" />
                                             <Input
                                                 type="number"
                                                 step="0.01"
@@ -277,7 +277,7 @@ export function PagamentosModal({ isOpen, onClose, ordem, onSuccess }: Pagamento
 
                                     {pagamento.forma_pagamento === FormaPagamento.CARTAO_CREDITO && (
                                         <div className="col-span-2">
-                                            <Label className="text-xs text-muted-foreground">Parcelas</Label>
+                                            <Label className="text-xs text-skin-text-muted">Parcelas</Label>
                                             <Select
                                                 value={String(pagamento.parcelas || 1)}
                                                 onValueChange={(value) => handlePagamentoChange(index, 'parcelas', parseInt(value))}
@@ -309,16 +309,16 @@ export function PagamentosModal({ isOpen, onClose, ordem, onSuccess }: Pagamento
                         ))}
 
                         {/* Soma dos pagamentos */}
-                        <div className={`flex justify-between items-center p-3 rounded-lg ${somaCorreta ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'} border`}>
+                        <div className={`flex justify-between items-center p-3 rounded-lg ${somaCorreta ? 'bg-skin-success/10 dark:bg-skin-success-hover/20 border-skin-success dark:border-skin-success' : 'bg-skin-danger/10 dark:bg-skin-danger-hover/20 border-skin-danger dark:border-skin-danger'} border`}>
                             <span className="text-sm font-medium flex items-center gap-2">
                                 {somaCorreta ? (
-                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                    <CheckCircle className="h-4 w-4 text-skin-success" />
                                 ) : (
-                                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                                    <AlertTriangle className="h-4 w-4 text-skin-danger" />
                                 )}
                                 Soma dos Pagamentos
                             </span>
-                            <span className={`font-semibold ${somaCorreta ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            <span className={`font-semibold ${somaCorreta ? 'text-skin-success dark:text-skin-success' : 'text-skin-danger dark:text-skin-danger'}`}>
                                 {formatCurrency(totalPagamentos)}
                             </span>
                         </div>

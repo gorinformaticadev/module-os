@@ -112,11 +112,11 @@ export function MeuModuloWidget() {
         <Card className="h-full border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Status Ordem de Servicos</CardTitle>
-                <Wrench className="h-4 w-4 text-blue-500" />
+                <Wrench className="h-4 w-4 text-skin-info" />
             </CardHeader>
             <CardContent className="space-y-3">
                 {loading ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-skin-text-muted">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span>Carregando resumo operacional...</span>
                     </div>
@@ -124,46 +124,46 @@ export function MeuModuloWidget() {
                     <>
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <div className="text-2xl font-bold text-blue-600">
+                                <div className="text-2xl font-bold text-skin-info">
                                     {totalOrdens > 0 ? totalOrdens : 'Ativo'}
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-xs text-skin-text-muted mt-1">
                                     {totalOrdens > 0
                                         ? `${ordensAtivas} em andamento e ${ordensFinalizadas} finalizadas`
                                         : 'Modulo operando normalmente'}
                                 </p>
                             </div>
-                            <Box className="h-8 w-8 text-blue-200" />
+                            <Box className="h-8 w-8 text-skin-info" />
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="rounded-md bg-muted/40 px-3 py-2">
-                                <div className="text-muted-foreground">Ativas</div>
+                                <div className="text-skin-text-muted">Ativas</div>
                                 <div className="font-semibold">{ordensAtivas}</div>
                             </div>
                             <div className="rounded-md bg-muted/40 px-3 py-2">
-                                <div className="text-muted-foreground">Finalizadas</div>
+                                <div className="text-skin-text-muted">Finalizadas</div>
                                 <div className="font-semibold">{ordensFinalizadas}</div>
                             </div>
                             <div className="rounded-md bg-muted/40 px-3 py-2">
-                                <div className="text-muted-foreground">Retirada</div>
+                                <div className="text-skin-text-muted">Retirada</div>
                                 <div className="font-semibold">{pendentesRetirada}</div>
                             </div>
                             <div className="rounded-md bg-muted/40 px-3 py-2">
-                                <div className="text-muted-foreground">Valor total</div>
+                                <div className="text-skin-text-muted">Valor total</div>
                                 <div className="font-semibold">{formatCurrency(valorTotal)}</div>
                             </div>
                         </div>
 
                         {pendentesRetirada > 0 ? (
-                            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            <div className="flex items-start gap-2 rounded-md border border-skin-warning bg-skin-warning/10 px-3 py-2 text-xs text-skin-warning-hover">
                                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                                 <span>{pendentesRetirada} equipamento(s) aguardando retirada.</span>
                             </div>
                         ) : null}
 
                         {error ? (
-                            <p className="text-xs text-muted-foreground">{error}</p>
+                            <p className="text-xs text-skin-text-muted">{error}</p>
                         ) : null}
                     </>
                 )}

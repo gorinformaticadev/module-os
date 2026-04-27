@@ -48,9 +48,9 @@ export function AlertaRetiradaBadge({
     }
 
     const getBadgeColor = () => {
-        if (alertas.urgentes > 0) return 'bg-red-500';
-        if (alertas.atencao > 0) return 'bg-yellow-500';
-        return 'bg-blue-500';
+        if (alertas.urgentes > 0) return 'bg-skin-danger';
+        if (alertas.atencao > 0) return 'bg-skin-warning';
+        return 'bg-skin-info';
     };
 
     const getBadgeIcon = () => {
@@ -91,10 +91,10 @@ export function AlertaRetiradaBadge({
                 {alertas.urgentes > 0 && (
                     <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-red-500" />
-                            <span className="text-muted-foreground">Urgentes (&gt;30 dias)</span>
+                            <div className="w-2 h-2 rounded-full bg-skin-danger" />
+                            <span className="text-skin-text-muted">Urgentes (&gt;30 dias)</span>
                         </div>
-                        <span className="font-medium text-red-600 dark:text-red-400">{alertas.urgentes}</span>
+                        <span className="font-medium text-skin-danger dark:text-skin-danger">{alertas.urgentes}</span>
                     </div>
                 )}
 
@@ -102,10 +102,10 @@ export function AlertaRetiradaBadge({
                 {alertas.atencao > 0 && (
                     <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                            <span className="text-muted-foreground">Atenção (15-30 dias)</span>
+                            <div className="w-2 h-2 rounded-full bg-skin-warning" />
+                            <span className="text-skin-text-muted">Atenção (15-30 dias)</span>
                         </div>
-                        <span className="font-medium text-yellow-600 dark:text-yellow-400">{alertas.atencao}</span>
+                        <span className="font-medium text-skin-warning dark:text-skin-warning">{alertas.atencao}</span>
                     </div>
                 )}
 
@@ -113,10 +113,10 @@ export function AlertaRetiradaBadge({
                 {alertas.normal > 0 && (
                     <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500" />
-                            <span className="text-muted-foreground">Normal (&lt;15 dias)</span>
+                            <div className="w-2 h-2 rounded-full bg-skin-info" />
+                            <span className="text-skin-text-muted">Normal (&lt;15 dias)</span>
                         </div>
-                        <span className="font-medium text-blue-600 dark:text-blue-400">{alertas.normal}</span>
+                        <span className="font-medium text-skin-info dark:text-skin-info">{alertas.normal}</span>
                     </div>
                 )}
 
@@ -124,10 +124,10 @@ export function AlertaRetiradaBadge({
                 {alertas.cobranca_ativa > 0 && (
                     <div className="flex items-center justify-between text-sm pt-2 border-t">
                         <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-3 w-3 text-amber-500" />
-                            <span className="text-muted-foreground">Com taxa de conservação</span>
+                            <AlertTriangle className="h-3 w-3 text-skin-warning" />
+                            <span className="text-skin-text-muted">Com taxa de conservação</span>
                         </div>
-                        <span className="font-medium text-amber-600 dark:text-amber-400">{alertas.cobranca_ativa}</span>
+                        <span className="font-medium text-skin-warning dark:text-skin-warning">{alertas.cobranca_ativa}</span>
                     </div>
                 )}
             </div>

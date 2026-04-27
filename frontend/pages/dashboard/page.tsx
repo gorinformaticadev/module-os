@@ -32,7 +32,7 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+    className={`rounded-xl border border-skin-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
     {...props}
   />
 ));
@@ -79,9 +79,9 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
   const variantClasses = {
     default: "bg-primary text-primary-foreground hover:bg-primary/90",
     destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    outline: "border border-skin-input-border bg-skin-background hover:bg-skin-surface-hover hover:text-skin-text",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
+    ghost: "hover:bg-skin-surface-hover hover:text-skin-text hover:shadow-none",
     link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
 
@@ -247,42 +247,42 @@ const OrderTable = ({
   return (
     <Card className="relative z-0 w-full overflow-visible transition-[z-index] hover:z-20">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        <CardTitle className="text-lg font-semibold text-skin-text-muted dark:text-skin-text-muted">
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="overflow-visible">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-skin-text-muted">
             Carregando dados do dashboard...
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-skin-text-muted">
             {emptyMessage}
           </div>
         ) : (
           <div className="relative overflow-visible">
             <table className="w-full table-fixed">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="w-[88px] py-3 px-2 text-left font-medium text-gray-600 dark:text-gray-300">No</th>
-                  <th className="py-3 px-2 text-left font-medium text-gray-600 dark:text-gray-300">Cliente</th>
-                  <th className="w-[122px] py-3 px-2 text-left font-medium text-gray-600 dark:text-gray-300">Prev. Final</th>
-                  <th className="w-[196px] py-3 px-2 text-right font-medium text-gray-600 dark:text-gray-300">Acoes</th>
+                <tr className="border-b border-skin-border dark:border-skin-border-strong">
+                  <th className="w-[88px] py-3 px-2 text-left font-medium text-skin-text-muted dark:text-skin-text-muted">No</th>
+                  <th className="py-3 px-2 text-left font-medium text-skin-text-muted dark:text-skin-text-muted">Cliente</th>
+                  <th className="w-[122px] py-3 px-2 text-left font-medium text-skin-text-muted dark:text-skin-text-muted">Prev. Final</th>
+                  <th className="w-[196px] py-3 px-2 text-right font-medium text-skin-text-muted dark:text-skin-text-muted">Acoes</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((ordem) => (
-                  <tr key={ordem.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="whitespace-nowrap py-3 px-2 text-sm font-medium text-blue-600 dark:text-blue-400">
+                  <tr key={ordem.id} className="border-b border-skin-text-muted dark:border-skin-text-muted hover:bg-skin-surface dark:hover:bg-skin-text">
+                    <td className="whitespace-nowrap py-3 px-2 text-sm font-medium text-skin-info dark:text-skin-info">
                       {ordem.numero}
                     </td>
-                    <td className="max-w-0 py-3 px-2 text-sm text-gray-700 dark:text-gray-300">
+                    <td className="max-w-0 py-3 px-2 text-sm text-skin-text-muted dark:text-skin-text-muted">
                       <span className="block truncate" title={ordem.cliente}>
                         {ordem.cliente}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap py-3 px-2 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="whitespace-nowrap py-3 px-2 text-sm text-skin-text-muted dark:text-skin-text-muted">
                       {ordem.dataPrevisaoFinal}
                     </td>
                     <td className="py-3 px-2 align-middle">
@@ -291,11 +291,11 @@ const OrderTable = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-blue-100 dark:hover:bg-blue-900`}
+                            className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-skin-info/10 dark:hover:bg-skin-info-hover`}
                             onClick={() => onView(ordem.ordem)}
                             title="Visualizar"
                           >
-                            <Eye className={`${DASHBOARD_ACTION_ICON_CLASS} text-blue-600`} />
+                            <Eye className={`${DASHBOARD_ACTION_ICON_CLASS} text-skin-info`} />
                           </Button>
                         )}
 
@@ -305,11 +305,11 @@ const OrderTable = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-yellow-100 dark:hover:bg-yellow-900`}
+                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-skin-warning/10 dark:hover:bg-skin-warning-hover`}
                               onClick={() => onEdit(ordem.ordem)}
                               title="Editar"
                             >
-                              <Edit className={`${DASHBOARD_ACTION_ICON_CLASS} text-yellow-600`} />
+                              <Edit className={`${DASHBOARD_ACTION_ICON_CLASS} text-skin-warning`} />
                             </Button>
                           )}
 
@@ -322,32 +322,32 @@ const OrderTable = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className={`h-8 min-w-8 gap-0.5 rounded-md px-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 ${printMenuOpen === ordem.id ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+                              className={`h-8 min-w-8 gap-0.5 rounded-md px-1.5 hover:bg-skin-surface dark:hover:bg-skin-text ${printMenuOpen === ordem.id ? 'bg-skin-surface dark:bg-skin-text' : ''}`}
                               onClick={() => onTogglePrintMenu(ordem.id)}
                               title="Imprimir"
                             >
-                              <Printer className="h-[18px] w-[18px] text-gray-600" />
-                              <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform ${printMenuOpen === ordem.id ? 'rotate-180' : ''}`} />
+                              <Printer className="h-[18px] w-[18px] text-skin-text-muted" />
+                              <ChevronDown className={`h-3.5 w-3.5 text-skin-text-muted transition-transform ${printMenuOpen === ordem.id ? 'rotate-180' : ''}`} />
                             </Button>
 
                             {printMenuOpen === ordem.id && (
                               <div className="absolute bottom-full right-0 z-[80] min-w-[190px] pb-2">
                                 <div className="absolute bottom-0 left-0 h-2 w-full pointer-events-auto" />
-                                <div className="overflow-hidden rounded-md border border-border bg-background shadow-2xl">
+                                <div className="overflow-hidden rounded-md border border-skin-border bg-skin-background shadow-2xl">
                                   <button
                                     type="button"
                                     onClick={() => onPrintA4(ordem.ordem)}
-                                    className="flex w-full items-center gap-2 border-b border-border px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                                    className="flex w-full items-center gap-2 border-b border-skin-border px-4 py-2.5 text-left text-sm text-skin-text transition-colors hover:bg-skin-surface-hover hover:text-skin-text"
                                   >
-                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <FileText className="h-4 w-4 text-skin-text-muted" />
                                     <span>Impressao A4</span>
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => onPrintThermal(ordem.ordem)}
-                                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-skin-text transition-colors hover:bg-skin-surface-hover hover:text-skin-text"
                                   >
-                                    <Receipt className="h-4 w-4 text-muted-foreground" />
+                                    <Receipt className="h-4 w-4 text-skin-text-muted" />
                                     <span>Impressao 50/80mm</span>
                                   </button>
                                 </div>
@@ -360,11 +360,11 @@ const OrderTable = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-green-100 dark:hover:bg-green-900`}
+                            className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-skin-success/10 dark:hover:bg-skin-success-hover`}
                             onClick={() => onWhatsApp(ordem.ordem)}
                             title="WhatsApp"
                           >
-                            <MessageCircle className={`${DASHBOARD_ACTION_ICON_CLASS} text-green-600`} />
+                            <MessageCircle className={`${DASHBOARD_ACTION_ICON_CLASS} text-skin-success`} />
                           </Button>
                         )}
 
@@ -373,11 +373,11 @@ const OrderTable = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-red-100 dark:hover:bg-red-900`}
+                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-skin-danger/10 dark:hover:bg-skin-danger-hover`}
                               onClick={() => onDelete(ordem.ordem)}
                               title="Excluir"
                             >
-                              <Trash2 className={`${DASHBOARD_ACTION_ICON_CLASS} text-red-600`} />
+                              <Trash2 className={`${DASHBOARD_ACTION_ICON_CLASS} text-skin-danger`} />
                             </Button>
                           )}
 
@@ -387,11 +387,11 @@ const OrderTable = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-orange-100 dark:hover:bg-orange-900`}
+                              className={`${DASHBOARD_ACTION_BUTTON_CLASS} hover:bg-skin-warning/10 dark:hover:bg-skin-warning-hover`}
                               onClick={() => onReopen(ordem.ordem)}
                               title="Reabrir OS"
                             >
-                              <RotateCcw className={`${DASHBOARD_ACTION_ICON_CLASS} text-orange-600`} />
+                              <RotateCcw className={`${DASHBOARD_ACTION_ICON_CLASS} text-skin-warning`} />
                             </Button>
                           )}
                       </div>
@@ -636,16 +636,16 @@ export default function OrdemServicoDashboardPage() {
 
   return (
     <ModulePageGuard resource="dashboard" action="view">
-      <div className="p-6 max-w-full mx-auto space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="p-6 max-w-full mx-auto space-y-6 bg-skin-surface dark:bg-skin-text-muted-hover min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+        <h1 className="text-3xl font-bold text-skin-text dark:text-skin-background">
           Dashboard - Ordem de Servicos
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <p className="text-skin-text-muted dark:text-skin-text-muted mt-2">
           Visao geral das ordens de servico e atalhos rapidos
         </p>
         {loadError ? (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{loadError}</p>
+          <p className="mt-3 text-sm text-skin-danger dark:text-skin-danger">{loadError}</p>
         ) : null}
       </div>
 
@@ -817,14 +817,14 @@ export default function OrdemServicoDashboardPage() {
         />
       </div>
 
-      <div className="mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <div className="mt-8 p-4 bg-white dark:bg-skin-text rounded-lg border border-skin-border dark:border-skin-border-strong">
+        <h3 className="text-sm font-semibold text-skin-text-muted dark:text-skin-text-muted mb-2">
           Atalhos de Teclado:
         </h3>
-        <div className="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-400">
-          <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F1</kbd> Clientes</span>
-          <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F2</kbd> Produtos/Servicos</span>
-          <span><kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">F3</kbd> Ordens</span>
+        <div className="flex flex-wrap gap-4 text-xs text-skin-text-muted dark:text-skin-text-muted">
+          <span><kbd className="px-2 py-1 bg-skin-surface dark:bg-skin-text-muted-hover rounded">F1</kbd> Clientes</span>
+          <span><kbd className="px-2 py-1 bg-skin-surface dark:bg-skin-text-muted-hover rounded">F2</kbd> Produtos/Servicos</span>
+          <span><kbd className="px-2 py-1 bg-skin-surface dark:bg-skin-text-muted-hover rounded">F3</kbd> Ordens</span>
         </div>
       </div>
       <OrdemViewModal
@@ -848,9 +848,9 @@ export default function OrdemServicoDashboardPage() {
       <div>
         {reopenOrder ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Reabrir Ordem de Servico</h3>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <div className="w-full max-w-md rounded-xl border border-skin-border bg-card p-6 shadow-xl">
+              <h3 className="text-lg font-semibold text-skin-text dark:text-skin-background">Reabrir Ordem de Servico</h3>
+              <p className="mt-2 text-sm text-skin-text-muted dark:text-skin-text-muted">
                 Tem certeza que deseja reabrir a OS <span className="font-semibold">#{reopenOrder.numero}</span>?
                 Isso alterara o status para Em Execucao.
               </p>
@@ -858,7 +858,7 @@ export default function OrdemServicoDashboardPage() {
                 <Button variant="outline" onClick={() => setReopenOrder(null)}>
                   Cancelar
                 </Button>
-                <Button className="bg-orange-600 text-white hover:bg-orange-700" onClick={() => void confirmReopen()}>
+                <Button className="bg-skin-warning text-white hover:bg-skin-warning-hover" onClick={() => void confirmReopen()}>
                   Confirmar Reabertura
                 </Button>
               </div>

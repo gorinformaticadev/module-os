@@ -166,7 +166,7 @@ export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
             <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <MessageCircle className="h-5 w-5 text-green-600" />
+                        <MessageCircle className="h-5 w-5 text-skin-success" />
                         Enviar WhatsApp
                     </DialogTitle>
                     <DialogDescription>
@@ -229,7 +229,7 @@ export function WhatsAppModal({ isOpen, onClose, ordem }: WhatsAppModalProps) {
 
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={sending}>Cancelar</Button>
-                    <Button onClick={handleSend} disabled={sending || !message.trim()} className="bg-green-600 hover:bg-green-700 text-white gap-2">
+                    <Button onClick={handleSend} disabled={sending || !message.trim()} className="bg-skin-success hover:bg-skin-success-hover text-white gap-2">
                         {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
                         {sending ? 'Registrando...' : 'Enviar Mensagem'}
                     </Button>

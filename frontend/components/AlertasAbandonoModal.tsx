@@ -188,7 +188,7 @@ export function AlertasAbandonoModal({ isOpen, onClose, ordemId, ordemNumero, on
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Bell className="h-5 w-5 text-amber-500" />
+                        <Bell className="h-5 w-5 text-skin-warning" />
                         Alertas de Abandono - OS #{ordemNumero}
                     </DialogTitle>
                     <DialogDescription>
@@ -209,7 +209,7 @@ export function AlertasAbandonoModal({ isOpen, onClose, ordemId, ordemNumero, on
                                 <div key={num} className="flex items-center gap-2">
                                     <div className={`
                                         w-10 h-10 rounded-full flex items-center justify-center
-                                        ${isCompleto ? 'bg-green-500 text-white' : isProximo ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}
+                                        ${isCompleto ? 'bg-skin-success text-white' : isProximo ? 'bg-primary text-primary-foreground' : 'bg-muted text-skin-text-muted'}
                                     `}>
                                         {isCompleto ? (
                                             <CheckCircle className="h-5 w-5" />
@@ -218,7 +218,7 @@ export function AlertasAbandonoModal({ isOpen, onClose, ordemId, ordemNumero, on
                                         )}
                                     </div>
                                     {num < 3 && (
-                                        <div className={`w-8 h-0.5 ${alertas.length >= num ? 'bg-green-500' : 'bg-muted'}`} />
+                                        <div className={`w-8 h-0.5 ${alertas.length >= num ? 'bg-skin-success' : 'bg-muted'}`} />
                                     )}
                                 </div>
                             );
@@ -228,7 +228,7 @@ export function AlertasAbandonoModal({ isOpen, onClose, ordemId, ordemNumero, on
                     {loading ? (
                         <div className="flex items-center justify-center py-8">
                             <Loader2 className="h-6 w-6 animate-spin" />
-                            <span className="ml-2 text-sm text-muted-foreground">Carregando alertas...</span>
+                            <span className="ml-2 text-sm text-skin-text-muted">Carregando alertas...</span>
                         </div>
                     ) : (
                         <>
@@ -247,20 +247,20 @@ export function AlertasAbandonoModal({ isOpen, onClose, ordemId, ordemNumero, on
                                                     className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                                            <CheckCircle className="h-4 w-4 text-green-600" />
+                                                        <div className="w-8 h-8 rounded-full bg-skin-success/10 dark:bg-skin-success-hover/30 flex items-center justify-center">
+                                                            <CheckCircle className="h-4 w-4 text-skin-success" />
                                                         </div>
                                                         <div className="text-left">
                                                             <div className="font-medium">Alerta {alerta.numero_alerta}</div>
-                                                            <div className="text-xs text-muted-foreground">
+                                                            <div className="text-xs text-skin-text-muted">
                                                                 {MEIO_COMUNICACAO_LABELS[alerta.meio_comunicacao]} - {formatDate(alerta.data_envio)}
                                                             </div>
                                                         </div>
                                                     </div>
                                                     {isExpanded ? (
-                                                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                                        <ChevronUp className="h-4 w-4 text-skin-text-muted" />
                                                     ) : (
-                                                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                                        <ChevronDown className="h-4 w-4 text-skin-text-muted" />
                                                     )}
                                                 </button>
                                                 {isExpanded && (
@@ -271,17 +271,17 @@ export function AlertasAbandonoModal({ isOpen, onClose, ordemId, ordemNumero, on
                                                         </div>
                                                         {alerta.mensagem && (
                                                             <div className="bg-muted/50 rounded p-2">
-                                                                <p className="text-xs text-muted-foreground mb-1">Mensagem:</p>
+                                                                <p className="text-xs text-skin-text-muted mb-1">Mensagem:</p>
                                                                 <p>{alerta.mensagem}</p>
                                                             </div>
                                                         )}
                                                         {alerta.observacoes && (
-                                                            <div className="text-muted-foreground">
+                                                            <div className="text-skin-text-muted">
                                                                 <p className="text-xs">Observações: {alerta.observacoes}</p>
                                                             </div>
                                                         )}
                                                         {alerta.enviado_por_nome && (
-                                                            <p className="text-xs text-muted-foreground">
+                                                            <p className="text-xs text-skin-text-muted">
                                                                 Registrado por: {alerta.enviado_por_nome}
                                                             </p>
                                                         )}
@@ -378,14 +378,14 @@ export function AlertasAbandonoModal({ isOpen, onClose, ordemId, ordemNumero, on
 
                             {/* Botão de Marcar como Abandonado */}
                             {podeMarcarAbandonado && !confirmAbandono && (
-                                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                                <div className="bg-skin-warning/10 dark:bg-skin-warning-hover/20 border border-skin-warning dark:border-skin-warning rounded-lg p-4">
                                     <div className="flex items-start gap-3">
-                                        <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+                                        <AlertTriangle className="h-5 w-5 text-skin-warning mt-0.5" />
                                         <div className="flex-1">
-                                            <h4 className="font-medium text-amber-700 dark:text-amber-400">
+                                            <h4 className="font-medium text-skin-warning-hover dark:text-skin-warning">
                                                 3 alertas registrados
                                             </h4>
-                                            <p className="text-sm text-amber-600 dark:text-amber-500 mt-1">
+                                            <p className="text-sm text-skin-warning dark:text-skin-warning mt-1">
                                                 Você pode agora marcar esta OS como abandonada. 
                                                 Esta ação é irreversível.
                                             </p>
@@ -404,14 +404,14 @@ export function AlertasAbandonoModal({ isOpen, onClose, ordemId, ordemNumero, on
 
                             {/* Confirmação de Abandono */}
                             {confirmAbandono && (
-                                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                                <div className="bg-skin-danger/10 dark:bg-skin-danger-hover/20 border border-skin-danger dark:border-skin-danger rounded-lg p-4">
                                     <div className="flex items-start gap-3">
-                                        <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
+                                        <AlertTriangle className="h-5 w-5 text-skin-danger mt-0.5" />
                                         <div className="flex-1">
-                                            <h4 className="font-medium text-red-700 dark:text-red-400">
+                                            <h4 className="font-medium text-skin-danger dark:text-skin-danger">
                                                 Confirmar Abandono
                                             </h4>
-                                            <p className="text-sm text-red-600 dark:text-red-500 mt-1">
+                                            <p className="text-sm text-skin-danger dark:text-skin-danger mt-1">
                                                 Tem certeza que deseja marcar esta OS como abandonada? 
                                                 Esta ação não pode ser desfeita.
                                             </p>

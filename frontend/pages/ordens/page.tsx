@@ -275,7 +275,7 @@ export default function OrdensPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Ordens de Serviço</h1>
-          <p className="text-muted-foreground">Gerencie todas as ordens de serviço</p>
+          <p className="text-skin-text-muted">Gerencie todas as ordens de serviço</p>
         </div>
         <div className="flex items-center gap-3">
           <AlertaRetiradaBadge variant="badge" />
@@ -301,7 +301,7 @@ export default function OrdensPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Buscar</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-skin-text-muted" />
                 <Input
                   placeholder="Número, cliente ou descrição..."
                   value={searchTerm}
@@ -362,7 +362,7 @@ export default function OrdensPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : ordens.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-skin-text-muted">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Nenhuma ordem de serviço encontrada</p>
             </div>
@@ -392,7 +392,7 @@ export default function OrdensPage() {
                         <div>
                           <div className="font-medium">{ordem.cliente?.name || 'Cliente não encontrado'}</div>
                           {ordem.cliente?.phone_primary && (
-                            <div className="text-sm text-muted-foreground">{ordem.cliente.phone_primary}</div>
+                            <div className="text-sm text-skin-text-muted">{ordem.cliente.phone_primary}</div>
                           )}
                         </div>
                       </TableCell>
@@ -415,7 +415,7 @@ export default function OrdensPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleView(ordem)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="text-skin-info hover:text-skin-info hover:bg-skin-info/10"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -426,7 +426,7 @@ export default function OrdensPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(ordem)}
-                              className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                              className="text-skin-warning hover:text-skin-warning hover:bg-skin-warning/10"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -450,8 +450,8 @@ export default function OrdensPage() {
                                 }
                               }}
                               className={`
-                                text-gray-600 hover:text-gray-700 hover:bg-gray-50 relative z-30 flex items-center gap-0.5
-                                ${printMenuOpen === ordem.id ? 'bg-gray-50' : ''}
+                                text-skin-text-muted hover:text-skin-text-muted hover:bg-skin-surface relative z-30 flex items-center gap-0.5
+                                ${printMenuOpen === ordem.id ? 'bg-skin-surface' : ''}
                               `}
                             >
                               <Printer className="h-4 w-4" />
@@ -466,16 +466,16 @@ export default function OrdensPage() {
                                 {/* Transparent bridge to maintain hover between button and menu */}
                                 <div className="absolute top-0 left-0 w-full h-2 pointer-events-auto" />
 
-                                <div className="bg-background border border-border shadow-xl rounded-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                                <div className="bg-skin-background border border-skin-border shadow-xl rounded-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                                   <button
                                     type="button"
                                     onClick={() => {
                                       handlePrintA4(ordem);
                                       setPrintMenuOpen(null);
                                     }}
-                                    className="w-full px-4 py-2.5 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 border-b border-border transition-colors cursor-pointer"
+                                    className="w-full px-4 py-2.5 text-left text-sm text-skin-text hover:bg-skin-surface-hover hover:text-skin-text flex items-center gap-2 border-b border-skin-border transition-colors cursor-pointer"
                                   >
-                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <FileText className="h-4 w-4 text-skin-text-muted" />
                                     <span>Impressão A4</span>
                                   </button>
                                   <button
@@ -484,9 +484,9 @@ export default function OrdensPage() {
                                       handlePrintThermal(ordem);
                                       setPrintMenuOpen(null);
                                     }}
-                                    className="w-full px-4 py-2.5 text-left text-sm text-foreground hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors cursor-pointer"
+                                    className="w-full px-4 py-2.5 text-left text-sm text-skin-text hover:bg-skin-surface-hover hover:text-skin-text flex items-center gap-2 transition-colors cursor-pointer"
                                   >
-                                    <Receipt className="h-4 w-4 text-muted-foreground" />
+                                    <Receipt className="h-4 w-4 text-skin-text-muted" />
                                     <span>Impressão 50/80mm</span>
                                   </button>
                                 </div>
@@ -500,7 +500,7 @@ export default function OrdensPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleWhatsApp(ordem)}
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              className="text-skin-success hover:text-skin-success hover:bg-skin-success/10"
                             >
                               <MessageCircle className="h-4 w-4" />
                             </Button>
@@ -511,7 +511,7 @@ export default function OrdensPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(ordem)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-skin-danger hover:text-skin-danger hover:bg-skin-danger/10"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -523,7 +523,7 @@ export default function OrdensPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleReabrir(ordem)}
-                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                className="text-skin-warning hover:text-skin-warning hover:bg-skin-warning/10"
                                 title="Reabrir OS"
                               >
                                 <RotateCcw className="h-4 w-4" />
@@ -553,7 +553,7 @@ export default function OrdensPage() {
             <Button variant="outline" onClick={() => setReopenOrder(null)}>
               Cancelar
             </Button>
-            <Button onClick={confirmReopen} className="bg-orange-600 hover:bg-orange-700 text-white">
+            <Button onClick={confirmReopen} className="bg-skin-warning hover:bg-skin-warning-hover text-white">
               Confirmar Reabertura
             </Button>
           </DialogFooter>

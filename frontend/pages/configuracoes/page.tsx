@@ -32,7 +32,7 @@ const Card = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`rounded-xl border border-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
+    className={`rounded-xl border border-skin-border/50 bg-card/90 dark:bg-card/60 backdrop-blur-sm text-card-foreground shadow-sm hover:shadow-md transition-all duration-300 ${className || ''}`}
     {...props}
   />
 ));
@@ -68,7 +68,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={`text-sm text-muted-foreground ${className || ''}`}
+    className={`text-sm text-skin-text-muted ${className || ''}`}
     {...props}
   />
 ));
@@ -91,9 +91,9 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
   const variantClasses = {
     default: "bg-primary text-primary-foreground hover:bg-primary/90",
     destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    outline: "border border-skin-input-border bg-skin-background hover:bg-skin-surface-hover hover:text-skin-text",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-none",
+    ghost: "hover:bg-skin-surface-hover hover:text-skin-text hover:shadow-none",
     link: "text-primary underline-offset-4 hover:underline hover:shadow-none",
   };
 
@@ -112,7 +112,7 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
     return (
       <input
         type={type}
-        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
+        className={`flex h-10 w-full rounded-md border border-skin-input-border bg-skin-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-skin-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
         ref={ref}
         {...props}
       />
@@ -141,7 +141,7 @@ const Select = ({ value, onValueChange, children, placeholder }: {
   <select
     value={value}
     onChange={(e) => onValueChange(e.target.value)}
-    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    className="flex h-10 w-full items-center justify-between rounded-md border border-skin-input-border bg-skin-background px-3 py-2 text-sm ring-offset-background placeholder:text-skin-text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
   >
     {placeholder && <option value="">{placeholder}</option>}
     {children}
@@ -159,7 +159,7 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
     default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
     secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
     destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-    outline: "text-foreground",
+    outline: "text-skin-text",
   };
 
   return (
@@ -186,7 +186,7 @@ const Switch = ({ id, checked, onCheckedChange }: {
       className="sr-only peer"
     />
     <div className="peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 peer-checked:bg-primary peer-unchecked:bg-input">
-      <div className="pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform peer-checked:translate-x-5 peer-unchecked:translate-x-0" />
+      <div className="pointer-events-none block h-5 w-5 rounded-full bg-skin-background shadow-lg ring-0 transition-transform peer-checked:translate-x-5 peer-unchecked:translate-x-0" />
     </div>
   </label>
 );
@@ -237,7 +237,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
   ({ className, ...props }, ref) => (
     <th
       ref={ref}
-      className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 ${className || ''}`}
+      className={`h-12 px-4 text-left align-middle font-medium text-skin-text-muted [&:has([role=checkbox])]:pr-0 ${className || ''}`}
       {...props}
     />
   )
@@ -758,21 +758,21 @@ export default function OrdemServicoConfiguracoesPage() {
             <Settings className="h-8 w-8 text-primary" />
             Configurações
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-skin-text-muted mt-2">
             Gerencie as preferências do módulo de Ordem de Serviço
           </p>
         </div>
       </div>
 
       {/* Horizontal Tabs */}
-      <div className="border-b border-border">
+      <div className="border-b border-skin-border">
         <nav className="flex space-x-8">
           {canManageConfigNotifications && (
           <Button
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'agendamento'
               ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              : 'border-transparent text-skin-text-muted hover:text-skin-text'
               }`}
             onClick={() => setActiveTab('agendamento')}
           >
@@ -785,7 +785,7 @@ export default function OrdemServicoConfiguracoesPage() {
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'usuarios'
               ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              : 'border-transparent text-skin-text-muted hover:text-skin-text'
               }`}
             onClick={() => setActiveTab('usuarios')}
           >
@@ -798,7 +798,7 @@ export default function OrdemServicoConfiguracoesPage() {
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'permissoes'
               ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              : 'border-transparent text-skin-text-muted hover:text-skin-text'
               }`}
             onClick={() => setActiveTab('permissoes')}
           >
@@ -811,7 +811,7 @@ export default function OrdemServicoConfiguracoesPage() {
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'opcoes-os'
               ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              : 'border-transparent text-skin-text-muted hover:text-skin-text'
               }`}
             onClick={() => setActiveTab('opcoes-os')}
           >
@@ -824,7 +824,7 @@ export default function OrdemServicoConfiguracoesPage() {
             variant="ghost"
             className={`border-b-2 rounded-none px-1 py-3 ${activeTab === 'ia'
               ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              : 'border-transparent text-skin-text-muted hover:text-skin-text'
               }`}
             onClick={() => setActiveTab('ia')}
           >
@@ -857,7 +857,7 @@ export default function OrdemServicoConfiguracoesPage() {
               {loading ? (
                 <div className="text-center py-8">Carregando usuários...</div>
               ) : users.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                <div className="text-center py-8 text-skin-text-muted border-2 border-dashed rounded-lg">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium">Nenhum usuário encontrado</p>
                   <p className="text-sm">Verifique se há usuários cadastrados no sistema principal.</p>
@@ -883,7 +883,7 @@ export default function OrdemServicoConfiguracoesPage() {
                               </Avatar>
                               <div className="flex flex-col">
                                 <span className="font-medium text-sm">{user.name}</span>
-                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                                <span className="text-xs text-skin-text-muted">{user.email}</span>
                               </div>
                             </div>
                           </TableCell>
@@ -892,14 +892,14 @@ export default function OrdemServicoConfiguracoesPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2 flex-wrap">
-                              {user.os_roles?.admin && <Badge className="bg-purple-500 hover:bg-purple-600 text-white">Administrador</Badge>}
+                              {user.os_roles?.admin && <Badge className="bg-skin-secondary hover:bg-skin-secondary text-white">Administrador</Badge>}
                               {user.os_roles?.attendant && <Badge variant="secondary">Atendente</Badge>}
-                              {user.os_roles?.technician && <Badge className="bg-blue-500 hover:bg-blue-600 text-white">Técnico</Badge>}
+                              {user.os_roles?.technician && <Badge className="bg-skin-info hover:bg-skin-primary text-white">Técnico</Badge>}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end items-center gap-2">
-                              <Label htmlFor={`tech-${user.id}`} className="text-xs text-muted-foreground mr-2">
+                              <Label htmlFor={`tech-${user.id}`} className="text-xs text-skin-text-muted mr-2">
                                 {user.os_roles?.technician ? 'Sim' : 'Não'}
                               </Label>
                               <Switch
@@ -927,7 +927,7 @@ export default function OrdemServicoConfiguracoesPage() {
                   <Shield className="h-5 w-5" />
                   Permissões por Perfil
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-skin-text-muted mt-1">
                   Configure as permissões para cada tipo de usuário: Administrador, Técnico e Atendente
                 </p>
               </div>
@@ -953,7 +953,7 @@ export default function OrdemServicoConfiguracoesPage() {
                   <Settings className="h-5 w-5" />
                   Opções da Ordem de Serviço
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-skin-text-muted mt-1">
                   Configurações específicas do módulo Ordem de Serviço
                 </p>
               </div>
@@ -977,7 +977,7 @@ export default function OrdemServicoConfiguracoesPage() {
                 <CardContent className="space-y-4">
                   {loadingCondicoes ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      <Loader2 className="h-6 w-6 animate-spin text-skin-text-muted" />
                     </div>
                   ) : (
                     <>
@@ -990,7 +990,7 @@ export default function OrdemServicoConfiguracoesPage() {
                             disabled={savingCondicoes}
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-skin-text-muted">
                           Este texto será exibido automaticamente no template de impressão A4
                         </p>
                       </div>
@@ -1020,7 +1020,7 @@ export default function OrdemServicoConfiguracoesPage() {
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MessageCircle className="h-5 w-5 text-green-600" />
+                    <MessageCircle className="h-5 w-5 text-skin-success" />
                     Mensagem de WhatsApp (OS)
                   </CardTitle>
                   <CardDescription>
@@ -1050,7 +1050,7 @@ export default function OrdemServicoConfiguracoesPage() {
                         'nomeFantasia'
                       ]}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-skin-text-muted mt-1">
                       Configure o modelo de mensagem. As variáveis serão substituídas pelos dados reais da OS.
                     </p>
                   </div>
@@ -1085,7 +1085,7 @@ export default function OrdemServicoConfiguracoesPage() {
                   <Brain className="h-5 w-5" />
                   Inteligência Artificial
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-skin-text-muted mt-1">
                   Configure a integração com modelos de linguagem (IA) para automação e análise
                 </p>
               </div>
@@ -1124,10 +1124,10 @@ export default function OrdemServicoConfiguracoesPage() {
                     aria-hidden="true"
                     className="hidden"
                   />
-                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-skin-border">
                     <div className="space-y-1">
                       <Label htmlFor="ai-enabled" className="text-base">Ativar IA no Módulo</Label>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-skin-text-muted">
                         Permite o uso de recursos de IA em todo o módulo de OS
                       </p>
                     </div>
@@ -1163,7 +1163,7 @@ export default function OrdemServicoConfiguracoesPage() {
                       data-1p-ignore="true"
                       data-form-type="other"
                     />
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-[10px] text-skin-text-muted">
                       {aiConfig.provider === 'openrouter'
                         ? 'Obtenha em openrouter.ai. Permite usar Claude, GPT-4, Llama, etc.'
                         : 'Obtenha em platform.openai.com'}
@@ -1220,12 +1220,12 @@ export default function OrdemServicoConfiguracoesPage() {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <h4 className="text-sm font-medium text-blue-500 mb-1 flex items-center gap-2">
+                  <div className="p-4 rounded-lg bg-skin-info/10 border border-skin-info/20">
+                    <h4 className="text-sm font-medium text-skin-info mb-1 flex items-center gap-2">
                       <Brain className="h-4 w-4" />
                       Dica de Uso
                     </h4>
-                    <p className="text-xs text-blue-500/70 leading-relaxed">
+                    <p className="text-xs text-skin-info/70 leading-relaxed">
                       A temperatura baixa (0.1 a 0.3) torna a IA mais precisa e determinista, ideal para análise de dados.
                       Temperaturas altas (0.7 a 1.0) tornam o texto mais criativo.
                     </p>
@@ -1242,7 +1242,7 @@ export default function OrdemServicoConfiguracoesPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="bg-background/50 p-3 rounded border text-xs font-mono whitespace-pre-wrap">
+                    <div className="bg-skin-background/50 p-3 rounded border text-xs font-mono whitespace-pre-wrap">
                       {testResponse}
                     </div>
                   </CardContent>
