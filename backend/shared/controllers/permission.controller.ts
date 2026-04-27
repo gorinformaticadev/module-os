@@ -24,6 +24,7 @@ type PermissionRequestUser = {
   tenantId?: string | null;
 };
 
+@Permissions('ordem_servico.permissions')
 @Controller("ordem_servico/permissions")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PermissionController {
