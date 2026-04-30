@@ -279,7 +279,7 @@ export default function OrdemServicoClientesPage() {
                                                             )}
                                                         </div>
                                                         <div className="flex flex-col min-w-0">
-                                                            <span className="font-semibold truncate text-skin-background-hover dark:text-skin-background">{client.name}</span>
+                                                            <span className="font-semibold truncate text-skin-text">{client.name}</span>
                                                             {client.document && (
                                                                 <div className="flex items-center gap-1 text-[10px] text-skin-text-muted font-medium">
                                                                     <FileText className="h-2.5 w-2.5" />
